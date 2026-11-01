@@ -1,0 +1,423 @@
+﻿TÀI LIỆU ĐẶC TẢ DỰ ÁN: ỨNG DỤNG QUẢN LÝ TÀI CHÍNH CÁ NHÂN ANDROID (PFM & MVP - PRODUCTION SPEC)
+1. TỔNG QUAN DỰ ÁN & BỐI CẢNH THỊ TRƯỜNG
+1.1. Bối cảnh thị trường tại Việt Nam
+* Nhu cầu quản lý tài chính cá nhân (Personal Finance Management - PFM) ngày càng gia tăng mạnh mẽ ở nhóm người trẻ, dân văn phòng và người làm công nghệ.
+* Hơn 70% người dùng từ bỏ các ứng dụng quản lý chi tiêu chỉ sau 2-3 tuần sử dụng do 5 rào cản lớn:
+1. Thao tác nhập liệu thủ công tốn thời gian và dễ bị quên đối với các giao dịch nhỏ lẻ hàng ngày (đặc biệt là chi tiêu tiền mặt).
+2. Các ngân hàng tại Việt Nam đã cắt giảm SMS truyền thống (hoặc thu phí cao) và chuyển sang thông báo đẩy trong ứng dụng (In-app Push Notification), làm tê liệt các ứng dụng đọc SMS đời cũ.
+3. Tâm lý lo ngại rủi ro lộ thông tin đăng nhập ngân hàng và mã OTP khi phải liên kết tài khoản trực tiếp qua bên thứ ba.
+4. Chi phí chuyển đổi (Switching Cost) cao khi người dùng muốn chuyển lịch sử giao dịch từ các ứng dụng cũ hoặc sao kê ngân hàng sang ứng dụng mới.
+5. Sự mệt mỏi với mô hình thu phí thuê bao định kỳ (Subscription) đắt đỏ kèm quảng cáo dày đặc.
+1.2. Phân tích đối thủ & Khoảng trống thị trường
+* Nhóm thống trị lâu năm (Money Lover, Sổ Thu Chi MISA): Đầy đủ tính năng nhưng giao diện nặng nề, chứa nhiều quảng cáo ở bản miễn phí, chi phí thuê bao cao, nhồi nhét dịch vụ vay tiêu dùng và bảo hiểm.
+* Nhóm quốc tế & Mã nguồn mở hiện đại (Spendee, Cashew, Paisa, Ivy Wallet, Actual Budget): Giao diện Material 3 mượt mà, trải nghiệm người dùng xuất sắc nhưng không hỗ trợ tự động hóa cho hệ sinh thái ngân hàng và ví điện tử Việt Nam; người dùng phải nhập tay 100%.
+* Nhóm tích hợp sẵn trong Ngân hàng/Ví (Techcombank, MoMo, Timo): Tự động ghi nhận giao dịch nội bộ nhưng bị đóng kín trong hệ sinh thái riêng (Walled Garden), không thể tổng hợp dòng tiền từ nhiều ngân hàng và tiền mặt.
+1.3. Định vị sản phẩm (Value Proposition)
+"Ứng dụng quản trị tài chính cá nhân tự động hóa qua thông báo, bảo mật cục bộ (Local-first) và giao diện tinh gọn dành riêng cho người dùng Việt Nam."
+* Không chạm (Zero-effort Entry): Tự động đón bắt và bóc tách biến động số dư qua Android NotificationListenerService, kết hợp Quick Settings Tile & App Shortcuts để nhập tiền mặt trong 1 chạm.
+* Xử lý dòng tiền thông minh: Tự động lọc bỏ tin nhắn rác/OTP, quét vét thông báo treo sau khi khởi động lại máy, đối ánh đa tài khoản qua 4 số cuối, khử trùng lặp thông báo giữa Ngân hàng và Ví điện tử, tự động ghép cặp giao dịch Chuyển khoản nội bộ.
+* Nghiệp vụ tài chính thực chiến: Hỗ trợ hoàn tiền giảm trừ chi phí (Refund/Offset), tách bạch và theo dõi trạng thái đòi tiền khoản chi hộ/tạm ứng, quản lý chu kỳ thẻ tín dụng, ngân sách cộng dồn (Rollover Budget), chuẩn hóa tên cửa hàng (Merchant) và gắn nhãn sự kiện đa chiều (Tags).
+* Riêng tư tuyệt đối (Privacy-first): 100% dữ liệu lưu trữ trên thiết bị, mã hóa toàn bộ cơ sở dữ liệu bằng SQLCipher (AES-256), không yêu cầu tạo tài khoản đám mây.
+________________
+
+
+2. KIẾN TRÚC KỸ THUẬT & HỆ THỐNG ENGINE ĐẶC THÙ
+2.1. Công nghệ cốt lõi (Tech Stack)
+* Ngôn ngữ & Nền tảng: Kotlin, Android Native (minSdk 26, targetSdk 35).
+* Giao diện người dùng: Jetpack Compose, Material 3, Dynamic Color, Single-Activity Architecture.
+* Kiến trúc phần mềm: Clean Architecture kết hợp MVI (Model-View-Intent) với luồng dữ liệu một chiều (Unidirectional Data Flow - UDF).
+* Cơ sở dữ liệu & Tìm kiếm: Room Database tích hợp SQLCipher (mã hóa AES-256), SQLite FTS4/FTS5 (External Content Table tìm kiếm toàn văn tốc độ cao với bộ tách từ unicode61), Composite Indexing và Atomic Database Transactions (@Transaction).
+* Quản lý tác vụ nền & Tiện ích hệ thống: Android NotificationListenerService (bắt biến động thời gian thực), WorkManager (xử lý giao dịch định kỳ, dọn thùng rác 30 ngày, sao lưu tự động, đồng bộ Rule OTA), TileService (Quick Settings Tile) và ShortcutManagerCompat (App Shortcuts).
+* Dependency Injection & Đồ thị: Hilt / Koin; thư viện Vico Chart kết hợp Compose Canvas.
+2.2. Kiến trúc Notification Automation Engine (8 Modules chuyên sâu)
+* Module 1 - Pre-Filter & OTP/Spam Blocker (Bộ lọc chặn rác đầu vào):
+   * Trích xuất toàn diện Notification.EXTRA_TITLE, EXTRA_TEXT, EXTRA_BIG_TEXT và EXTRA_TEXT_LINES (nơi chứa toàn văn thông báo ngân hàng khi bị thu gọn).
+   * Lọc nhanh theo NotificationChannel ID (channelIdAllowlist) kết hợp danh sách từ khóa loại trừ (ignoreKeywords: mã OTP, SmartOTP, khuyến mãi, cảnh báo đăng nhập, chúc mừng) để loại bỏ sớm thông báo phi tài chính trước khi chạy Regex.
+* Module 2 - Active Notification Scanner (Quét vét thông báo đang treo):
+   * Ngay khi sự kiện onListenerConnected() kích hoạt (sau khi điện thoại khởi động lại hoặc dịch vụ vừa được phục hồi), tự động gọi getActiveNotifications() để quét toàn bộ thông báo ngân hàng còn lưu trên thanh trạng thái, đối chiếu mã băm contentHash (SHA-256) nhằm không bỏ sót biến động lúc máy sập nguồn.
+* Module 3 - Staging, Notification Log & Failed Inbox:
+   * Mọi thông báo từ ứng dụng ngân hàng/ví đều được lưu vết vào bảng NotificationLog.
+   * Nếu thông báo chứa dấu hiệu biến động số dư nhưng không khớp Regex (do ngân hàng mới đổi mẫu), hệ thống chuyển vào Hộp thư thông báo lỗi (Failed Notification Inbox) để người dùng bấm chuyển thành giao dịch thủ công với 1 chạm hoặc kiểm tra trong Regex Sandbox.
+* Module 4 - Multi-Rule Named-Group Parser & Remote OTA JSON:
+   * Hỗ trợ cấu hình nhiều biểu thức Regex cho cùng một ngân hàng theo độ ưu tiên (priority) để xử lý đa dạng mẫu câu (chuyển khoản NAPAS 247, quét VietQR, chi tiêu thẻ tín dụng, hoàn tiền).
+   * Sử dụng Named Capturing Groups: (?<sign>...), (?<amount>...), (?<mask>...), (?<balance>...), (?<merchant>...), (?<note>...), (?<time>...) thay vì vị trí thứ tự cứng nhắc, kèm bộ chuẩn hóa dấu phân cách hàng nghìn (. hoặc ,), giúp cập nhật file JSON OTA từ GitHub/CDN linh hoạt mà không cần phát hành lại APK.
+* Module 5 - Account Mapping (Đối ánh đa tài khoản):
+   * Kết hợp tên gói ứng dụng (bankPackageName) và 4 số cuối tài khoản/thẻ (accountNumberMask) bóc tách từ thông báo để hạch toán chính xác vào đúng tài khoản nguồn.
+* Module 6 - Deduplication Engine (Khử trùng lặp):
+   * Chặn thông báo kép trong cửa sổ thời gian hẹp (<= 30 giây) dựa trên bộ ba (Số tiền, Chiều biến động +/-, Nội dung/Merchant rút gọn) khi thanh toán qua ví điện tử có liên kết trực tiếp với tài khoản ngân hàng.
+* Module 7 - Auto-Transfer Pairing (Ghép cặp chuyển khoản nội bộ):
+   * Tự động phát hiện 1 biến động trừ tiền ở tài khoản A và 1 biến động cộng tiền cùng mệnh giá ở tài khoản B của người dùng trong vòng 1-2 phút để hợp nhất thành 1 giao dịch Chuyển khoản nội bộ (TRANSFER).
+* Module 8 - Cold-Start Balance Initializer & Reconciliation:
+   * Bóc tách số dư sau giao dịch (postBalance) từ thông báo ngân hàng. Nếu tài khoản mới tạo chưa có số dư gốc (isInitialized = false), tự động tính toán ngược (initialBalance = postBalance -/+ amount) và gợi ý thiết lập số dư ban đầu chuẩn xác.
+2.3. Tối ưu nhập liệu, Bảo mật trải nghiệm & Tương thích hệ điều hành
+* Nhập tiền mặt 1 chạm (Zero-Friction Cash Entry): Cung cấp nút bấm trên thanh cài đặt nhanh Android (Quick Settings Tile) và menu nhấn giữ biểu tượng ứng dụng (App Shortcuts) để mở thẳng Bottom Sheet bàn phím nhập tiền mặt trong dưới 0.5 giây.
+* Di chuyển dữ liệu & Nhập sao kê (Data Migration & Import): Hỗ trợ trình hướng dẫn nhập file CSV/Excel từ sao kê ngân hàng hoặc dữ liệu xuất từ Money Lover, Sổ Thu Chi MISA thông qua bảng cấu hình ánh xạ cột (ImportProfile).
+* Bảo mật truy cập & Hiển thị: Xác thực vân tay/khuôn mặt qua BiometricPrompt; nút ẩn nhanh số dư (Privacy Masking hiển thị ***) trên Dashboard; bật cờ FLAG_SECURE làm mờ màn hình ứng dụng trong trình đa nhiệm (Recent Apps) và chặn chụp màn hình trái phép.
+* Toàn vẹn dữ liệu (Timestamped Soft Delete): Áp dụng cơ chế xóa mềm lưu mốc thời gian xóa (deletedAt) cho Tài khoản, Danh mục, Giao dịch và Nhãn; WorkManager tự động dọn dẹp vĩnh viễn các bản ghi quá hạn 30 ngày trong Thùng rác.
+* Tương thích Android 13+ & OEM ROM: Màn hình hướng dẫn trực quan giúp người dùng bật Allow Restricted Settings trên Android 13+ và cấu hình Không tối ưu hóa pin (Battery Unrestricted / Auto-start) trên HyperOS, OriginOS, One UI, ColorOS.
+________________
+
+
+3. MÔ HÌNH DỮ LIỆU CỐT LÕI CHUẨN PRODUCTION (10 NHÓM BẢNG ROOM DATABASE SCHEMA)
+3.1. Bảng Account (Tài khoản & Nguồn tiền)
+* id: UUID / String (Primary Key)
+* name: String (Tên hiển thị: Tiền mặt, Vietcombank, MB Bank, MoMo, Thẻ tín dụng VIB...)
+* type: Enum (BANK, WALLET, CASH, SAVINGS, CREDIT_CARD)
+* initialBalance: Long (Số dư gốc tại thời điểm bắt đầu sử dụng — mốc chuẩn cố định để tái tính toán và kiểm toán chuỗi số dư)
+* currentBalance: Long (Số dư hiện tại hoặc dư nợ hiện tại, được cập nhật nguyên tử thông qua DAO @Transaction)
+* currency: String (Mã tiền tệ, mặc định VND)
+* bankPackageName: String? (Package name ứng dụng ngân hàng/ví, được đánh chỉ mục Index)
+* accountNumberMask: String? (4 số cuối số tài khoản hoặc số thẻ để phân biệt đa tài khoản cùng ngân hàng, được đánh chỉ mục Index)
+* creditLimit: Long? (Hạn mức tín dụng, áp dụng cho CREDIT_CARD)
+* statementDay: Int? (Ngày chốt sao kê hàng tháng 1..31, áp dụng cho CREDIT_CARD)
+* dueDay: Int? (Ngày đến hạn thanh toán hàng tháng 1..31, áp dụng cho CREDIT_CARD)
+* icon: String (Định danh biểu tượng tài khoản/ngân hàng)
+* color: Int (Mã màu hiển thị)
+* sortOrder: Int (Thứ tự hiển thị trên Dashboard)
+* excludeFromNetWorth: Boolean (Loại trừ tài khoản này khỏi tính toán Tài sản ròng)
+* isArchived: Boolean (Đóng băng tài khoản cũ không còn giao dịch nhưng giữ lại toàn bộ lịch sử báo cáo)
+* isInitialized: Boolean (Đánh dấu tài khoản đã được thiết lập số dư gốc hay chưa)
+* createdAt: Long (Timestamp khởi tạo bản ghi)
+* updatedAt: Long (Timestamp cập nhật gần nhất)
+* deletedAt: Long? (Null nếu đang hoạt động; lưu Timestamp thời điểm xóa mềm để WorkManager tự động dọn sau 30 ngày)
+3.2. Bảng Category (Danh mục thu/chi phân cấp)
+* id: UUID / String (Primary Key)
+* name: String (Tên danh mục: Ăn uống, Di chuyển, Nhà ở, Mua sắm, Lương...)
+* icon: String (Định danh biểu tượng)
+* color: Int (Mã màu hiển thị)
+* type: Enum (EXPENSE, INCOME)
+* parentId: UUID / String? (Khóa ngoại tự tham chiếu hỗ trợ cây danh mục Cha - Con 2 cấp, được đánh chỉ mục Index, onDelete = RESTRICT)
+* isSystemDefault: Boolean (Đánh dấu danh mục gốc của hệ thống để bảo vệ khỏi thao tác xóa nhầm)
+* sortOrder: Int (Thứ tự ưu tiên hiển thị)
+* createdAt: Long (Timestamp khởi tạo)
+* updatedAt: Long (Timestamp cập nhật gần nhất)
+* deletedAt: Long? (Timestamp xóa mềm lưu trong thùng rác)
+3.3. Bảng Transaction & Bảng ảo TransactionFts (Giao dịch tài chính & Chỉ mục FTS)
+* Bảng chính Transaction:
+   * id: UUID / String (Primary Key)
+   * amount: Long (Số tiền giao dịch quy đổi ra tiền tệ chính, luôn lưu giá trị nguyên dương > 0)
+   * feeAmount: Long (Phí giao dịch/chuyển khoản kèm theo nếu có, mặc định 0)
+   * originalAmount: Long? (Số tiền nguyên tệ trước khi quy đổi ngoại tệ)
+   * originalCurrency: String? (Đơn vị ngoại tệ gốc nếu giao dịch bằng USD, JPY, EUR...)
+   * exchangeRate: Double? (Tỷ giá quy đổi tại thời điểm giao dịch)
+   * type: Enum (EXPENSE, INCOME, TRANSFER, ADJUSTMENT, REFUND)
+   * accountId: UUID / String (Khóa ngoại trỏ tới Account nguồn, Composite Index cùng timestamp DESC)
+   * toAccountId: UUID / String? (Khóa ngoại trỏ tới Account đích, bắt buộc khi type là TRANSFER, Indexed)
+   * categoryId: UUID / String? (Khóa ngoại trỏ tới Category, được đánh chỉ mục Index; cho phép null khi type là TRANSFER hoặc ADJUSTMENT)
+   * timestamp: Long (Thời gian phát sinh giao dịch, được đánh chỉ mục giảm dần để phân trang nhanh)
+   * merchantName: String? (Tên đơn vị thụ hưởng/cửa hàng đã chuẩn hóa: Shopee, Grab, Highlands, Điện lực...)
+   * note: String (Ghi chú hoặc nội dung chuyển khoản gốc)
+   * source: Enum (MANUAL, NOTIFICATION_PARSER, RECURRING, ADJUSTMENT, IMPORT)
+   * isSplitParent: Boolean (Cờ đánh dấu giao dịch gốc đã được tách thành nhiều giao dịch con; các câu truy vấn tính tổng danh mục sẽ lọc isSplitParent = false để chống cộng trùng tiền Double-counting)
+   * parentTransactionId: UUID / String? (Khóa ngoại trỏ tới giao dịch cha khi Tách giao dịch - Split Transaction)
+   * refundForTransactionId: UUID / String? (Khóa ngoại trỏ tới giao dịch chi tiêu gốc khi nhận tiền hoàn trả - Refund/Offset)
+   * excludeFromAnalytics: Boolean (Cờ đánh dấu khoản Chi hộ / Tạm ứng, loại trừ khỏi biểu đồ thu/chi cá nhân)
+   * reimbursementStatus: Enum? (NONE, PENDING, SETTLED — theo dõi khoản chi hộ/tạm ứng đã được hoàn trả đủ hay chưa)
+   * postBalance: Long? (Số dư tài khoản ngay sau giao dịch bóc tách từ thông báo ngân hàng, phục vụ đối soát)
+   * attachmentUri: String? (Đường dẫn cục bộ của ảnh chụp hóa đơn đính kèm)
+   * notificationLogId: UUID / String? (Khóa ngoại liên kết ngược về bản ghi NotificationLog gốc)
+   * createdAt: Long (Timestamp khởi tạo)
+   * updatedAt: Long (Timestamp cập nhật)
+   * deletedAt: Long? (Timestamp xóa mềm)
+* Bảng chỉ mục toàn văn TransactionFts (External Content FTS4/FTS5 Table):
+   * Liên kết trực tiếp với bảng Transaction thông qua rowid, sử dụng bộ tách từ unicode61 đánh chỉ mục toàn văn trên hai cột merchantName và note giúp truy vấn tìm kiếm dưới 50ms.
+3.4. Bảng Tag & TransactionTagCrossRef (Nhãn sự kiện đa chiều)
+* Bảng Tag:
+   * id: UUID / String (Primary Key)
+   * name: String (Tên nhãn: Du lịch Đà Lạt, Tết 2027, Dự án Freelance, Đám cưới...)
+   * color: Int (Mã màu nhãn)
+   * isArchived: Boolean (Ẩn các nhãn sự kiện cũ đã kết thúc khỏi danh sách gợi ý nhanh)
+   * createdAt: Long (Timestamp khởi tạo)
+   * updatedAt: Long (Timestamp cập nhật)
+   * deletedAt: Long? (Timestamp xóa mềm)
+* Bảng TransactionTagCrossRef (Quan hệ nhiều - nhiều):
+   * transactionId: UUID / String (Primary Key, Foreign Key, Indexed, onDelete = CASCADE)
+   * tagId: UUID / String (Primary Key, Foreign Key, Indexed, onDelete = CASCADE)
+3.5. Bảng Budget (Ngân sách & Hạn mức chi tiêu)
+* id: UUID / String (Primary Key)
+* categoryId: UUID / String? (Khóa ngoại trỏ tới Category; nếu null là ngân sách tổng toàn bộ chi tiêu tháng)
+* limitAmount: Long (Hạn mức chi tiêu gốc của tháng)
+* carryOverAmount: Long (Số tiền dư hoặc thâm hụt thực tế được kết chuyển từ tháng trước sang khi bật isRollover, mặc định 0)
+* monthYear: String (Kỳ ngân sách định dạng YYYY-MM, Unique Index kết hợp với categoryId)
+* isRollover: Boolean (Cho phép cộng dồn phần tiền dư hoặc trừ lùi phần vượt ngân sách tháng trước sang tháng sau)
+* alertThreshold: Int (Ngưỡng phần trăm cảnh báo sớm, mặc định 80%)
+* lastAlertSentThreshold: Int? (Lưu mốc cảnh báo gần nhất đã bắn thông báo 80% hoặc 100% để tránh lặp thông báo nhiều lần)
+* createdAt: Long (Timestamp khởi tạo)
+* updatedAt: Long (Timestamp cập nhật)
+3.6. Bảng RecurringPlan (Kế hoạch định kỳ & Hóa đơn cố định)
+* id: UUID / String (Primary Key)
+* name: String (Tên khoản định kỳ: Tiền thuê nhà, Internet, Netflix, Youtube Premium, Trả góp...)
+* amount: Long (Số tiền định kỳ)
+* type: Enum (EXPENSE, INCOME, TRANSFER)
+* accountId: UUID / String (Khóa ngoại trỏ tới Account thanh toán)
+* toAccountId: UUID / String? (Khóa ngoại trỏ tới Account đích nếu là chuyển khoản tiết kiệm/trả nợ định kỳ)
+* categoryId: UUID / String? (Khóa ngoại trỏ tới Category)
+* merchantName: String? (Tên nhà cung cấp dịch vụ định kỳ)
+* frequency: Enum (DAILY, WEEKLY, MONTHLY, YEARLY)
+* intervalCount: Int (Chu kỳ lặp lại, mặc định 1; ví dụ intervalCount = 3 với MONTHLY là 3 tháng/lần)
+* dayOfMonth: Int? (Cố định ngày đến hạn trong tháng để tránh trôi ngày giữa các tháng 28, 30 và 31 ngày)
+* nextDueDate: Long (Mốc thời gian đến hạn tiếp theo, Indexed)
+* lastExecutedAt: Long? (Mốc thời gian lần gần nhất hệ thống đã sinh giao dịch định kỳ này)
+* autoCreate: Boolean (True: tự động sinh giao dịch khi đến hạn; False: chỉ gửi thông báo nhắc nhở xác nhận)
+* remindDaysBefore: Int (Số ngày gửi thông báo nhắc trước khi đến hạn, mặc định 1 ngày)
+* isActive: Boolean (Trạng thái đang hoạt động hay tạm dừng)
+* createdAt: Long (Timestamp khởi tạo)
+* updatedAt: Long (Timestamp cập nhật)
+3.7. Bảng NotificationLog (Hàng đợi, Nhật ký & Hộp thư thông báo lỗi)
+* id: UUID / String (Primary Key)
+* packageName: String (Tên gói ứng dụng phát thông báo, Indexed)
+* channelId: String? (ID kênh thông báo NotificationChannel của Android)
+* title: String (Tiêu đề thông báo gốc)
+* content: String (Toàn văn thông báo gốc, ưu tiên lấy từ EXTRA_BIG_TEXT và EXTRA_TEXT_LINES)
+* contentHash: String (Mã băm SHA-256 của packageName + postTime + content, đánh Unique Index để chống xử lý trùng lặp khi quét lại thông báo treo)
+* postTime: Long (Thời gian thông báo được hệ điều hành Android ghi nhận)
+* receivedAt: Long (Thời gian dịch vụ của ứng dụng đọc được thông báo)
+* matchedRuleId: String? (Khóa ngoại trỏ tới ParserRule đã khớp thành công)
+* parsedAmount: Long? (Số tiền bóc tách được)
+* parsedType: String? (Chiều biến động +/-)
+* parsedAccountMask: String? (4 số cuối tài khoản/thẻ bóc tách được)
+* parsedPostBalance: Long? (Số dư cuối bóc tách được)
+* parsedMerchant: String? (Tên đơn vị thụ hưởng bóc tách được)
+* status: Enum (PENDING, CONFIRMED, DEDUPLICATED, PAIRED_TRANSFER, IGNORED_SPAM, FAILED)
+* failureReason: String? (Mô tả lý do không bóc tách được để hiển thị trong Failed Notification Inbox)
+* linkedTransactionId: UUID / String? (Khóa ngoại liên kết tới giao dịch đã tạo thành công)
+3.8. Bảng ParserRule & CategoryKeywordRule (Hệ thống Rule Engine động)
+* Bảng ParserRule (Quy tắc bóc tách thông báo ngân hàng đa mẫu câu):
+   * id: String (Primary Key, ví dụ: vcb_balance_v2, vcb_credit_v1, momo_payment_v3)
+   * packageName: String (Indexed - Package ứng dụng ngân hàng/ví)
+   * bankName: String (Tên thương hiệu ngân hàng)
+   * channelIdAllowlist: String? (Danh sách JSON các NotificationChannel hợp lệ để lọc nhanh thông báo giao dịch)
+   * priority: Int (Thứ tự ưu tiên chạy Regex khi một ngân hàng có nhiều mẫu thông báo khác nhau)
+   * regexPattern: String (Biểu thức chính quy sử dụng Named Capturing Groups: (?<sign>...), (?<amount>...), (?<mask>...), (?<balance>...), (?<merchant>...), (?<note>...), (?<time>...))
+   * ignoreKeywords: String (Chuỗi JSON danh sách từ khóa chặn sớm tin nhắn OTP, quảng cáo, thông báo đăng nhập)
+   * fallbackTransactionType: String? (Loại giao dịch mặc định EXPENSE/INCOME khi mẫu thông báo không dùng dấu +/- mà dùng câu chữ)
+   * dateFormatPattern: String? (Định dạng thời gian giao dịch trong thông báo nếu có, ví dụ dd/MM/yyyy HH:mm:ss)
+   * version: Int (Phiên bản rule phục vụ cập nhật OTA)
+   * isUserCustom: Boolean (Đánh dấu rule do người dùng tự tinh chỉnh trong Regex Sandbox để không bị bản cập nhật OTA ghi đè)
+   * isActive: Boolean (Trạng thái kích hoạt)
+   * updatedAt: Long (Timestamp cập nhật)
+* Bảng CategoryKeywordRule (Quy tắc tự động đoán danh mục & Chuẩn hóa Merchant):
+   * id: UUID / String (Primary Key)
+   * keyword: String (Từ khóa nhận diện trong nội dung chuyển khoản, Indexed)
+   * matchType: Enum (CONTAINS, EXACT, REGEX)
+   * normalizedMerchantName: String? (Tên cửa hàng chuẩn hóa để gán vào trường merchantName của giao dịch)
+   * categoryId: UUID / String (Khóa ngoại trỏ tới Category được gán)
+   * priority: Int (Độ ưu tiên khớp từ khóa)
+   * isUserDefined: Boolean (Đánh dấu rule do người dùng tự dạy cho máy hay mặc định)
+   * updatedAt: Long (Timestamp cập nhật)
+3.9. Bảng AccountBalanceSnapshot (Chốt số dư cuối kỳ & Tăng tốc biểu đồ Tài sản ròng)
+* id: UUID / String (Primary Key)
+* accountId: UUID / String (Khóa ngoại trỏ tới Account, Unique Index kết hợp với monthYear)
+* monthYear: String (Kỳ chốt số dư định dạng YYYY-MM)
+* openingBalance: Long (Số dư đầu tháng của tài khoản)
+* closingBalance: Long (Số dư chốt cuối tháng của tài khoản)
+* totalIncome: Long (Tổng tiền vào của tài khoản trong tháng)
+* totalExpense: Long (Tổng tiền ra của tài khoản trong tháng)
+* totalTransferIn: Long (Tổng tiền chuyển khoản nội bộ nhận vào trong tháng)
+* totalTransferOut: Long (Tổng tiền chuyển khoản nội bộ chuyển đi trong tháng)
+* updatedAt: Long (Cập nhật tức thì khi có giao dịch phát sinh trong kỳ, giúp vẽ biểu đồ biến động Tài sản ròng nhiều năm dưới 16ms mà không cần quét cộng dồn lại từ giao dịch đầu tiên)
+3.10. Bảng ImportProfile (Mẫu ánh xạ cột khi nhập sao kê CSV/Excel)
+* id: UUID / String (Primary Key)
+* profileName: String (Tên mẫu: Sao kê Vietcombank, Dữ liệu Money Lover, Dữ liệu Sổ Thu Chi MISA...)
+* columnMappingJson: String (Chuỗi JSON định nghĩa vị trí cột: Ngày giao dịch, Số tiền, Loại giao dịch, Danh mục, Ghi chú, Số tài khoản)
+* dateFormat: String (Định dạng ngày tháng của file nhập, ví dụ dd/MM/yyyy)
+* skipHeaderRows: Int (Số dòng tiêu đề bỏ qua ở đầu file)
+* updatedAt: Long (Timestamp cập nhật)
+________________
+
+
+4. BẢNG PHÂN LOẠI PHẠM VI TÍNH NĂNG TOÀN DIỆN (MOSCOW MATRIX)
+
+
+Nhóm
+	Phân hệ (Module)
+	Tên tính năng
+	Mô tả chi tiết chức năng
+	Độ phức tạp
+	Must-Have
+	Automation Core
+	Bắt & Parse thông báo đa mẫu câu
+	Tích hợp NotificationListenerService đọc EXTRA_BIG_TEXT của Vietcombank, MB Bank, MoMo bằng Named-Group Regex và lưu vết qua NotificationLog.
+	Cao
+	Must-Have
+	Automation Core
+	Chặn OTP/Spam & Quét thông báo treo
+	Lọc bỏ sớm tin nhắn OTP/quảng cáo qua ignoreKeywords; tự động gọi getActiveNotifications() quét vét thông báo còn treo khi khởi động lại máy.
+	Vừa
+	Must-Have
+	Automation Core
+	Đối ánh đa tài khoản (Account Mapping)
+	Tự động nhận diện đúng tài khoản nguồn dựa trên packageName kết hợp 4 số cuối tài khoản/thẻ (accountNumberMask).
+	Vừa
+	Must-Have
+	Automation Core
+	Khử trùng lặp giao dịch (Deduplication)
+	Chặn thông báo kép phát sinh đồng thời từ ví điện tử và ngân hàng liên kết trong cửa sổ 30 giây.
+	Vừa
+	Must-Have
+	Automation Core
+	Tự động ghép chuyển khoản (Transfer Pairing)
+	Tự động gộp 2 biến động (+/-) cùng số tiền giữa 2 tài khoản nội bộ trong 1-2 phút thành 1 giao dịch Chuyển khoản.
+	Vừa
+	Must-Have
+	Automation Core
+	Khởi tạo số dư tự động (Cold-Start Balance)
+	Bóc tách số dư cuối (postBalance) từ thông báo để tự động tính ngược initialBalance hoặc cảnh báo lệch số dư thực tế.
+	Vừa
+	Must-Have
+	Automation Core
+	Cập nhật Regex từ xa (Remote Rule OTA)
+	Tải cấu hình JSON chứa Regex ngân hàng từ GitHub/CDN để thích ứng ngay khi ngân hàng đổi mẫu thông báo.
+	Vừa
+	Must-Have
+	Transaction Core
+	CRUD Giao dịch & Nhập tiền mặt 1 chạm
+	Bàn phím số tích hợp phép tính cộng/trừ/nhân/chia; hỗ trợ Quick Settings Tile và App Shortcuts để mở nhanh màn hình nhập tiền mặt.
+	Vừa
+	Must-Have
+	Transaction Core
+	Phân loại Chi hộ & Theo dõi hoàn ứng
+	Cờ excludeFromAnalytics và trạng thái reimbursementStatus giúp tách khoản trả hộ khỏi báo cáo và nhắc đòi tiền.
+	Thấp
+	Must-Have
+	Account Core
+	Điều chỉnh số dư nhanh (Reconciliation)
+	Hiệu chỉnh trực tiếp số dư thực tế của ví/tài khoản và tự động sinh bản ghi điều chỉnh (ADJUSTMENT).
+	Thấp
+	Must-Have
+	Account Core
+	Quản lý đa tài khoản chuẩn kiểm toán
+	Tách bạch initialBalance và currentBalance cho Tiền mặt, Ngân hàng, Ví điện tử, Sổ tiết kiệm; cập nhật nguyên tử qua @Transaction.
+	Thấp
+	Must-Have
+	Category Core
+	Cây danh mục 2 cấp
+	Cung cấp bộ danh mục chuẩn văn hóa chi tiêu Việt Nam; hỗ trợ tùy biến biểu tượng, màu sắc và phân cấp Cha - Con.
+	Thấp
+	Must-Have
+	Security & Storage
+	Mã hóa DB & Bảo mật hiển thị
+	Mã hóa Room Database bằng SQLCipher; khóa vân tay BiometricPrompt; nút ẩn số dư (***) và cờ FLAG_SECURE chống chụp màn hình.
+	Vừa
+	Must-Have
+	Report
+	Dashboard & Báo cáo dòng tiền tháng
+	Tổng hợp Thu, Chi, Số dư ròng và biểu đồ phân bổ chi tiêu theo danh mục, cửa hàng (Merchant).
+	Vừa
+	Should-Have
+	Automation Core
+	Phân loại thông minh & Chuẩn hóa Merchant
+	Tự động gán danh mục và chuẩn hóa tên cửa hàng (Grab, Shopee, Highlands...) dựa trên CategoryKeywordRule.
+	Vừa
+	Should-Have
+	Automation Core
+	Hộp thư lỗi (Failed Inbox) & Regex Sandbox
+	Màn hình cứu hộ các thông báo ngân hàng parse lỗi thành giao dịch thủ công và công cụ thử nghiệm Regex trực tiếp trên máy.
+	Vừa
+	Should-Have
+	Transaction Core
+	Nghiệp vụ Hoàn tiền (Refund / Offset)
+	Ghi nhận khoản hoàn tiền liên kết trực tiếp với giao dịch gốc để giảm trừ chi phí thực tế thay vì tính thành thu nhập ảo.
+	Vừa
+	Should-Have
+	Transaction Core
+	Hệ thống Nhãn đa chiều (Tags)
+	Gắn nhiều nhãn sự kiện (#DuLich, #Tet, #CongTac) cho giao dịch để thống kê chi phí xuyên danh mục.
+	Thấp
+	Should-Have
+	Search & Filter
+	Tìm kiếm toàn văn (FTS5) & Lọc nâng cao
+	Tìm kiếm tức thì dưới 50ms theo ghi chú, cửa hàng, số tiền và lọc kết hợp theo khoảng thời gian, tài khoản, danh mục, nhãn.
+	Vừa
+	Should-Have
+	Account Core
+	Nghiệp vụ Thẻ tín dụng (Credit Card)
+	Quản lý hạn mức tín dụng, ngày chốt sao kê, ngày đến hạn thanh toán và luồng chuyển khoản tất toán dư nợ thẻ.
+	Vừa
+	Should-Have
+	Finance Core
+	Quản lý hóa đơn định kỳ (Recurring Plan)
+	Theo dõi tiền nhà, internet, thuê bao số; tự động nhắc nhở hoặc sinh giao dịch trừ vào đúng tài khoản khi đến hạn.
+	Vừa
+	Should-Have
+	Finance Core
+	Theo dõi Tài sản ròng (Net Worth Snapshot)
+	Biểu đồ biến động Tài sản ròng nhiều năm tốc độ cao nhờ bảng chốt số dư cuối kỳ AccountBalanceSnapshot.
+	Vừa
+	Should-Have
+	Budgeting
+	Ngân sách hạn mức & Kết chuyển (Rollover)
+	Thiết lập hạn mức chi tiêu tháng theo danh mục, lưu số dư kết chuyển (carryOverAmount) sang tháng sau và cảnh báo chạm ngưỡng.
+	Vừa
+	Should-Have
+	Data Portability
+	Nhập sao kê CSV/Excel & Thùng rác 30 ngày
+	Hỗ trợ Import sao kê ngân hàng / dữ liệu từ app cũ qua ImportProfile; xuất file .json mã hóa / .xlsx; tự động dọn Thùng rác sau 30 ngày.
+	Vừa
+	Should-Have
+	Onboarding / System
+	Hướng dẫn quyền Android 13+ & Pin
+	Màn hình hướng dẫn trực quan cách bật Allow Restricted Settings và mở khóa Battery Optimization trên các ROM tùy biến.
+	Vừa
+	Could-Have
+	Cloud Backup
+	Sao lưu Google Drive cá nhân
+	Tự động đẩy file backup mã hóa lên thư mục ẩn AppData trên Google Drive của chính người dùng.
+	Cao
+	Could-Have
+	Automation Core
+	Mở rộng hệ sinh thái ngân hàng
+	Bổ sung bộ mẫu Regex đa kịch bản cho Techcombank, ACB, VPBank, TPBank, BIDV, VietinBank, ZaloPay, ShopeePay.
+	Thấp
+	Could-Have
+	Transaction Core
+	Tách giao dịch (Split Transaction) & Ngoại tệ
+	Chia một hóa đơn siêu thị thành nhiều danh mục con (chống cộng trùng qua isSplitParent); hỗ trợ giao dịch ngoại tệ kèm tỷ giá.
+	Vừa
+	Could-Have
+	Transaction Core
+	Đính kèm ảnh chụp hóa đơn
+	Chụp và nén ảnh biên lai lưu trữ cục bộ gắn liền với bản ghi giao dịch.
+	Thấp
+	Won't-Have
+	Advanced AI
+	Quét hóa đơn OCR bằng ML Kit
+	Tự động đọc từng dòng sản phẩm trên hóa đơn giấy bằng camera (hoãn sang phiên bản v1.2).
+	Cao
+	Won't-Have
+	Social / Sharing
+	Sổ nợ & Chia tiền nhóm (Split Bill)
+	Quản lý công nợ phức tạp và chia tiền ăn uống nhiều người (hoãn sang phiên bản mở rộng).
+	Cao
+	Won't-Have
+	Cloud Sync
+	Đồng bộ đa thiết bị thời gian thực
+	Kiến trúc máy chủ đồng bộ thời gian thực (tốn chi phí duy trì server và đi ngược tôn chỉ Local-first).
+	Rất cao
+	Won't-Have
+	Investment
+	Quản lý danh mục Chứng khoán, Vàng, Crypto
+	Cập nhật bảng giá thị trường tài chính theo thời gian thực (thuộc phân hệ đầu tư chuyên sâu).
+	Cao
+	________________
+
+
+5. TIÊU CHÍ NGHIỆM THU CẤP ĐỘ PRODUCTION (DEFINITION OF DONE)
+6. Độ chính xác & Khả năng phục hồi của Automation Engine:
+   * Đạt tỷ lệ bóc tách chính xác trên 98% đối với thông báo biến động số dư (bao gồm cả thông báo thu gọn và mở rộng EXTRA_BIG_TEXT / EXTRA_TEXT_LINES) của Vietcombank, MB Bank và MoMo.
+   * Chặn chính xác 100% thông báo mã OTP, cảnh báo đăng nhập và tin nhắn quảng cáo thông qua bộ lọc channelIdAllowlist và ignoreKeywords mà không tạo bản ghi lỗi giả.
+   * Tự động quét vét thành công các thông báo ngân hàng còn treo trên thanh trạng thái thông qua getActiveNotifications() ngay khi dịch vụ kết nối lại.
+   * Đạt 100% khả năng đối ánh đúng tài khoản qua 4 số cuối (accountNumberMask); khử trùng lặp 100% thông báo kép giữa ví điện tử và ngân hàng trong 30 giây; ghép cặp chuyển khoản nội bộ trong 1-2 phút.
+7. Tính toàn vẹn số liệu & Kiểm toán tài chính (Reconciliation):
+   * Tách bạch rõ initialBalance và currentBalance; mọi thao tác thêm/sửa/xóa giao dịch đều cập nhật số dư tài khoản và bảng chốt kỳ AccountBalanceSnapshot trong một giao dịch cơ sở dữ liệu nguyên tử (@Transaction).
+   * Các giao dịch cha đã tách nhỏ (isSplitParent = true), giao dịch đánh dấu Chi hộ (excludeFromAnalytics = true) và giao dịch đang nằm trong Thùng rác (deletedAt != null) tuyệt đối không bị cộng trùng hoặc làm sai lệch báo cáo thu/chi.
+   * Khoản hoàn tiền (REFUND) giảm trừ trực tiếp vào tổng chi của danh mục gốc thay vì cộng dồn vào thu nhập.
+   * Công thức kiểm toán luôn khớp tuyệt đối trên mọi tài khoản tại mọi thời điểm:
+currentBalance = initialBalance + Tổng thu nhập - Tổng chi tiêu - Tổng phí giao dịch + Tổng tiền hoàn trả ± Tổng chuyển khoản nội bộ + Tổng điều chỉnh số dư.
+8. Khả năng cập nhật OTA, Tìm kiếm & Nhập/Xuất dữ liệu:
+   * Cập nhật thành công file cấu hình JSON Named-Group Regex từ xa mà không làm mất các rule tùy chỉnh (isUserCustom = true) của người dùng.
+   * Truy vấn tìm kiếm toàn văn (TransactionFts) trả kết quả dưới 50ms và biểu đồ Tài sản ròng (AccountBalanceSnapshot) hiển thị dưới 16ms với tập dữ liệu thử nghiệm 50.000 bản ghi giao dịch.
+9. Hiệu năng, Bảo mật & Tương thích hệ điều hành:
+   * Khởi động nguội (Cold start) dưới 1.2 giây; mở nhanh bàn phím nhập tiền mặt từ Quick Settings Tile hoặc App Shortcuts dưới 0.5 giây.
+   * Cơ sở dữ liệu SQLite được mã hóa AES-256 bằng SQLCipher; màn hình ứng dụng tự động làm mờ khi chuyển sang cửa sổ Đa nhiệm (Recent Apps).
+   * Luồng Onboarding hướng dẫn đầy đủ thao tác cấp quyền Restricted Settings trên Android 13/14/15 và giữ tiến trình NotificationListenerService hoạt động bền bỉ trên HyperOS, OriginOS, One UI, ColorOS.
