@@ -21,6 +21,8 @@ spotless = "8.10.4"
 ktlint = "1.8.0"
 composeRules = "0.6.8"
 konsist = "0.18.1"
+haze = "2.1.0"
+composeUnstyled = "2.10.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +46,11 @@ hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", v
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 konsist = { group = "com.lemonappdev", name = "konsist", version.ref = "konsist" }
+haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
+haze-blur = { group = "dev.chrisbanes.haze", name = "haze-blur", version.ref = "haze" }
+composeunstyled-bottom-sheet = { group = "com.composables", name = "composeunstyled-bottom-sheet", version.ref = "composeUnstyled" }
+composeunstyled-dialog = { group = "com.composables", name = "composeunstyled-dialog", version.ref = "composeUnstyled" }
+composeunstyled-toggle-switch = { group = "com.composables", name = "composeunstyled-toggle-switch", version.ref = "composeUnstyled" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

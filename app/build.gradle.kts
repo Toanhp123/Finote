@@ -57,8 +57,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
@@ -100,6 +100,11 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.kotlinx.serialization.core)
+    implementation(libs.haze)
+    implementation(libs.haze.blur)
+    implementation(libs.composeunstyled.bottom.sheet)
+    implementation(libs.composeunstyled.dialog)
+    implementation(libs.composeunstyled.toggle.switch)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
