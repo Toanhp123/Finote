@@ -124,6 +124,13 @@ class DangerousCommands(Base):
         self.blocked("git status; git reset --hard", tool="PowerShell")
         self.blocked("git -C D:\\nope reset --hard", tool="PowerShell")
 
+    def test_powershell_script_blocks(self):
+        self.seed()
+        self.checkout("dev")
+        self.allowed("git status; if ($?) { git switch -c chore/x }", tool="PowerShell")
+        self.blocked("if ($?) { git switch -c chore/x main }", tool="PowerShell")
+        self.blocked("if ($?) { git status } else { git push --force }", tool="PowerShell")
+
     def test_text_in_message_is_not_a_command(self):
         self.seed()
         self.checkout("dev")

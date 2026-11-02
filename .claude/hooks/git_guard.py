@@ -395,7 +395,9 @@ def tokenize(command, tool):
         return [part.split() for part in re.split(r"[;&|\n]+", command)], False
     segments, current = [], []
     for token in tokens:
-        if token and set(token) <= set(PUNCTUATION):  # an empty quoted argument is not a separator
+        # an empty quoted argument is not a separator
+        # shortcut: shlex drops quotes, so a quoted "}" splits like a quoted ";", accept until it matters
+        if token == "}" or (token and set(token) <= set(PUNCTUATION)):
             segments.append(current)
             current = []
         else:
