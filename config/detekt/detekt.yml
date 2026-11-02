@@ -10,3 +10,7 @@ complexity:
 naming:
   FunctionNaming:
     ignoreAnnotated: ['Composable']
+style:
+  MagicNumber:
+    # Keeps the detekt defaults (tests, kts) and adds the theme package, the only place raw numbers are allowed.
+    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/*.kts', '**/ui/common/theme/**']
