@@ -24,7 +24,7 @@ ________________
 2. KIẾN TRÚC KỸ THUẬT & HỆ THỐNG ENGINE ĐẶC THÙ
 2.1. Công nghệ cốt lõi (Tech Stack)
 * Ngôn ngữ & Nền tảng: Kotlin, Android Native (minSdk 26, targetSdk 35).
-* Giao diện người dùng: Jetpack Compose, Material 3, Dynamic Color, Single-Activity Architecture.
+* Giao diện người dùng: Jetpack Compose, Material 3, Dynamic Color, Single-Activity Architecture. Đa ngôn ngữ theo từng app (per-app language): mọi chuỗi giao diện nằm trong strings.xml, chọn ngôn ngữ trong app và trong Cài đặt hệ thống Android 13+, Android 12 trở xuống dùng AppCompatDelegate.setApplicationLocales (cần AppCompatActivity). Ngôn ngữ hỗ trợ: Tiếng Việt (mặc định), Tiếng Anh, Tiếng Trung giản thể, Tiếng Nhật.
 * Kiến trúc phần mềm: Clean Architecture kết hợp MVI (Model-View-Intent) với luồng dữ liệu một chiều (Unidirectional Data Flow - UDF).
 * Cơ sở dữ liệu & Tìm kiếm: Room Database tích hợp SQLCipher (mã hóa AES-256), SQLite FTS4/FTS5 (External Content Table tìm kiếm toàn văn tốc độ cao với bộ tách từ unicode61), Composite Indexing và Atomic Database Transactions (@Transaction).
 * Quản lý tác vụ nền & Tiện ích hệ thống: Android NotificationListenerService (bắt biến động thời gian thực), WorkManager (xử lý giao dịch định kỳ, dọn thùng rác 30 ngày, sao lưu tự động, đồng bộ Rule OTA), TileService (Quick Settings Tile) và ShortcutManagerCompat (App Shortcuts).

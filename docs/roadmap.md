@@ -41,7 +41,8 @@ Mục tiêu: build chạy, khung kiến trúc sẵn sàng cho mọi phase sau.
 Việc (thứ tự theo `docs/superpowers/specs/2026-11-02-architecture-foundation-design.md` mục 6):
 1. `chore/gradle-catalog`: **đã xong.** Gộp cả `chore/build-plugins`. Catalog có Compose BOM, Hilt, KSP, detekt, Spotless, Konsist. Kotlin dùng built-in của AGP, không thêm `kotlin-android`.
 2. `chore/quality-gate`: **đã xong.** `./gradlew.bat qualityGate`, git hook, GitHub Actions, luật Konsist. Chi tiết: `docs/architecture.md`.
-3. `feature/app-shell`: `MainActivity` (Single Activity), Compose theme Material 3, Dynamic Color, `NavDisplay` của Navigation3 với back stack rỗng.
+3. `feature/app-shell`: `MainActivity` (Single Activity, `AppCompatActivity` vì đa ngôn ngữ, xem D9), Compose theme Material 3, Dynamic Color, `NavDisplay` của Navigation3. Back stack bắt đầu bằng key `Home` (màn trống), vì `NavDisplay` không nhận back stack rỗng. Nav host nằm ở `ui/navigation`, không ở `ui/common`, vì nó import màn của các feature.
+   - Đa ngôn ngữ (per-app language): giữ `appcompat`, theme `Theme.AppCompat.DayNight.NoActionBar`, `generateLocaleConfig = true`, `res/resources.properties`, `AppLocalesMetadataHolderService` với `autoStoreLocales` cho API 32 trở xuống. Mọi chuỗi UI nằm trong `strings.xml`.
    - ViewModel theo từng màn: khi có ViewModel đầu tiên, thêm `androidx.lifecycle:lifecycle-viewmodel-navigation3` và `androidx.hilt:hilt-lifecycle-viewmodel-compose` (cho `hiltViewModel()`).
 4. `feature/mvi-base`: base class cho MVI: `UiState`, `UiIntent`, `UiEffect`, `BaseViewModel` có luồng một chiều.
 
@@ -207,6 +208,7 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 | D6 | DI: Hilt hay Koin? | **Đã chốt:** Hilt (theo `CLAUDE.md`) | P0 |
 | D7 | Ai chạy benchmark và instrumented test trên máy thật? | User chạy khi tới P3 và P5, theo yêu cầu | P3 |
 | D8 | Room 2.x hay Room 3? `navigation-compose` hay Navigation3? | **Đã chốt (2026-11-02):** Room 3 (stable 3.0.x từ 07/2026, chỉ KSP, driver API) và Navigation3 (stable 1.2.0). Chưa có code dùng nên không tốn chi phí chuyển. Rủi ro: driver SQLCipher cho Room 3 mới có từ 08/2026 | P0 |
+| D9 | Đa ngôn ngữ: spec gốc không ghi, user bổ sung 2026-11-02. Hỗ trợ ngôn ngữ nào? | **Đã chốt (2026-11-02):** `vi` (mặc định, `values/`), `en` (`values-en`), tiếng Trung giản thể (`values-zh-rCN`), tiếng Nhật (`values-ja`). Màn chọn ngôn ngữ trong app: chưa làm | Trước màn đầu tiên có chữ |
 
 ## 10. Thứ tự làm việc ngay
 
