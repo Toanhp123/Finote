@@ -1,0 +1,146 @@
+# Architecture
+
+Binding for every human and agent in this repo. Machines enforce most rules. A rule that only a human can check is listed at the end.
+
+## Layers
+
+One Gradle module, `:app`. Layers are packages. Inside a layer, packages split by feature. Root package: `io.github.toanhp123.finote`.
+
+```text
+domain/<feature>/    model, repository interface, use case, pure logic
+data/<feature>/      Room entity, DAO, mapper, repository impl
+ui/<feature>/        Screen, Contract, ViewModel
+ui/common/           theme, shared components, BaseViewModel
+automation/          NotificationListenerService, thin
+work/                Worker, thin
+di/                  Hilt module
+```
+
+- Starting features: `transaction`, `account`, `category`, `notification`.
+- The root package holds only `MainActivity` and `FinoteApplication`. No layer imports it.
+- Every production package is the root or sits under `domain`, `data`, `ui`, `automation`, `work`, or `di`. A stray or misspelled package fails.
+- `TileService` only opens the cash entry screen, so it lives in `ui/<feature>`.
+- Parser, dedup, pairing, and balance math live in `domain`. They test on the JVM without Robolectric.
+- `automation/` receives a notification and calls a use case. Nothing more.
+
+| Layer | May depend on | Must not depend on |
+|---|---|---|
+| `domain` | Kotlin, coroutines, `javax.inject` | `android.*`, `androidx.*`, Room, Hilt, `data`, `ui`, `automation`, `work`, `di` |
+| `data` | `domain` | `ui`, `automation`, `work` |
+| `ui` | `domain` | `data`, `automation`, `work` |
+| `automation` | `domain` | `ui`, `data`, `work` |
+| `work` | `domain` | `ui`, `data`, `automation` |
+| `di` | every layer | logic |
+
+`ui/<feature>` may use `ui/common`. `ui/common` must not use `ui/<feature>`.
+
+UI flow is MVI: Screen sends `Intent`, ViewModel calls a use case, ViewModel emits `State` and `Effect`, Screen draws.
+
+## Naming and roles
+
+| Role | Name | Where | May do |
+|---|---|---|---|
+| Model | `Transaction` | `domain/<f>/model` | Hold data. No I/O |
+| Use case | `AddTransactionUseCase` | `domain/<f>/usecase` | One job. One public `operator fun invoke` |
+| Pure logic | `NotificationParser` | `domain/<f>` | Pure functions. No I/O |
+| Repository | `TransactionRepository` | `domain/<f>/repository` | Interface only |
+| Repository impl | `TransactionRepositoryImpl` | `data/<f>` | Drive DAOs, map |
+| Entity, DAO | `TransactionEntity`, `TransactionDao` | `data/<f>` | Schema, queries |
+| Mapper | `TransactionMapper.kt` | `data/<f>` | Only `toDomain()` and `toEntity()` extensions |
+| Contract | `TransactionListContract.kt` | `ui/<f>` | Declare `State`, `Intent`, `Effect` |
+| ViewModel | `TransactionListViewModel` | `ui/<f>` | Take intents, call use cases, emit state |
+| Screen | `TransactionListScreen` | `ui/<f>` | Draw state. No use case calls |
+| Worker | `TrashPurgeWorker` | `work` | Call a use case |
+| DI | `DatabaseModule` | `di` | Bindings only |
+
+| Kind | Rule | Example |
+|---|---|---|
+| Function returning `Flow` | `observeX` | `observeAccounts()` |
+| One-shot `suspend` read | `getX` | `getAccount(id)` |
+| Boolean | `is`, `has`, `should` | `isArchived` |
+| Constant | `UPPER_SNAKE_CASE` | `DEDUP_WINDOW_MS` |
+
+| Limit | Value | Tool |
+|---|---|---|
+| Lines per file | 300 | Konsist |
+| Lines per function | 40 | detekt |
+| Lines per `@Composable` | 80 | Konsist |
+| Parameters per function | 6, `@Composable` exempt | detekt |
+| Cyclomatic complexity | 10 | detekt |
+| Public classes per file | 1, Contract may have 3 | Konsist |
+
+detekt cannot hold two limits in one rule. `LongMethod` and `LongParameterList` set `ignoreAnnotated: ['Composable']`. Konsist checks the 80-line limit.
+
+Any class or interface named `*Repository` is an interface in `domain/<feature>/repository`. `*Mapper.kt` lives in `data`, `*Contract.kt` and `*Screen.kt` in `ui`.
+
+Project rules, checked over all production code:
+- No `android.util.Log`, no `println`, no `printStackTrace`, no `::println`.
+- No `Double` or `Float` in a property or parameter named like `amount`, `balance`, `limit`, `fee`. This covers type arguments (`List<Double>`) and an undeclared type whose initializer is a floating literal or ends in `.toDouble()` or `.toFloat()`. No `typealias` to `Double` or `Float`.
+- No `Suppress`, `SuppressLint`, or `SuppressWarnings`, in any spelling. Fix the cause. If a rule is wrong for a valid case, change the rule in its own commit.
+
+## Quality gate
+
+```bash
+./gradlew.bat qualityGate      # the full gate
+./gradlew.bat spotlessApply    # auto-fix format
+git config core.hooksPath .githooks   # once per clone
+```
+
+`qualityGate` depends on `spotlessCheck`, `detekt`, `detektMain`, `lintDebug`, `testDebugUnitTest`, `assembleDebug`.
+
+| Layer | Tool | Enforces |
+|---|---|---|
+| Compile | Kotlin `allWarningsAsErrors` | Warnings fail the build |
+| Format | Spotless, ktlint, compose-rules | Style, Compose mistakes |
+| Analysis | detekt, any finding fails, no baseline | Complexity, length, coroutines, bugs |
+| Android | Lint, `warningsAsErrors` | Platform and resource errors |
+| Architecture | Konsist, inside `testDebugUnitTest` | Layers, naming, project rules |
+| Behavior | Unit tests | Logic |
+
+Facts about the real setup:
+- `detektMain` has type resolution but skips test sources. `detekt` covers test sources without type resolution. The gate runs both.
+- detekt does not analyse `src/androidTest`. Spotless does.
+- Konsist reads source text, not classes. `app/build.gradle.kts` adds `src/main` as an input of every `Test` task, so a source-only change re-runs `testDebugUnitTest`.
+- `LongParameterList` fires only in `detektMain`. The working-branch hook runs `detekt`, so it misses this rule. The `dev` gate catches it.
+- Kotlin sets `extraWarnings = true` on top of `allWarningsAsErrors`. Kotlin 2.4 reports unused variables only then.
+- Lint disables `GradleDependency`, `NewerVersionAvailable`, and `AndroidGradlePluginVersion`. A new library release must not turn the gate red.
+- compose-rules use the ktlint build, not the detekt build.
+- Layer rules check imports by package. They do not use `assertArchitecture`, which fails on an empty layer and ignores imports outside declared layers.
+- The Gradle daemon is pinned to Java 21 in `gradle/gradle-daemon-jvm.properties`. A Java 25 JRE without `jlink` breaks `compileSdk 37`.
+
+## Hooks and CI
+
+| When | Runs | How |
+|---|---|---|
+| Commit on a work branch | `spotlessCheck`, `detekt` | `.githooks/pre-commit` |
+| Commit on `dev` or `main` | `qualityGate` | same hook, by branch name |
+| Merge commit | same as above | `.githooks/pre-merge-commit` |
+| Pull request into `dev`, `main` | `qualityGate` | `.github/workflows/quality-gate.yml` |
+
+- Git skips `pre-commit` on a merge commit. That is why `pre-merge-commit` exists.
+- `git_guard.py` blocks `--no-verify`, `-c core.hooksPath=`, and `git config` changes to `core.hooksPath` other than `.githooks`. It binds Claude Code only.
+- The hooks do not cover everything:
+  - A user can disable them in their own terminal.
+  - A fast-forward merge creates no commit, so no hook runs.
+  - `git cherry-pick` and `git revert` skip `pre-commit`.
+  - The hook checks the working tree, not the index.
+- CI is the backstop once a remote exists. The GitHub Actions workflow has never run, because the repo has no remote. Check it when a remote appears.
+
+## Rules for new Konsist rules
+
+Rules live in `app/src/test/java/io/github/toanhp123/finote/architecture/`.
+
+- Konsist `assertTrue` passes on an empty set. A wrong package pattern passes silently.
+- `app/build/generated` is outside `scopeFromProduction`. A rule never sees KSP output.
+- Every new rule needs one red proof. Write a deliberate violation, run the rule, see it fail, record the output, then remove the violation. Never commit the violation.
+- A rule with `strict = false` passes while its feature does not exist. The red proof is what shows the rule works.
+- After Hilt and Room land, confirm the `@Suppress` rule does not flag code under `build/generated/ksp/`.
+
+## Rules only `reviewer` can check
+
+Machines cannot enforce these. `reviewer` checks them on every branch.
+
+- `Intent` names describe a user action: `AmountChanged`.
+- `Effect` names describe a one-time command: `NavigateBack`.
+- A one-shot `suspend` read is named `getX`.
+- Test fixtures hold no real bank notification, balance, or account number.

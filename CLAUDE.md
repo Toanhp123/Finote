@@ -15,10 +15,10 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 - Never read the whole spec. Use `offset` and `limit` on these lines: `2.2` notification engine L32–51, `3.1–3.10` Room schema L61–228, `4` MoSCoW scope L229–404, `5–9` acceptance criteria L405–422.
 
 ## Current state
-- `app/src/main/java/` has no Kotlin source yet. Only `ExampleUnitTest.kt` and `ExampleInstrumentedTest.kt` exist.
-- Git repository with no commits yet. Do not assume commit history exists.
+- `app/src/main/java/` has no production Kotlin yet. Tests exist, including Konsist rules in `app/src/test/java/io/github/toanhp123/finote/architecture/`.
+- Git history exists. Branches: `main`, `dev`, work branches.
 - Package: `io.github.toanhp123.finote`. `minSdk` 26 (per spec). `targetSdk` 37 (intentionally above the spec's 35).
-- Kotlin, Compose, Room, Hilt, and SQLCipher are not in `gradle/libs.versions.toml` yet. Add a dependency only when a task needs it, through the version catalog. Never hardcode versions in `build.gradle.kts`.
+- Compose, Hilt, KSP, detekt, Spotless, and Konsist are in `gradle/libs.versions.toml`. Room, SQLCipher, WorkManager, Robolectric, and Turbine are not. Add a dependency only when a task needs it, through the version catalog. Never hardcode versions in `build.gradle.kts`.
 
 ## Model routing (subagents in `.claude/agents/`)
 - Find code: call `codegraph_explore` yourself. It is one call. Do not delegate a lookup.
@@ -34,10 +34,12 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 ## Commands
 - Build: `./gradlew.bat assembleDebug`
 - Unit tests: `./gradlew.bat testDebugUnitTest`
+- Full gate: `./gradlew.bat qualityGate`
 - Instrumented tests (`connectedDebugAndroidTest`) need a device or emulator. Run them only when the user asks.
 
 ## Verification
 - IMPORTANT: after any logic change (parser, dedup, pairing, balance), run `./gradlew.bat testDebugUnitTest`.
+- Before the squash into `dev`, run `./gradlew.bat qualityGate` and read the output.
 - Do not report work as done without a real build or test run and its output.
 
 ## Git
@@ -47,6 +49,7 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 - `.claude/hooks/git_guard.py` blocks violations. Never work around a block. Tell the user.
 
 ## Architecture
+- IMPORTANT: layers, naming, and limits are in `docs/architecture.md`. Tests in `app/src/test/java/io/github/toanhp123/finote/architecture/` enforce them.
 - Clean Architecture with MVI: one-way flow of state, intent, and effect.
 - Single Activity. UI is Compose with Material 3.
 

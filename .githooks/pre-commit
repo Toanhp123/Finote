@@ -1,0 +1,5 @@
+#!/bin/sh
+case "$(git symbolic-ref --short HEAD 2>/dev/null)" in
+  dev|main) exec ./gradlew qualityGate ;;
+  *) exec ./gradlew spotlessCheck detekt ;;
+esac

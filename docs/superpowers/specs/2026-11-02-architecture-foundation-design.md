@@ -123,7 +123,7 @@ Luật tầng trong Konsist viết bằng kiểm tra import theo package, không
 Luật dự án trong Konsist, quét bằng `scopeFromProduction()`:
 - Cấm `android.util.Log` và `println` trong toàn bộ code production, vì `CLAUDE.md` cấm ghi dữ liệu ngân hàng ra Logcat.
 - Cấm `Double`, `Float` cho thuộc tính và tham số có tên chứa `amount`, `balance`, `limit`, `fee`, không phân biệt hoa thường. `exchangeRate` (`Double`) và `alertThreshold` (`Int`) của spec không dính luật này.
-- Cấm `@Suppress`, lọc thêm đường dẫn chứa `/build/` để không quét code KSP sinh ra. detekt không dùng baseline, `maxIssues = 0`.
+- Cấm `@Suppress`. `scopeFromProduction()` không quét `app/build/generated`, nên không lọc đường dẫn `/build/`. detekt không dùng baseline, mọi finding làm gate fail (khóa `maxIssues` không tồn tại trong detekt 2.0).
 
 Rule Konsist chạy trên tập rỗng được xem là chưa chứng minh gì. Tham số assert có `testName`, `strict`, `additionalMessage`. Tài liệu chỉ nói `strict = true` làm fail khi tập rỗng, không nói mặc định. Mặc định phải xác nhận khi cài. Rule dùng `strict = false` để pass khi feature chưa tồn tại, và mục 7 chứng minh rule đỏ được.
 

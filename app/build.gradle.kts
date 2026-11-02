@@ -3,6 +3,32 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.spotless)
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom("$rootDir/config/detekt/detekt.yml")
+}
+
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        ktlint(libs.versions.ktlint.get())
+            .customRuleSets(listOf("io.nlopez.compose.rules:ktlint:${libs.versions.composeRules.get()}"))
+    }
+    kotlinGradle {
+        target("*.gradle.kts", "../*.gradle.kts")
+        ktlint(libs.versions.ktlint.get())
+    }
+}
+
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors = true
+        extraWarnings = true
+    }
 }
 
 android {
@@ -36,6 +62,24 @@ android {
     buildFeatures {
         compose = true
     }
+    lint {
+        warningsAsErrors = true
+        abortOnError = true
+        // Version-bump checks would turn the gate red whenever a library ships.
+        disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
+    }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+}
+
+// Compose Preview creates runfiles for every variant and requires unit tests on each of them.
+androidComponents {
+    beforeVariants { variantBuilder ->
+        variantBuilder.hostTests[com.android.build.api.variant.HostTestBuilder.UNIT_TEST_TYPE]?.enable = true
+    }
 }
 
 dependencies {
@@ -53,6 +97,18 @@ dependencies {
     ksp(libs.hilt.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
+    testImplementation(libs.konsist)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+}
+// Konsist reads source text, but the test task tracks compiled classes only. Without this input a source-only
+// change (for example a new @Suppress line) leaves testDebugUnitTest up to date and the gate green.
+tasks.withType<Test>().configureEach {
+    inputs.files(fileTree("src/main")).withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
+tasks.register("qualityGate") {
+    group = "verification"
+    // detekt is listed too because detektMain skips test sources.
+    dependsOn("spotlessCheck", "detekt", "detektMain", "lintDebug", "testDebugUnitTest", "assembleDebug")
 }

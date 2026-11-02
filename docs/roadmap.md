@@ -3,10 +3,10 @@
 Trạng thái: bản nháp v1. Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9; `CLAUDE.md`; `docs/git-workflow.md`.
 
 Hiện trạng (đã kiểm tra):
-- Gradle chỉ có `appcompat`, `material`, `core-ktx`. Chưa có Compose, Room, Hilt, SQLCipher, WorkManager.
-- `app/src/main/java/` chưa có source Kotlin.
+- Catalog đã có Compose BOM, Hilt, KSP, detekt, Spotless, Konsist. Chưa có Room, SQLCipher, WorkManager, Robolectric, Turbine.
+- `app/src/main/java/` chưa có source Kotlin production. Đã có luật Konsist trong `app/src/test/`.
 - `minSdk = 26`, `targetSdk = 37` (spec ghi 35, đã chốt ở mục D3).
-- Git: nhánh `dev` đã có 2 commit khởi tạo.
+- Git: nhánh `dev` đã có commit khởi tạo, spec, plan và catalog. Xem lịch sử bằng `git log dev`.
 
 ## 0. Nguyên tắc làm việc
 
@@ -37,22 +37,27 @@ Mỗi mốc: `release/x.y.z` từ `dev` → `main` (`--no-ff`) → tag `vX.Y.Z` 
 
 Mục tiêu: build chạy, khung kiến trúc sẵn sàng cho mọi phase sau.
 
-Việc:
-1. `chore/gradle-catalog`: thêm vào `gradle/libs.versions.toml`:
-   - Compose BOM, Material 3, activity-compose, lifecycle-viewmodel-compose, navigation-compose.
-   - Hilt, KSP.
-   - Room (runtime, ktx, compiler), SQLCipher (`net.zetetic:sqlcipher-android`).
-   - WorkManager, Hilt-work.
-   - Test: junit, Robolectric, kotlinx-coroutines-test, Turbine.
-   - Chỉ thêm version qua catalog. Không hardcode version trong `build.gradle.kts`.
-2. `chore/build-plugins`: thêm plugin Kotlin Compose, KSP, Hilt ở root và `app`. Bật Compose trong `buildFeatures`.
+Việc (thứ tự theo `docs/superpowers/specs/2026-11-02-architecture-foundation-design.md` mục 6):
+1. `chore/gradle-catalog`: **đã xong.** Gộp cả `chore/build-plugins`. Catalog có Compose BOM, Hilt, KSP, detekt, Spotless, Konsist. Kotlin dùng built-in của AGP, không thêm `kotlin-android`.
+2. `chore/quality-gate`: **đã xong.** `./gradlew.bat qualityGate`, git hook, GitHub Actions, luật Konsist. Chi tiết: `docs/architecture.md`.
 3. `feature/app-shell`: `MainActivity` (Single Activity), Compose theme Material 3, Dynamic Color, NavHost rỗng.
 4. `feature/mvi-base`: base class cho MVI: `UiState`, `UiIntent`, `UiEffect`, `BaseViewModel` có luồng một chiều.
-5. Cấu trúc package:
-   - `di/`, `domain/` (model, use case, repository interface), `data/` (Room, repository impl), `automation/` (listener, parser), `ui/` (screen, component), `work/` (WorkManager).
+
+Cấu trúc package (spec mục 3, chi tiết ở `docs/architecture.md`): tầng là package, trong tầng chia theo feature.
+- `domain/<feature>/`: model, repository interface, use case, logic thuần (parser, dedup, pairing, số dư).
+- `data/<feature>/`: Room entity, DAO, mapper, repository impl.
+- `ui/<feature>/`, `ui/common/`: Screen, Contract, ViewModel; theme và component dùng chung.
+- `automation/` (listener, mỏng), `work/` (Worker, mỏng), `di/` (Hilt module).
+- Feature ban đầu: `transaction`, `account`, `category`, `notification`.
+
+Thêm vào catalog trên nhánh dùng chúng, không thêm trước:
+- Room (runtime, ktx, compiler), SQLCipher (`net.zetetic:sqlcipher-android`).
+- WorkManager, Hilt-work.
+- Robolectric, Turbine. (`junit` đã có trong catalog. `kotlinx-coroutines-test` thêm khi test đầu tiên cần.)
+- Chỉ thêm version qua catalog. Không hardcode version trong `build.gradle.kts`.
 
 DoD:
-- `./gradlew.bat assembleDebug` pass.
+- `./gradlew.bat qualityGate` pass.
 - `./gradlew.bat testDebugUnitTest` pass, có ít nhất một test.
 - App mở được màn hình trống.
 
@@ -74,6 +79,7 @@ Việc:
    - Mở DB bằng `SupportOpenHelperFactory`.
    - Quyết định D2 (xem mục 9).
 2. `feature/db-schema`: entity, DAO, `FinoteDatabase`, `exportSchema = true`.
+   - DoD thêm: chạy luật `@Suppress` của Konsist với code KSP của Hilt và Room trong `build/generated/ksp/`, xác nhận không báo nhầm (spec mục 7).
    - Trước v1.0 có thể tăng version và tạo lại DB. Sau v1.0 mọi thay đổi phải có migration và test migration.
 3. `feature/balance-engine`: hàm thuần trong domain tính lại số dư:
    `currentBalance = initialBalance + thu − chi − phí + hoàn ± chuyển nội bộ + điều chỉnh`.
@@ -113,6 +119,7 @@ Mục tiêu: bắt giao dịch từ thông báo ngân hàng và ví mà không c
 - Test: lọc OTP và quảng cáo, không tạo bản ghi lỗi giả. Test quét lại không tạo trùng.
 
 ### P2b — `feature/parser-engine` (Module 4, Failed Inbox)
+- Parser nằm ở `domain/notification`, không phụ thuộc `android.*`.
 - Bảng `ParserRule` (3.8) và seed rule cho Vietcombank, MB Bank, MoMo.
 - Named groups: `sign`, `amount`, `mask`, `balance`, `merchant`, `note`, `time`.
 - Chuẩn hóa số tiền: bỏ dấu `.` hoặc `,` hàng nghìn.
@@ -122,12 +129,14 @@ Mục tiêu: bắt giao dịch từ thông báo ngân hàng và ví mà không c
 - Corpus test: 30–50 mẫu thông báo đã ẩn số (mục D4). Đạt 98% bóc tách đúng (mục 6).
 
 ### P2c — `feature/account-dedup-balance` (Module 5, 6, 8)
+- Dedup nằm ở `domain/notification`, không phụ thuộc `android.*`.
 - Đối ánh tài khoản theo `bankPackageName` + `accountNumberMask` (4 số cuối).
 - Khử trùng: cùng số tiền, cùng chiều, cùng merchant rút gọn, trong 30 giây. Dùng cho ví có liên kết ngân hàng.
 - Cold-start: tài khoản `isInitialized = false` và có `postBalance` thì tính ngược `initialBalance` và gợi ý user xác nhận.
 - Test: ví và ngân hàng cùng gửi một biến động, chỉ tạo một giao dịch.
 
 ### P2d — `feature/transfer-pairing` (Module 7)
+- Pairing nằm ở `domain/notification`, không phụ thuộc `android.*`.
 - Hai biến động cùng số tiền, một trừ (tài khoản A) và một cộng (tài khoản B), trong 1–2 phút → gộp thành `TRANSFER`, `status = PAIRED_TRANSFER`.
 - Cần thiết kế: biến động thứ hai đến muộn. Lưu trạng thái chờ ghép, không tự tạo hai giao dịch lệch.
 - Test: ghép đúng, không ghép khi số tiền khác, timeout thì giữ hai giao dịch riêng.
@@ -198,7 +207,7 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 ## 10. Thứ tự làm việc ngay
 
 1. D3, D6 đã chốt.
-2. P0: `chore/gradle-catalog` → `chore/build-plugins` → `feature/app-shell` → `feature/mvi-base`.
+2. P0: `chore/gradle-catalog` và `chore/quality-gate` đã xong. Còn `feature/app-shell` → `feature/mvi-base`.
 3. Chốt D2 trước khi làm `feature/db-encryption`.
 4. P1 theo thứ tự: `db-encryption` → `db-schema` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `cash-entry` → còn lại.
 5. P2 chỉ bắt đầu khi P1 xong và D4 đã chốt.

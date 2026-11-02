@@ -273,6 +273,27 @@ def check_clean(rest, ctx):
         raise Blocked("git clean -f deletes files. Ask the user.")
 
 
+def check_config(rest, ctx):
+    pos = positional(rest, ("--file", "-f", "--blob", "--type", "--default"))
+    # git 2.46+ subcommand forms: config set|unset|get|list|edit
+    sub = pos[0] if pos and pos[0] in ("set", "unset", "get", "list", "edit") else ""
+    if sub == "edit" or has(rest, "-e", "--edit"):
+        raise Blocked("git config edit opens the config file. Ask the user.")
+    if sub:
+        pos = pos[1:]
+    keys = [i for i, a in enumerate(pos) if a.lower() == "core.hookspath"]
+    if not keys:
+        return
+    if sub == "unset" or has(rest, "--unset", "--unset-all"):
+        raise Blocked("do not remove core.hooksPath. The quality gate hooks depend on it.")
+    reads = ("--get", "--get-all", "--get-regexp", "--list", "-l")
+    value = pos[keys[0] + 1] if keys[0] + 1 < len(pos) else None
+    if sub == "set" and value is None:
+        raise Blocked("core.hooksPath may only be set to .githooks.")
+    if value is not None and value != ".githooks" and not has(rest, *reads):
+        raise Blocked("core.hooksPath may only be set to .githooks.")
+
+
 def check_restore(rest, ctx):
     if "--staged" not in rest or short(rest, "W") or "--worktree" in rest:
         raise Blocked("git restore discards changes. Only --staged is allowed.")
@@ -317,6 +338,7 @@ CHECKS = {
     "checkout": check_checkout,
     "clean": check_clean,
     "commit": check_commit,
+    "config": check_config,
     "filter-branch": check_forbidden,
     "filter-repo": check_forbidden,
     "merge": check_merge,
@@ -373,7 +395,7 @@ def tokenize(command, tool):
         return [part.split() for part in re.split(r"[;&|\n]+", command)], False
     segments, current = [], []
     for token in tokens:
-        if set(token) <= set(PUNCTUATION):
+        if token and set(token) <= set(PUNCTUATION):  # an empty quoted argument is not a separator
             segments.append(current)
             current = []
         else:

@@ -1,0 +1,12 @@
+complexity:
+  LongMethod:
+    allowedLines: 40
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    allowedFunctionParameters: 6
+    ignoreAnnotated: ['Composable']
+  CyclomaticComplexMethod:
+    allowedComplexity: 10
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
