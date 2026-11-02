@@ -109,6 +109,6 @@ tasks.withType<Test>().configureEach {
 
 tasks.register("qualityGate") {
     group = "verification"
-    // detekt is listed too because detektMain skips test sources.
-    dependsOn("spotlessCheck", "detekt", "detektMain", "lintDebug", "testDebugUnitTest", "assembleDebug")
+    // detektMain skips test sources, so detekt and detektTest cover them (detektTest: unit and androidTest, typed).
+    dependsOn("spotlessCheck", "detekt", "detektMain", "detektTest", "lintDebug", "testDebugUnitTest", "assembleDebug")
 }

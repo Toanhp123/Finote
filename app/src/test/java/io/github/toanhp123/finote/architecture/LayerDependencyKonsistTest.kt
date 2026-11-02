@@ -50,9 +50,10 @@ class LayerDependencyKonsistTest {
 
     @Test
     fun `ui common does not import ui features`() {
-        filesIn(UI_COMMON).assertNoImports("ui common does not import ui features") { import ->
-            import.isFrom(UI) && !import.isFrom(UI_COMMON)
-        }
+        val isUiFeature = { name: String -> name.inPackage(UI) && !name.inPackage(UI_COMMON) }
+        val testName = "ui common does not import ui features"
+        filesIn(UI_COMMON).assertNoImports(testName) { isUiFeature(it.name) }
+        filesIn(UI_COMMON).assertNoQualifiedNames("$testName, fully qualified", isUiFeature)
     }
 
     @Test
@@ -67,15 +68,10 @@ class LayerDependencyKonsistTest {
 
     @Test
     fun `nothing imports the root package`() {
-        // R and BuildConfig are generated into the root package, so importing them is fine.
-        val generated = setOf("R", "BuildConfig")
-        productionFiles.assertNoImports("nothing imports the root package") { import ->
-            val rest = import.name.removePrefix("$ROOT.")
-            val importsRootWildcard = import.name == ROOT && import.isWildcard
-            val importsRootClass =
-                import.name != rest && rest.first().isUpperCase() &&
-                    rest.substringBefore('.') !in generated
-            importsRootWildcard || importsRootClass
+        val testName = "nothing imports the root package"
+        productionFiles.assertNoImports(testName) { import ->
+            (import.name == ROOT && import.isWildcard) || import.name.isRootClassName()
         }
+        productionFiles.assertNoQualifiedNames("$testName, fully qualified") { it.isRootClassName() }
     }
 }
