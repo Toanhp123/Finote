@@ -7,6 +7,8 @@
       "Bash(git status*)",
       "Bash(git diff*)",
       "Bash(git log*)",
+      "Bash(python3 .claude/skills/gradle-run/scripts/gradle_run.py *)",
+      "PowerShell(python3 .claude/skills/gradle-run/scripts/gradle_run.py *)",
       "PowerShell(./gradlew.bat assembleDebug*)",
       "PowerShell(./gradlew.bat testDebugUnitTest*)",
       "PowerShell(.\\gradlew.bat assembleDebug*)",
