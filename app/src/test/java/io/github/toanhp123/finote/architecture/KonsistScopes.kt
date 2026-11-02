@@ -58,9 +58,36 @@ internal fun List<KoFileDeclaration>.assertNoImports(
     isForbidden: (KoImportDeclaration) -> Boolean,
 ) = assertTrue(strict = false, testName = testName) { file -> file.imports.none(isForbidden) }
 
-/** Fails every file in [files] that imports any of the project layers in [forbiddenLayers]. */
+/** Project names written in code (`io.github.toanhp123.finote.data.Foo`), without `package` and `import` lines. */
+internal fun KoFileDeclaration.qualifiedProjectNames(): List<String> =
+    text
+        .lineSequence()
+        .filterNot { line -> line.trimStart().let { it.startsWith("package ") || it.startsWith("import ") } }
+        .flatMap { line -> qualifiedProjectName.findAll(line).map { it.value } }
+        .toList()
+
+private val qualifiedProjectName = Regex(Regex.escape(ROOT) + """(?:\.\w+)*""")
+
+/** Fails every file in the list that writes a project name accepted by [isForbidden] fully qualified in code. */
+internal fun List<KoFileDeclaration>.assertNoQualifiedNames(
+    testName: String,
+    isForbidden: (String) -> Boolean,
+) = assertTrue(strict = false, testName = testName) { file -> file.qualifiedProjectNames().none(isForbidden) }
+
+/** Fails every file in [files] that imports, or writes fully qualified, any project layer in [forbiddenLayers]. */
 internal fun assertLayerDoesNotImport(
     testName: String,
     files: List<KoFileDeclaration>,
     vararg forbiddenLayers: String,
-) = files.assertNoImports(testName) { import -> forbiddenLayers.any { import.isFrom(it) } }
+) {
+    files.assertNoImports(testName) { import -> forbiddenLayers.any { import.isFrom(it) } }
+    files.assertNoQualifiedNames("$testName, fully qualified") { name -> forbiddenLayers.any { name.inPackage(it) } }
+}
+
+/** True for a root-package class other than generated `R` and `BuildConfig`: `ROOT.MainActivity`, not `ROOT.R.id`. */
+internal fun String.isRootClassName(): Boolean {
+    val rest = removePrefix("$ROOT.")
+    return rest != this && rest.first().isUpperCase() && rest.substringBefore('.') !in GENERATED_CLASSES
+}
+
+private val GENERATED_CLASSES = setOf("R", "BuildConfig")

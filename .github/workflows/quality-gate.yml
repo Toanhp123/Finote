@@ -16,5 +16,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      # platforms;android-37.0 matches the folder name AGP created locally for compileSdk 37.
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-37.0'
+          accept-android-sdk-licenses: true
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew qualityGate

@@ -86,7 +86,7 @@ Project rules, checked over all production code:
 git config core.hooksPath .githooks   # once per clone
 ```
 
-`qualityGate` depends on `spotlessCheck`, `detekt`, `detektMain`, `lintDebug`, `testDebugUnitTest`, `assembleDebug`.
+`qualityGate` depends on `spotlessCheck`, `detekt`, `detektMain`, `detektTest`, `lintDebug`, `testDebugUnitTest`, `assembleDebug`.
 
 | Layer | Tool | Enforces |
 |---|---|---|
@@ -98,15 +98,15 @@ git config core.hooksPath .githooks   # once per clone
 | Behavior | Unit tests | Logic |
 
 Facts about the real setup:
-- `detektMain` has type resolution but skips test sources. `detekt` covers test sources without type resolution. The gate runs both.
-- detekt does not analyse `src/androidTest`. Spotless does.
+- `detektMain` has type resolution but skips test sources. `detekt` covers `src/main` and `src/test` without type resolution, and not `src/androidTest`. `detektTest` covers `src/test` and `src/androidTest` with type resolution (`detektDebugUnitTest`, `detektReleaseUnitTest`, `detektDebugAndroidTest`). The gate runs all three.
 - Konsist reads source text, not classes. `app/build.gradle.kts` adds `src/main` as an input of every `Test` task, so a source-only change re-runs `testDebugUnitTest`.
 - `LongParameterList` fires only in `detektMain`. The working-branch hook runs `detekt`, so it misses this rule. The `dev` gate catches it.
 - Kotlin sets `extraWarnings = true` on top of `allWarningsAsErrors`. Kotlin 2.4 reports unused variables only then.
 - Lint disables `GradleDependency`, `NewerVersionAvailable`, and `AndroidGradlePluginVersion`. A new library release must not turn the gate red.
 - compose-rules use the ktlint build, not the detekt build.
-- Layer rules check imports by package. They do not use `assertArchitecture`, which fails on an empty layer and ignores imports outside declared layers.
-- The Gradle daemon is pinned to Java 21 in `gradle/gradle-daemon-jvm.properties`. A Java 25 JRE without `jlink` breaks `compileSdk 37`.
+- Layer rules check imports by package. They also fail a forbidden project package written fully qualified in code (`io.github.toanhp123.finote.data.Foo()` in `domain`). Lines that start with `package ` or `import ` are skipped by prefix; comments and strings are not. They do not use `assertArchitecture`, which fails on an empty layer and ignores imports outside declared layers.
+- The root rule (`nothing imports the root package`) covers imports and fully qualified names. `R` and `BuildConfig` are allowed. That allowance has a unit test (`RootClassNameTest`). `buildConfig` stays off.
+- The Gradle daemon is pinned to Java 21, vendor Eclipse Temurin (`ADOPTIUM`), in `gradle/gradle-daemon-jvm.properties`. A Java 25 JRE without `jlink` breaks `compileSdk 37`. Change it only with `./gradlew.bat updateDaemonJvm --jvm-version=21 --jvm-vendor=adoptium`.
 
 ## Hooks and CI
 
@@ -117,6 +117,8 @@ Facts about the real setup:
 | Merge commit | same as above | `.githooks/pre-merge-commit` |
 | Pull request into `dev`, `main` | `qualityGate` | `.github/workflows/quality-gate.yml` |
 
+The workflow installs Temurin 21, then the Android SDK with `android-actions/setup-android` (`platform-tools`, `platforms;android-37.0`; licences accepted), then runs Gradle. `platforms;android-37.0` is the folder name AGP created locally for `compileSdk 37`. Bump `compileSdk` and this package together.
+
 - Git skips `pre-commit` on a merge commit. That is why `pre-merge-commit` exists.
 - `git_guard.py` blocks `--no-verify`, `-c core.hooksPath=`, and `git config` changes to `core.hooksPath` other than `.githooks`. It binds Claude Code only.
 - The hooks do not cover everything:
@@ -124,7 +126,7 @@ Facts about the real setup:
   - A fast-forward merge creates no commit, so no hook runs.
   - `git cherry-pick` and `git revert` skip `pre-commit`.
   - The hook checks the working tree, not the index.
-- CI is the backstop once a remote exists. The GitHub Actions workflow has never run, because the repo has no remote. Check it when a remote appears.
+- CI is the backstop. The GitHub Actions workflow runs `qualityGate` on every pull request into `dev` or `main`. It only blocks a merge once branch protection requires the `quality-gate` check.
 
 ## Rules for new Konsist rules
 
