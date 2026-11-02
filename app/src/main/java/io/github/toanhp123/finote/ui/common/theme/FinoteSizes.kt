@@ -1,0 +1,17 @@
+package io.github.toanhp123.finote.ui.common.theme
+
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+
+data class FinoteSizes(
+    val iconSm: Dp = 20.dp,
+    val iconMd: Dp = 24.dp,
+    val avatar: Dp = 36.dp,
+    val touchTarget: Dp = 48.dp,
+    val border: Dp = 1.dp,
+    val navBarHeight: Dp = 56.dp,
+    val emptyIcon: Dp = 72.dp,
+    val progressStroke: Dp = 2.dp,
+    val sheetHandleWidth: Dp = 32.dp,
+    val sheetHandleHeight: Dp = 4.dp,
+)
