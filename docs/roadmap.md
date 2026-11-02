@@ -44,7 +44,7 @@ Việc (thứ tự theo `docs/superpowers/specs/2026-11-02-architecture-foundati
 3. `feature/app-shell`: `MainActivity` (Single Activity, `AppCompatActivity` vì đa ngôn ngữ, xem D9), Compose theme Material 3, Dynamic Color, `NavDisplay` của Navigation3. Back stack bắt đầu bằng key `Home` (màn trống), vì `NavDisplay` không nhận back stack rỗng. Nav host nằm ở `ui/navigation`, không ở `ui/common`, vì nó import màn của các feature.
    - Đa ngôn ngữ (per-app language): giữ `appcompat`, theme `Theme.AppCompat.DayNight.NoActionBar`, `generateLocaleConfig = true`, `res/resources.properties`, `AppLocalesMetadataHolderService` với `autoStoreLocales` cho API 32 trở xuống. Mọi chuỗi UI nằm trong `strings.xml`.
    - ViewModel theo từng màn: khi có ViewModel đầu tiên, thêm `androidx.lifecycle:lifecycle-viewmodel-navigation3` và `androidx.hilt:hilt-lifecycle-viewmodel-compose` (cho `hiltViewModel()`).
-4. `feature/mvi-base`: base class cho MVI: `UiState`, `UiIntent`, `UiEffect`, `BaseViewModel` có luồng một chiều.
+4. `feature/mvi-base`: `ui/common/BaseViewModel<S, I, E>` (state là `StateFlow`, effect là `Channel(BUFFERED)`, một cửa vào `onIntent`) và `ui/common/ObserveEffects` (nhận effect khi STARTED, trên `Dispatchers.Main.immediate`). Không có interface đánh dấu `UiState`/`UiIntent`/`UiEffect`: generic đã đủ, và luật một public class mỗi file sẽ tạo 3 file rỗng.
 
 Cấu trúc package (spec mục 3, chi tiết ở `docs/architecture.md`): tầng là package, trong tầng chia theo feature.
 - `domain/<feature>/`: model, repository interface, use case, logic thuần (parser, dedup, pairing, số dư).
@@ -213,7 +213,7 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 ## 10. Thứ tự làm việc ngay
 
 1. D3, D6, D8 đã chốt.
-2. P0: `chore/gradle-catalog` và `chore/quality-gate` đã xong. Còn `feature/app-shell` → `feature/mvi-base`.
+2. P0: `chore/gradle-catalog`, `chore/quality-gate`, `feature/app-shell`, `feature/mvi-base` đã xong.
 3. Chốt D2 trước khi làm `feature/db-encryption`.
 4. P1 theo thứ tự: `db-encryption` → `db-schema` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `cash-entry` → còn lại.
 5. P2 chỉ bắt đầu khi P1 xong và D4 đã chốt.
