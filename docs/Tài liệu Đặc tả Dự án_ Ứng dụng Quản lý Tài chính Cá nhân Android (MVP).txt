@@ -63,9 +63,9 @@ ________________
 * id: UUID / String (Primary Key)
 * name: String (Tên hiển thị: Tiền mặt, Vietcombank, MB Bank, MoMo, Thẻ tín dụng VIB...)
 * type: Enum (BANK, WALLET, CASH, SAVINGS, CREDIT_CARD)
-* initialBalance: Long (Số dư gốc tại thời điểm bắt đầu sử dụng — mốc chuẩn cố định để tái tính toán và kiểm toán chuỗi số dư)
-* currentBalance: Long (Số dư hiện tại hoặc dư nợ hiện tại, được cập nhật nguyên tử thông qua DAO @Transaction)
-* currency: String (Mã tiền tệ, mặc định VND)
+* initialBalance: Long (Số dư gốc tại thời điểm bắt đầu sử dụng — mốc chuẩn cố định để tái tính toán và kiểm toán chuỗi số dư) [Bổ sung 2026-11-02] initialBalance là số dư trước mọi giao dịch của tài khoản, không phụ thuộc ngày giao dịch (kể cả giao dịch có timestamp trước createdAt).
+* currentBalance: Long (Số dư hiện tại hoặc dư nợ hiện tại, được cập nhật nguyên tử thông qua DAO @Transaction) [Bổ sung 2026-11-02] Luôn là số dư có dấu, áp dụng một công thức cho mọi loại tài khoản; CREDIT_CARD mang giá trị âm khi đang nợ (dư nợ = -currentBalance).
+* currency: String (Mã tiền tệ, mặc định VND) [Bổ sung 2026-11-02] MVP chỉ dùng VND cho mọi tài khoản; ngoại tệ là Could-Have.
 * bankPackageName: String? (Package name ứng dụng ngân hàng/ví, được đánh chỉ mục Index)
 * accountNumberMask: String? (4 số cuối số tài khoản hoặc số thẻ để phân biệt đa tài khoản cùng ngân hàng, được đánh chỉ mục Index)
 * creditLimit: Long? (Hạn mức tín dụng, áp dụng cho CREDIT_CARD)
@@ -79,15 +79,15 @@ ________________
 * isInitialized: Boolean (Đánh dấu tài khoản đã được thiết lập số dư gốc hay chưa)
 * createdAt: Long (Timestamp khởi tạo bản ghi)
 * updatedAt: Long (Timestamp cập nhật gần nhất)
-* deletedAt: Long? (Null nếu đang hoạt động; lưu Timestamp thời điểm xóa mềm để WorkManager tự động dọn sau 30 ngày)
+* deletedAt: Long? (Null nếu đang hoạt động; lưu Timestamp thời điểm xóa mềm để WorkManager tự động dọn sau 30 ngày) [Bổ sung 2026-11-02] Tài khoản còn giao dịch chưa xóa thì chặn xóa mềm, chỉ cho lưu trữ (isArchived).
 3.2. Bảng Category (Danh mục thu/chi phân cấp)
 * id: UUID / String (Primary Key)
-* name: String (Tên danh mục: Ăn uống, Di chuyển, Nhà ở, Mua sắm, Lương...)
+* name: String (Tên danh mục: Ăn uống, Di chuyển, Nhà ở, Mua sắm, Lương...) [Bổ sung 2026-11-02] Thêm trường nameKey: String? cho danh mục hệ thống: khóa chuỗi để hiển thị theo ngôn ngữ app (vi, en, zh-CN, ja); khi user đổi tên thì nameKey = null và dùng name.
 * icon: String (Định danh biểu tượng)
 * color: Int (Mã màu hiển thị)
 * type: Enum (EXPENSE, INCOME)
-* parentId: UUID / String? (Khóa ngoại tự tham chiếu hỗ trợ cây danh mục Cha - Con 2 cấp, được đánh chỉ mục Index, onDelete = RESTRICT)
-* isSystemDefault: Boolean (Đánh dấu danh mục gốc của hệ thống để bảo vệ khỏi thao tác xóa nhầm)
+* parentId: UUID / String? (Khóa ngoại tự tham chiếu hỗ trợ cây danh mục Cha - Con 2 cấp, được đánh chỉ mục Index, onDelete = RESTRICT) [Bổ sung 2026-11-02] Tối đa 2 cấp: danh mục con không có con. Danh mục con cùng type với danh mục cha. RESTRICT không có tác dụng với xóa mềm, nên chặn xóa mềm danh mục cha khi còn danh mục con chưa xóa.
+* isSystemDefault: Boolean (Đánh dấu danh mục gốc của hệ thống để bảo vệ khỏi thao tác xóa nhầm) [Bổ sung 2026-11-02] Danh mục hệ thống không xóa được, chỉ ẩn được.
 * sortOrder: Int (Thứ tự ưu tiên hiển thị)
 * createdAt: Long (Timestamp khởi tạo)
 * updatedAt: Long (Timestamp cập nhật gần nhất)
@@ -96,19 +96,19 @@ ________________
 * Bảng chính Transaction:
    * id: UUID / String (Primary Key)
    * amount: Long (Số tiền giao dịch quy đổi ra tiền tệ chính, luôn lưu giá trị nguyên dương > 0)
-   * feeAmount: Long (Phí giao dịch/chuyển khoản kèm theo nếu có, mặc định 0)
+   * feeAmount: Long (Phí giao dịch/chuyển khoản kèm theo nếu có, mặc định 0) [Bổ sung 2026-11-02] Phí luôn trừ vào accountId. Với TRANSFER: tài khoản nguồn mất amount + feeAmount, tài khoản đích nhận amount.
    * originalAmount: Long? (Số tiền nguyên tệ trước khi quy đổi ngoại tệ)
    * originalCurrency: String? (Đơn vị ngoại tệ gốc nếu giao dịch bằng USD, JPY, EUR...)
    * exchangeRate: Double? (Tỷ giá quy đổi tại thời điểm giao dịch)
-   * type: Enum (EXPENSE, INCOME, TRANSFER, ADJUSTMENT, REFUND)
+   * type: Enum (EXPENSE, INCOME, TRANSFER, ADJUSTMENT, REFUND) [Bổ sung 2026-11-02] Thêm trường adjustmentDirection: Enum? (IN, OUT), bắt buộc khi type = ADJUSTMENT, null với mọi type khác; amount vẫn luôn > 0.
    * accountId: UUID / String (Khóa ngoại trỏ tới Account nguồn, Composite Index cùng timestamp DESC)
    * toAccountId: UUID / String? (Khóa ngoại trỏ tới Account đích, bắt buộc khi type là TRANSFER, Indexed)
-   * categoryId: UUID / String? (Khóa ngoại trỏ tới Category, được đánh chỉ mục Index; cho phép null khi type là TRANSFER hoặc ADJUSTMENT)
+   * categoryId: UUID / String? (Khóa ngoại trỏ tới Category, được đánh chỉ mục Index; cho phép null khi type là TRANSFER hoặc ADJUSTMENT) [Bổ sung 2026-11-02] Giao dịch EXPENSE chỉ gắn danh mục EXPENSE, INCOME chỉ gắn danh mục INCOME.
    * timestamp: Long (Thời gian phát sinh giao dịch, được đánh chỉ mục giảm dần để phân trang nhanh)
    * merchantName: String? (Tên đơn vị thụ hưởng/cửa hàng đã chuẩn hóa: Shopee, Grab, Highlands, Điện lực...)
    * note: String (Ghi chú hoặc nội dung chuyển khoản gốc)
    * source: Enum (MANUAL, NOTIFICATION_PARSER, RECURRING, ADJUSTMENT, IMPORT)
-   * isSplitParent: Boolean (Cờ đánh dấu giao dịch gốc đã được tách thành nhiều giao dịch con; các câu truy vấn tính tổng danh mục sẽ lọc isSplitParent = false để chống cộng trùng tiền Double-counting)
+   * isSplitParent: Boolean (Cờ đánh dấu giao dịch gốc đã được tách thành nhiều giao dịch con; các câu truy vấn tính tổng danh mục sẽ lọc isSplitParent = false để chống cộng trùng tiền Double-counting) [Bổ sung 2026-11-02] Số dư tài khoản cũng chỉ tính giao dịch con, không tính giao dịch cha có isSplitParent = true.
    * parentTransactionId: UUID / String? (Khóa ngoại trỏ tới giao dịch cha khi Tách giao dịch - Split Transaction)
    * refundForTransactionId: UUID / String? (Khóa ngoại trỏ tới giao dịch chi tiêu gốc khi nhận tiền hoàn trả - Refund/Offset)
    * excludeFromAnalytics: Boolean (Cờ đánh dấu khoản Chi hộ / Tạm ứng, loại trừ khỏi biểu đồ thu/chi cá nhân)
@@ -118,7 +118,7 @@ ________________
    * notificationLogId: UUID / String? (Khóa ngoại liên kết ngược về bản ghi NotificationLog gốc)
    * createdAt: Long (Timestamp khởi tạo)
    * updatedAt: Long (Timestamp cập nhật)
-   * deletedAt: Long? (Timestamp xóa mềm)
+   * deletedAt: Long? (Timestamp xóa mềm) [Bổ sung 2026-11-02] Giao dịch có deletedAt != null không tính vào số dư, snapshot và báo cáo.
 * Bảng chỉ mục toàn văn TransactionFts (External Content FTS4/FTS5 Table):
    * Liên kết trực tiếp với bảng Transaction thông qua rowid, sử dụng bộ tách từ unicode61 đánh chỉ mục toàn văn trên hai cột merchantName và note giúp truy vấn tìm kiếm dưới 50ms.
 3.4. Bảng Tag & TransactionTagCrossRef (Nhãn sự kiện đa chiều)
@@ -208,14 +208,14 @@ ________________
 3.9. Bảng AccountBalanceSnapshot (Chốt số dư cuối kỳ & Tăng tốc biểu đồ Tài sản ròng)
 * id: UUID / String (Primary Key)
 * accountId: UUID / String (Khóa ngoại trỏ tới Account, Unique Index kết hợp với monthYear)
-* monthYear: String (Kỳ chốt số dư định dạng YYYY-MM)
+* monthYear: String (Kỳ chốt số dư định dạng YYYY-MM) [Bổ sung 2026-11-02] Tính từ timestamp theo múi giờ của máy tại lúc ghi. Tháng không có giao dịch thì openingBalance = closingBalance = closingBalance của tháng trước.
 * openingBalance: Long (Số dư đầu tháng của tài khoản)
 * closingBalance: Long (Số dư chốt cuối tháng của tài khoản)
-* totalIncome: Long (Tổng tiền vào của tài khoản trong tháng)
-* totalExpense: Long (Tổng tiền ra của tài khoản trong tháng)
+* totalIncome: Long (Tổng tiền vào của tài khoản trong tháng) [Bổ sung 2026-11-02] Snapshot là dòng tiền vào/ra của tài khoản, không phải báo cáo phân tích: totalIncome gồm INCOME, REFUND và ADJUSTMENT IN.
+* totalExpense: Long (Tổng tiền ra của tài khoản trong tháng) [Bổ sung 2026-11-02] totalExpense gồm EXPENSE, mọi feeAmount (kể cả phí của TRANSFER) và ADJUSTMENT OUT.
 * totalTransferIn: Long (Tổng tiền chuyển khoản nội bộ nhận vào trong tháng)
 * totalTransferOut: Long (Tổng tiền chuyển khoản nội bộ chuyển đi trong tháng)
-* updatedAt: Long (Cập nhật tức thì khi có giao dịch phát sinh trong kỳ, giúp vẽ biểu đồ biến động Tài sản ròng nhiều năm dưới 16ms mà không cần quét cộng dồn lại từ giao dịch đầu tiên)
+* updatedAt: Long (Cập nhật tức thì khi có giao dịch phát sinh trong kỳ, giúp vẽ biểu đồ biến động Tài sản ròng nhiều năm dưới 16ms mà không cần quét cộng dồn lại từ giao dịch đầu tiên) [Bổ sung 2026-11-02] Ràng buộc: closingBalance = openingBalance + totalIncome - totalExpense + totalTransferIn - totalTransferOut, và openingBalance tháng sau = closingBalance tháng trước. Thêm/sửa/xóa giao dịch ở một tháng (kể cả đổi timestamp sang tháng khác) phải tính lại tháng đó và openingBalance/closingBalance của mọi tháng sau, trong cùng một @Transaction.
 3.10. Bảng ImportProfile (Mẫu ánh xạ cột khi nhập sao kê CSV/Excel)
 * id: UUID / String (Primary Key)
 * profileName: String (Tên mẫu: Sao kê Vietcombank, Dữ liệu Money Lover, Dữ liệu Sổ Thu Chi MISA...)
@@ -272,7 +272,7 @@ Nhóm
 	Must-Have
 	Transaction Core
 	CRUD Giao dịch & Nhập tiền mặt 1 chạm
-	Bàn phím số tích hợp phép tính cộng/trừ/nhân/chia; hỗ trợ Quick Settings Tile và App Shortcuts để mở nhanh màn hình nhập tiền mặt.
+	Bàn phím số tích hợp phép tính cộng/trừ/nhân/chia; hỗ trợ Quick Settings Tile và App Shortcuts để mở nhanh màn hình nhập tiền mặt. [Bổ sung 2026-11-02] Kết quả phép chia làm tròn về đồng theo kiểu nửa lên (half-up); số tiền cuối phải > 0.
 	Vừa
 	Must-Have
 	Transaction Core
@@ -297,7 +297,7 @@ Nhóm
 	Must-Have
 	Security & Storage
 	Mã hóa DB & Bảo mật hiển thị
-	Mã hóa Room Database bằng SQLCipher; khóa vân tay BiometricPrompt; nút ẩn số dư (***) và cờ FLAG_SECURE chống chụp màn hình.
+	Mã hóa Room Database bằng SQLCipher; khóa vân tay BiometricPrompt; nút ẩn số dư (***) và cờ FLAG_SECURE chống chụp màn hình. [Bổ sung 2026-11-02] Khóa SQLCipher 32 byte sinh ngẫu nhiên, bọc bằng Android Keystore (AES-GCM), không bắt xác thực sinh trắc học vì NotificationListenerService phải ghi DB khi máy đang khóa. DB và file chứa khóa bọc bị loại khỏi Android Auto Backup.
 	Vừa
 	Must-Have
 	Report
@@ -413,7 +413,7 @@ Nhóm
    * Các giao dịch cha đã tách nhỏ (isSplitParent = true), giao dịch đánh dấu Chi hộ (excludeFromAnalytics = true) và giao dịch đang nằm trong Thùng rác (deletedAt != null) tuyệt đối không bị cộng trùng hoặc làm sai lệch báo cáo thu/chi.
    * Khoản hoàn tiền (REFUND) giảm trừ trực tiếp vào tổng chi của danh mục gốc thay vì cộng dồn vào thu nhập.
    * Công thức kiểm toán luôn khớp tuyệt đối trên mọi tài khoản tại mọi thời điểm:
-currentBalance = initialBalance + Tổng thu nhập - Tổng chi tiêu - Tổng phí giao dịch + Tổng tiền hoàn trả ± Tổng chuyển khoản nội bộ + Tổng điều chỉnh số dư.
+currentBalance = initialBalance + Tổng thu nhập - Tổng chi tiêu - Tổng phí giao dịch + Tổng tiền hoàn trả ± Tổng chuyển khoản nội bộ + Tổng điều chỉnh số dư. [Bổ sung 2026-11-02] Phí trừ vào accountId; điều chỉnh mang dấu theo adjustmentDirection; chuyển khoản trừ ở nguồn, cộng ở đích; chỉ tính giao dịch có deletedAt = null và isSplitParent = false.
 8. Khả năng cập nhật OTA, Tìm kiếm & Nhập/Xuất dữ liệu:
    * Cập nhật thành công file cấu hình JSON Named-Group Regex từ xa mà không làm mất các rule tùy chỉnh (isUserCustom = true) của người dùng.
    * Truy vấn tìm kiếm toàn văn (TransactionFts) trả kết quả dưới 50ms và biểu đồ Tài sản ròng (AccountBalanceSnapshot) hiển thị dưới 16ms với tập dữ liệu thử nghiệm 50.000 bản ghi giao dịch.

@@ -70,6 +70,8 @@ Quyết định đã chọn: Hilt (không dùng Koin). Lý do: `CLAUDE.md` ghi H
 
 Mục tiêu: user nhập tay được, số dư luôn đúng, DB đã mã hóa.
 
+Spec đã bổ sung ngày 2026-11-02 (các đoạn `[Bổ sung 2026-11-02]` trong mục 3, 4, 7): chiều của ADJUSTMENT (`adjustmentDirection`), phí trừ vào `accountId`, dấu số dư của thẻ tín dụng, giao dịch tách và xóa mềm không tính vào số dư, nội dung cột snapshot và ràng buộc liên tháng, `monthYear` theo múi giờ máy, luật xóa tài khoản và danh mục, `nameKey` cho danh mục hệ thống, làm tròn phép chia, D2.
+
 Bảng Room tạo trong phase này (spec mục 3):
 - `Account` (3.1), `Category` (3.2, phần cây 2 cấp), `Transaction` (3.3, bảng chính), `Tag` và `TransactionTagCrossRef` (3.4), `AccountBalanceSnapshot` (3.9).
 - Lý do: mục 7 yêu cầu mọi thay đổi giao dịch cập nhật snapshot trong cùng transaction.
@@ -80,7 +82,7 @@ Việc:
    - Sinh khóa 32 byte ngẫu nhiên.
    - Bọc khóa bằng Android Keystore (AES-GCM). Lưu bản đã bọc trong SharedPreferences.
    - Mở DB bằng driver SQLCipher cho Room 3 (`RoomDatabase.Builder.setDriver(...)`). Room 3 không còn `SupportOpenHelperFactory`. Xác nhận tên class driver trong README `sqlcipher-android` khi làm.
-   - Quyết định D2 và D8 (xem mục 9).
+   - D2 và D8 đã chốt (xem mục 9). Loại DB và file chứa khóa bọc khỏi Auto Backup (`backup_rules.xml`, `data_extraction_rules.xml`).
 2. `feature/db-schema`: entity, DAO, `FinoteDatabase`, `exportSchema = true`.
    - DoD thêm: chạy luật `@Suppress` của Konsist với code KSP của Hilt và Room trong `build/generated/ksp/`, xác nhận không báo nhầm (spec mục 7).
    - Kiểm lại test DAO có cần Robolectric không. Room 3 dùng driver API, có thể chạy trên JVM thuần.
@@ -88,16 +90,18 @@ Việc:
 3. `feature/balance-engine`: hàm thuần trong domain tính lại số dư:
    `currentBalance = initialBalance + thu − chi − phí + hoàn ± chuyển nội bộ + điều chỉnh`.
    - Dùng để kiểm tra chéo khi ghi DB.
-   - Test: mọi loại giao dịch, số âm, số dư đầu bằng 0.
+   - Test: mọi loại giao dịch, ADJUSTMENT IN/OUT, phí của TRANSFER, thẻ tín dụng âm, bỏ qua `deletedAt` và `isSplitParent`, số dư đầu bằng 0.
+   - Thêm hàm thuần dựng lại snapshot theo tháng. Kiểm ràng buộc `closing = opening + income − expense + transferIn − transferOut` và nối tháng.
 4. `feature/transaction-crud`: thêm/sửa/xóa mềm giao dịch. Mỗi thao tác là một `@Transaction` cập nhật `currentBalance` và `AccountBalanceSnapshot`.
-   - Test với Robolectric: thêm, sửa đổi số tiền, xóa mềm, rollback khi lỗi giữa chừng.
+   - Sửa/xóa giao dịch ở tháng cũ, kể cả đổi timestamp sang tháng khác, phải tính lại snapshot của tháng đó và mọi tháng sau trong cùng `@Transaction`.
+   - Test với Robolectric: thêm, sửa đổi số tiền, đổi tháng, xóa mềm, rollback khi lỗi giữa chừng.
 5. `feature/account-crud`: tạo, sửa, lưu trữ (`isArchived`). Đặt `initialBalance` và `isInitialized`.
-   - Xóa mềm tài khoản có giao dịch sẽ chặn bằng validation.
-6. `feature/category-seed`: seed cây danh mục chuẩn VN (`isSystemDefault = true`). `parentId` `onDelete = RESTRICT`.
+   - Xóa mềm tài khoản có giao dịch sẽ chặn bằng validation, chỉ cho lưu trữ. Chỉ VND.
+6. `feature/category-seed`: seed cây danh mục chuẩn VN (`isSystemDefault = true`). `parentId` `onDelete = RESTRICT`. Danh mục hệ thống lưu `nameKey` để hiện theo 4 ngôn ngữ (D9). Tối đa 2 cấp, con cùng type với cha, chặn xóa mềm cha còn con, danh mục hệ thống chỉ ẩn.
    - UI quản lý cây 2 cấp (Must-Have, mục 4).
-7. `feature/cash-entry`: màn nhập tiền mặt có bàn phím số, phép tính `+ − × ÷`, chọn tài khoản và danh mục.
+7. `feature/cash-entry`: màn nhập tiền mặt có bàn phím số, phép tính `+ − × ÷`, chọn tài khoản và danh mục. Phép chia làm tròn nửa lên về đồng; số tiền cuối > 0.
    - `TileService` và `ShortcutManagerCompat` mở thẳng màn này (Must-Have).
-8. `feature/reconciliation`: điều chỉnh số dư thực tế. Tạo giao dịch `ADJUSTMENT`.
+8. `feature/reconciliation`: điều chỉnh số dư thực tế. Tạo giao dịch `ADJUSTMENT` với `adjustmentDirection` IN hoặc OUT theo chênh lệch.
 9. `feature/reimbursement-flag`: cờ `excludeFromAnalytics` và `reimbursementStatus` (Must-Have, mục 4). Chỉ lưu và lọc. Logic hoàn tiền (REFUND) ở P4.
 10. Danh sách giao dịch cơ bản, lọc theo tài khoản, sắp xếp theo `timestamp DESC`.
 
@@ -201,7 +205,7 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 | Mã | Câu hỏi | Đề xuất | Cần chốt trước |
 |---|---|---|---|
 | D1 | FTS4 hay FTS5? Room annotation chỉ hỗ trợ FTS4. FTS5 cần SQL thô trong migration. Chưa kiểm Room 3 còn `@Fts4` không. | FTS4 (đơn giản, đủ cho mục tiêu 50 ms) | P3 |
-| D2 | Khóa SQLCipher lưu ở đâu? | Sinh ngẫu nhiên, bọc bằng Android Keystore | P1 |
+| D2 | Khóa SQLCipher lưu ở đâu? | **Đã chốt (2026-11-02):** 32 byte ngẫu nhiên, bọc bằng Android Keystore (AES-GCM), không bắt sinh trắc học (listener ghi DB khi máy khóa). DB và khóa bọc bị loại khỏi Auto Backup | P1 |
 | D3 | `targetSdk`: spec ghi 35, build đang 37. `CLAUDE.md` ghi 37 là có chủ đích. | **Đã chốt:** giữ 37. Ghi chú này là lý do, spec không sửa | P0 |
 | D4 | Mẫu thông báo thật để đạt 98%? Không có mẫu thì không đo được. | User cung cấp mẫu đã ẩn số. Nếu không có, mình tự tạo mẫu tổng hợp và ghi rõ là tổng hợp | P2b |
 | D5 | Import XLSX có cần ngay ở P4? | CSV trước, XLSX sau | P4 |
@@ -214,6 +218,6 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 
 1. D3, D6, D8 đã chốt.
 2. P0: `chore/gradle-catalog`, `chore/quality-gate`, `feature/app-shell`, `feature/mvi-base` đã xong.
-3. Chốt D2 trước khi làm `feature/db-encryption`.
+3. D2 đã chốt. Spec P1 đã bổ sung ngày 2026-11-02.
 4. P1 theo thứ tự: `db-encryption` → `db-schema` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `cash-entry` → còn lại.
 5. P2 chỉ bắt đầu khi P1 xong và D4 đã chốt.
