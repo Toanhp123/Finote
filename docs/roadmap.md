@@ -12,7 +12,7 @@ Hiện trạng (đã kiểm tra):
 
 - Mỗi phase kết thúc bằng một mốc release nhỏ, có tiêu chí đo được (DoD).
 - Mỗi tính năng là một nhánh `feature/<name>` từ `dev`, squash vào `dev`. `reviewer` chạy một lần cho mỗi nhánh, trước khi squash.
-- Thay đổi logic (parser, dedup, pairing, balance) phải chạy `./gradlew.bat testDebugUnitTest` và đọc output.
+- Thay đổi logic (parser, dedup, pairing, balance) phải chạy `testDebugUnitTest` qua `gradle-run` và đọc bản tóm tắt.
 - Tiền luôn là `Long` VND. Không dùng `Double` cho số tiền.
 - Mọi thay đổi số dư nằm trong một `@Transaction`, gồm cả `AccountBalanceSnapshot`.
 - Xóa mềm bằng `deletedAt`. Chỉ WorkManager dọn thùng rác mới được xóa cứng.
@@ -42,7 +42,7 @@ Việc (thứ tự theo `docs/superpowers/specs/2026-11-02-architecture-foundati
 1. `chore/gradle-catalog`: **đã xong.** Gộp cả `chore/build-plugins`. Catalog có Compose BOM, Hilt, KSP, detekt, Spotless, Konsist. Kotlin dùng built-in của AGP, không thêm `kotlin-android`.
 2. `chore/quality-gate`: **đã xong.** `./gradlew.bat qualityGate`, git hook, GitHub Actions, luật Konsist. Chi tiết: `docs/architecture.md`.
 3. `feature/app-shell`: `MainActivity` (Single Activity), Compose theme Material 3, Dynamic Color, `NavDisplay` của Navigation3 với back stack rỗng.
-   - ViewModel theo từng màn: thêm `lifecycle-viewmodel-navigation3` và `hiltViewModel()` khi có ViewModel đầu tiên.
+   - ViewModel theo từng màn: khi có ViewModel đầu tiên, thêm `androidx.lifecycle:lifecycle-viewmodel-navigation3` và `androidx.hilt:hilt-lifecycle-viewmodel-compose` (cho `hiltViewModel()`).
 4. `feature/mvi-base`: base class cho MVI: `UiState`, `UiIntent`, `UiEffect`, `BaseViewModel` có luồng một chiều.
 
 Cấu trúc package (spec mục 3, chi tiết ở `docs/architecture.md`): tầng là package, trong tầng chia theo feature.
@@ -82,6 +82,7 @@ Việc:
    - Quyết định D2 và D8 (xem mục 9).
 2. `feature/db-schema`: entity, DAO, `FinoteDatabase`, `exportSchema = true`.
    - DoD thêm: chạy luật `@Suppress` của Konsist với code KSP của Hilt và Room trong `build/generated/ksp/`, xác nhận không báo nhầm (spec mục 7).
+   - Kiểm lại test DAO có cần Robolectric không. Room 3 dùng driver API, có thể chạy trên JVM thuần.
    - Trước v1.0 có thể tăng version và tạo lại DB. Sau v1.0 mọi thay đổi phải có migration và test migration.
 3. `feature/balance-engine`: hàm thuần trong domain tính lại số dư:
    `currentBalance = initialBalance + thu − chi − phí + hoàn ± chuyển nội bộ + điều chỉnh`.

@@ -30,7 +30,7 @@ Trạng thái: nghiên cứu ngày 2026-11-02. Bộ P1 đã cài vào `.claude/s
 
 | Skill | Nguồn | Lý do cho Finote |
 |---|---|---|
-| `gradle-run` | chrisbanes | Bọc Gradle, chỉ trả tóm tắt JSON. Không đổ cả log build vào context. Cần `python3` (máy đã có 3.13). Chưa thử với `gradlew.bat`. |
+| `gradle-run` | chrisbanes | Bọc Gradle, chỉ trả tóm tắt JSON. Không đổ cả log build vào context. Cần `python3` (máy đã có 3.13). Đã thử trên Windows, xem mục 6. |
 | `kotlin-concurrency-and-flow` | chrisbanes | StateFlow, Flow, coroutine cho MVI và repository. Claude: 72,2% → 100%. |
 | `compose-state-and-effects` | chrisbanes | State và effect cho màn hình MVI. Claude: 79,2% → 95,8%. |
 | `edge-to-edge` | android/skills | Dùng cho `feature/app-shell` (P0, chưa làm). |
@@ -80,6 +80,6 @@ Trạng thái: nghiên cứu ngày 2026-11-02. Bộ P1 đã cài vào `.claude/s
 
 - Mỗi thư mục có file `LICENSE` của repo nguồn (Apache-2.0).
 - `gradle-run`: bỏ `scripts/test_gradle_run.py` và `agents/openai.yaml` (dành cho Codex). Script lưu log trong thư mục temp của hệ thống, có hỗ trợ Windows (`msvcrt`, `taskkill`), không gọi mạng.
-- Đã thử `gradle-run` trên Windows: `create`, `run`, `finish` chạy được. Lệnh Gradle phải ghi `.\gradlew.bat`. `./gradlew.bat` lỗi vì cmd không hiểu `./`, còn `gradlew.bat` không có đường dẫn thì báo không tìm thấy file.
+- Đã thử `gradle-run` trên Windows: `create`, `run`, `finish` chạy được. Lệnh Gradle phải ghi `.\gradlew.bat`, từ Bash thì để trong nháy đơn `'.\gradlew.bat'`. `./gradlew.bat` lỗi vì cmd không hiểu `./`, còn `gradlew.bat` không có đường dẫn thì báo không tìm thấy file.
 - Ví dụ trong skill có version cứng (`testImplementation("...:1.x")`). Luật `CLAUDE.md` thắng: version luôn qua catalog.
 - Skill skydoves có link tới skill anh em và `docs/CORPUS.md` không được cài. Link chết không ảnh hưởng nội dung chính.

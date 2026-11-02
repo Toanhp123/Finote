@@ -33,6 +33,8 @@ git merge --squash feature/parser-vcb
 git commit -m "feat(parser): add VCB balance regex"
 ```
 
+These commands are for a human at a PowerShell prompt. Agents run the same Gradle tasks through the `gradle-run` skill (see `CLAUDE.md` Commands).
+
 After a squash, `git branch -d` refuses because the commits are not reachable from `dev`. Confirm the squash commit exists, then the user deletes the branch with `git branch -D` in their own terminal.
 
 ## Release flow
@@ -75,7 +77,7 @@ A hotfix follows the same steps. It starts with `git switch -c hotfix/1.0.1 main
 
 1. Stage files by name. Never `git add -A`, `git add .`, or `git commit -a`.
 2. Read `git diff --cached`. Every line must belong to this commit.
-3. After a logic change (parser, dedup, pairing, balance), run `./gradlew.bat testDebugUnitTest` and read the output.
+3. After a logic change (parser, dedup, pairing, balance), run `testDebugUnitTest` (agents: through `gradle-run`) and read the result.
 4. Check privacy. See below.
 
 ## Privacy and secrets

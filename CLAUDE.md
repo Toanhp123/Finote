@@ -32,16 +32,17 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 - The main session model is the user's choice (`/model`). Do not switch it yourself.
 
 ## Commands
-- Build: `./gradlew.bat assembleDebug`
-- Unit tests: `./gradlew.bat testDebugUnitTest`
-- Full gate: `./gradlew.bat qualityGate`
-- Through the `gradle-run` skill, pass `.\gradlew.bat` (backslash). `./gradlew.bat` fails under cmd, and bare `gradlew.bat` is not found.
+- Build: `assembleDebug`
+- Unit tests: `testDebugUnitTest`
+- Full gate: `qualityGate`
+- Run these tasks through the `gradle-run` skill. Pass `.\gradlew.bat`: as is from PowerShell, single-quoted (`'.\gradlew.bat'`) from Bash. `./gradlew.bat` fails under cmd, and bare `gradlew.bat` is not found.
 - Instrumented tests (`connectedDebugAndroidTest`) need a device or emulator. Run them only when the user asks.
 
 ## Verification
-- IMPORTANT: after any logic change (parser, dedup, pairing, balance), run `./gradlew.bat testDebugUnitTest`.
-- Before the squash into `dev`, run `./gradlew.bat qualityGate` and read the output.
+- IMPORTANT: after any logic change (parser, dedup, pairing, balance), run `testDebugUnitTest` through `gradle-run`.
+- Before the squash into `dev`, run `qualityGate` through `gradle-run` and read its summary.
 - Do not report work as done without a real build or test run and its output.
+- The `gradle-run` JSON summary (question, answer, `exit_status`) counts as the output. Never paste the full build log.
 
 ## Git
 - IMPORTANT: follow `docs/git-workflow.md` for every branch, commit, merge, and tag.
