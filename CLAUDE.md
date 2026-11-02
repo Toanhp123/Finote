@@ -35,6 +35,7 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 - Build: `./gradlew.bat assembleDebug`
 - Unit tests: `./gradlew.bat testDebugUnitTest`
 - Full gate: `./gradlew.bat qualityGate`
+- Through the `gradle-run` skill, pass `.\gradlew.bat` (backslash). `./gradlew.bat` fails under cmd, and bare `gradlew.bat` is not found.
 - Instrumented tests (`connectedDebugAndroidTest`) need a device or emulator. Run them only when the user asks.
 
 ## Verification

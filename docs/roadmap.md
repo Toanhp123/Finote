@@ -3,7 +3,7 @@
 Trạng thái: bản nháp v1. Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9; `CLAUDE.md`; `docs/git-workflow.md`.
 
 Hiện trạng (đã kiểm tra):
-- Catalog đã có Compose BOM, Hilt, KSP, detekt, Spotless, Konsist. Chưa có Room, SQLCipher, WorkManager, Robolectric, Turbine.
+- Catalog đã có Compose BOM, Hilt, KSP, detekt, Spotless, Konsist, Navigation3. Chưa có Room 3, SQLCipher, WorkManager, Robolectric, Turbine.
 - `app/src/main/java/` chưa có source Kotlin production. Đã có luật Konsist trong `app/src/test/`.
 - `minSdk = 26`, `targetSdk = 37` (spec ghi 35, đã chốt ở mục D3).
 - Git: nhánh `dev` đã có commit khởi tạo, spec, plan và catalog. Xem lịch sử bằng `git log dev`.
@@ -19,6 +19,7 @@ Hiện trạng (đã kiểm tra):
 - Không log nội dung thông báo, số dư, số tài khoản. Log rule id hoặc trạng thái thay thế.
 - Fixture test: thay tên, số tiền, số tài khoản bằng giá trị giả. Không commit dữ liệu thật.
 - Instrumented test chỉ chạy khi user yêu cầu. Vì vậy test Room dùng Robolectric để chạy trong `testDebugUnitTest`.
+- Thư viện native của SQLCipher không chạy trên JVM. Test Room dùng DB không mã hóa qua driver khác (dự kiến `BundledSQLiteDriver`). Mã hóa được kiểm riêng ở `feature/db-encryption`.
 
 ## 1. Mốc phát hành
 
@@ -40,7 +41,8 @@ Mục tiêu: build chạy, khung kiến trúc sẵn sàng cho mọi phase sau.
 Việc (thứ tự theo `docs/superpowers/specs/2026-11-02-architecture-foundation-design.md` mục 6):
 1. `chore/gradle-catalog`: **đã xong.** Gộp cả `chore/build-plugins`. Catalog có Compose BOM, Hilt, KSP, detekt, Spotless, Konsist. Kotlin dùng built-in của AGP, không thêm `kotlin-android`.
 2. `chore/quality-gate`: **đã xong.** `./gradlew.bat qualityGate`, git hook, GitHub Actions, luật Konsist. Chi tiết: `docs/architecture.md`.
-3. `feature/app-shell`: `MainActivity` (Single Activity), Compose theme Material 3, Dynamic Color, NavHost rỗng.
+3. `feature/app-shell`: `MainActivity` (Single Activity), Compose theme Material 3, Dynamic Color, `NavDisplay` của Navigation3 với back stack rỗng.
+   - ViewModel theo từng màn: thêm `lifecycle-viewmodel-navigation3` và `hiltViewModel()` khi có ViewModel đầu tiên.
 4. `feature/mvi-base`: base class cho MVI: `UiState`, `UiIntent`, `UiEffect`, `BaseViewModel` có luồng một chiều.
 
 Cấu trúc package (spec mục 3, chi tiết ở `docs/architecture.md`): tầng là package, trong tầng chia theo feature.
@@ -51,7 +53,7 @@ Cấu trúc package (spec mục 3, chi tiết ở `docs/architecture.md`): tần
 - Feature ban đầu: `transaction`, `account`, `category`, `notification`.
 
 Thêm vào catalog trên nhánh dùng chúng, không thêm trước:
-- Room (runtime, ktx, compiler), SQLCipher (`net.zetetic:sqlcipher-android`).
+- Room 3 (`androidx.room3:room3-runtime`, `room3-compiler` qua KSP), SQLCipher (`net.zetetic:sqlcipher-android`, từ 4.18 trở lên vì cần driver cho Room 3).
 - WorkManager, Hilt-work.
 - Robolectric, Turbine. (`junit` đã có trong catalog. `kotlinx-coroutines-test` thêm khi test đầu tiên cần.)
 - Chỉ thêm version qua catalog. Không hardcode version trong `build.gradle.kts`.
@@ -76,8 +78,8 @@ Việc:
 1. `feature/db-encryption`: SQLCipher.
    - Sinh khóa 32 byte ngẫu nhiên.
    - Bọc khóa bằng Android Keystore (AES-GCM). Lưu bản đã bọc trong SharedPreferences.
-   - Mở DB bằng `SupportOpenHelperFactory`.
-   - Quyết định D2 (xem mục 9).
+   - Mở DB bằng driver SQLCipher cho Room 3 (`RoomDatabase.Builder.setDriver(...)`). Room 3 không còn `SupportOpenHelperFactory`. Xác nhận tên class driver trong README `sqlcipher-android` khi làm.
+   - Quyết định D2 và D8 (xem mục 9).
 2. `feature/db-schema`: entity, DAO, `FinoteDatabase`, `exportSchema = true`.
    - DoD thêm: chạy luật `@Suppress` của Konsist với code KSP của Hilt và Room trong `build/generated/ksp/`, xác nhận không báo nhầm (spec mục 7).
    - Trước v1.0 có thể tăng version và tạo lại DB. Sau v1.0 mọi thay đổi phải có migration và test migration.
@@ -196,17 +198,18 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 
 | Mã | Câu hỏi | Đề xuất | Cần chốt trước |
 |---|---|---|---|
-| D1 | FTS4 hay FTS5? Room annotation chỉ hỗ trợ FTS4. FTS5 cần SQL thô trong migration. | FTS4 (đơn giản, đủ cho mục tiêu 50 ms) | P3 |
+| D1 | FTS4 hay FTS5? Room annotation chỉ hỗ trợ FTS4. FTS5 cần SQL thô trong migration. Chưa kiểm Room 3 còn `@Fts4` không. | FTS4 (đơn giản, đủ cho mục tiêu 50 ms) | P3 |
 | D2 | Khóa SQLCipher lưu ở đâu? | Sinh ngẫu nhiên, bọc bằng Android Keystore | P1 |
 | D3 | `targetSdk`: spec ghi 35, build đang 37. `CLAUDE.md` ghi 37 là có chủ đích. | **Đã chốt:** giữ 37. Ghi chú này là lý do, spec không sửa | P0 |
 | D4 | Mẫu thông báo thật để đạt 98%? Không có mẫu thì không đo được. | User cung cấp mẫu đã ẩn số. Nếu không có, mình tự tạo mẫu tổng hợp và ghi rõ là tổng hợp | P2b |
 | D5 | Import XLSX có cần ngay ở P4? | CSV trước, XLSX sau | P4 |
 | D6 | DI: Hilt hay Koin? | **Đã chốt:** Hilt (theo `CLAUDE.md`) | P0 |
 | D7 | Ai chạy benchmark và instrumented test trên máy thật? | User chạy khi tới P3 và P5, theo yêu cầu | P3 |
+| D8 | Room 2.x hay Room 3? `navigation-compose` hay Navigation3? | **Đã chốt (2026-11-02):** Room 3 (stable 3.0.x từ 07/2026, chỉ KSP, driver API) và Navigation3 (stable 1.2.0). Chưa có code dùng nên không tốn chi phí chuyển. Rủi ro: driver SQLCipher cho Room 3 mới có từ 08/2026 | P0 |
 
 ## 10. Thứ tự làm việc ngay
 
-1. D3, D6 đã chốt.
+1. D3, D6, D8 đã chốt.
 2. P0: `chore/gradle-catalog` và `chore/quality-gate` đã xong. Còn `feature/app-shell` → `feature/mvi-base`.
 3. Chốt D2 trước khi làm `feature/db-encryption`.
 4. P1 theo thứ tự: `db-encryption` → `db-schema` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `cash-entry` → còn lại.
