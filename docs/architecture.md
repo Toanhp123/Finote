@@ -126,7 +126,7 @@ The workflow installs Temurin 21, then the Android SDK with `android-actions/set
   - A fast-forward merge creates no commit, so no hook runs.
   - `git cherry-pick` and `git revert` skip `pre-commit`.
   - The hook checks the working tree, not the index.
-- CI is the backstop once a remote exists. The GitHub Actions workflow has never run, because the repo has no remote. Check it when a remote appears.
+- CI is the backstop. The GitHub Actions workflow runs `qualityGate` on every pull request into `dev` or `main`. It only blocks a merge once branch protection requires the `quality-gate` check.
 
 ## Rules for new Konsist rules
 
