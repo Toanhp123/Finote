@@ -62,7 +62,8 @@ private fun FinoteDialogOpenPreview() {
 private fun FinoteDatePickerOpenPreview() {
     ScreenBehind(Alignment.BottomCenter) {
         SheetSurface {
-            DatePickerContent(selected = LocalDate.of(2026, 11, 3), onConfirm = {}, onDismiss = {})
+            // A past month: the picker rings "today" from the system clock, so a current month breaks the image daily.
+            DatePickerContent(selected = LocalDate.of(2025, 3, 3), onConfirm = {}, onDismiss = {})
         }
     }
 }
