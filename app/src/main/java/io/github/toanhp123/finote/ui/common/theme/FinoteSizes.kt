@@ -20,6 +20,7 @@ data class FinoteSizes(
     val progressStroke: Dp = 2.dp,
     val sheetHandleWidth: Dp = 32.dp,
     val sheetHandleHeight: Dp = 4.dp,
+    val dialogMaxWidth: Dp = 360.dp,
     val switchTrackWidth: Dp = 52.dp,
     val switchTrackHeight: Dp = 32.dp,
     val switchThumb: Dp = 24.dp,

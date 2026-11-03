@@ -5,4 +5,6 @@
     <string name="balance_expense">支出</string>
     <string name="cd_loading">読み込み中</string>
     <string name="cd_back">戻る</string>
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">キャンセル</string>
 </resources>

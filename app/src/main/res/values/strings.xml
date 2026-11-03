@@ -5,4 +5,6 @@
     <string name="balance_expense">Chi</string>
     <string name="cd_loading">Đang tải</string>
     <string name="cd_back">Quay lại</string>
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Hủy</string>
 </resources>
