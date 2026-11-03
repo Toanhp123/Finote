@@ -50,6 +50,7 @@ konsist = { group = "com.lemonappdev", name = "konsist", version.ref = "konsist"
 haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
 haze-blur = { group = "dev.chrisbanes.haze", name = "haze-blur", version.ref = "haze" }
 composeunstyled-bottom-sheet = { group = "com.composables", name = "composeunstyled-bottom-sheet", version.ref = "composeUnstyled" }
+composeunstyled-modal-bottom-sheet = { group = "com.composables", name = "composeunstyled-modal-bottom-sheet", version.ref = "composeUnstyled" }
 composeunstyled-dialog = { group = "com.composables", name = "composeunstyled-dialog", version.ref = "composeUnstyled" }
 composeunstyled-toggle-switch = { group = "com.composables", name = "composeunstyled-toggle-switch", version.ref = "composeUnstyled" }
 screenshot-validation-api = { group = "com.android.tools.screenshot", name = "screenshot-validation-api", version.ref = "screenshot" }

@@ -112,6 +112,7 @@ dependencies {
     implementation(libs.haze.blur)
     implementation(libs.composeunstyled.bottom.sheet)
     implementation(libs.composeunstyled.dialog)
+    implementation(libs.composeunstyled.modal.bottom.sheet)
     implementation(libs.composeunstyled.toggle.switch)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
