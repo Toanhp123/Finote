@@ -10,7 +10,7 @@ One Gradle module, `:app`. Layers are packages. Inside a layer, packages split b
 domain/<feature>/    model, repository interface, use case, pure logic
 data/<feature>/      Room entity, DAO, mapper, repository impl
 ui/<feature>/        Screen, Contract, ViewModel
-ui/common/           theme, shared components, BaseViewModel
+ui/common/           theme, shared components, BaseViewModel (tokens and components: docs/design-system.md)
 automation/          NotificationListenerService, thin
 work/                Worker, thin
 di/                  Hilt module
@@ -86,7 +86,7 @@ Project rules, checked over all production code:
 git config core.hooksPath .githooks   # once per clone
 ```
 
-`qualityGate` depends on `spotlessCheck`, `detekt`, `detektMain`, `detektTest`, `lintDebug`, `testDebugUnitTest`, `assembleDebug`.
+`qualityGate` depends on `spotlessCheck`, `detekt`, `detektMain`, `detektTest`, `lintDebug`, `testDebugUnitTest`, `testDebugScreenshotTestDefaultTestSuite`, `assembleDebug`.
 
 | Layer | Tool | Enforces |
 |---|---|---|
@@ -146,3 +146,6 @@ Machines cannot enforce these. `reviewer` checks them on every branch.
 - `Effect` names describe a one-time command: `NavigateBack`.
 - A one-shot `suspend` read is named `getX`.
 - Test fixtures hold no real bank notification, balance, or account number.
+- The hero gradient (`brushes.hero`) is used only by `BalanceHeroCard`, at most once per screen.
+- Glass (`finoteGlass`) is only for floating chrome: nav bar, sheets, snackbar. Never for content cards.
+- Color is never the only signal. An amount has a sign, a transaction has a type icon, an error has text.

@@ -99,11 +99,12 @@ Việc:
    - Xóa mềm tài khoản có giao dịch sẽ chặn bằng validation, chỉ cho lưu trữ. Chỉ VND.
 6. `feature/category-seed`: seed cây danh mục chuẩn VN (`isSystemDefault = true`). `parentId` `onDelete = RESTRICT`. Danh mục hệ thống lưu `nameKey` để hiện theo 4 ngôn ngữ (D9). Tối đa 2 cấp, con cùng type với cha, chặn xóa mềm cha còn con, danh mục hệ thống chỉ ẩn.
    - UI quản lý cây 2 cấp (Must-Have, mục 4).
-7. `feature/cash-entry`: màn nhập tiền mặt có bàn phím số, phép tính `+ − × ÷`, chọn tài khoản và danh mục. Phép chia làm tròn nửa lên về đồng; số tiền cuối > 0.
+7. `feature/design-system` (xong): token, `FinoteTheme`, `MoneyFormat`, bộ component dùng chung, luật Konsist, screenshot test trong `qualityGate`. Chi tiết ở `docs/design-system.md`.
+8. `feature/cash-entry`: màn nhập tiền mặt có bàn phím số, phép tính `+ − × ÷`, chọn tài khoản và danh mục. Phép chia làm tròn nửa lên về đồng; số tiền cuối > 0.
    - `TileService` và `ShortcutManagerCompat` mở thẳng màn này (Must-Have).
-8. `feature/reconciliation`: điều chỉnh số dư thực tế. Tạo giao dịch `ADJUSTMENT` với `adjustmentDirection` IN hoặc OUT theo chênh lệch.
-9. `feature/reimbursement-flag`: cờ `excludeFromAnalytics` và `reimbursementStatus` (Must-Have, mục 4). Chỉ lưu và lọc. Logic hoàn tiền (REFUND) ở P4.
-10. Danh sách giao dịch cơ bản, lọc theo tài khoản, sắp xếp theo `timestamp DESC`.
+9. `feature/reconciliation`: điều chỉnh số dư thực tế. Tạo giao dịch `ADJUSTMENT` với `adjustmentDirection` IN hoặc OUT theo chênh lệch.
+10. `feature/reimbursement-flag`: cờ `excludeFromAnalytics` và `reimbursementStatus` (Must-Have, mục 4). Chỉ lưu và lọc. Logic hoàn tiền (REFUND) ở P4.
+11. Danh sách giao dịch cơ bản, lọc theo tài khoản, sắp xếp theo `timestamp DESC`.
 
 DoD:
 - Test công thức số dư pass cho mọi loại giao dịch.
@@ -219,5 +220,5 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 1. D3, D6, D8 đã chốt.
 2. P0: `chore/gradle-catalog`, `chore/quality-gate`, `feature/app-shell`, `feature/mvi-base` đã xong.
 3. D2 đã chốt. Spec P1 đã bổ sung ngày 2026-11-02.
-4. P1 theo thứ tự: `db-encryption` → `db-schema` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `cash-entry` → còn lại.
+4. P1 theo thứ tự: `db-encryption` → `db-schema` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `design-system` → `cash-entry` → còn lại.
 5. P2 chỉ bắt đầu khi P1 xong và D4 đã chốt.
