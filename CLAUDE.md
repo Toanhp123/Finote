@@ -52,6 +52,7 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 
 ## Architecture
 - IMPORTANT: layers, naming, and limits are in `docs/architecture.md`. Tests in `app/src/test/java/io/github/toanhp123/finote/architecture/` enforce them.
+- IMPORTANT: UI tokens, components, and usage rules are in `docs/design-system.md`.
 - Clean Architecture with MVI: one-way flow of state, intent, and effect.
 - Single Activity. UI is Compose with Material 3.
 

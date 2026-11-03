@@ -57,8 +57,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
@@ -76,6 +76,14 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+        }
+        screenshotTests.create("screenshotTest") {
+            engineVersion = libs.versions.screenshot.get()
+            targetVariants.add("debug")
+            dependencies {
+                implementation(libs.androidx.compose.ui.tooling)
+                implementation(libs.screenshot.validation.api)
+            }
         }
     }
 }
@@ -100,10 +108,21 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.kotlinx.serialization.core)
+    implementation(libs.haze)
+    implementation(libs.haze.blur)
+    implementation(libs.composeunstyled.bottom.sheet)
+    implementation(libs.composeunstyled.dialog)
+    implementation(libs.composeunstyled.modal.bottom.sheet)
+    implementation(libs.composeunstyled.toggle.switch)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.junit)
+    testImplementation(libs.androidx.espresso.core)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
     testImplementation(libs.konsist)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
@@ -114,10 +133,21 @@ dependencies {
 // change (for example a new @Suppress line) leaves testDebugUnitTest up to date and the gate green.
 tasks.withType<Test>().configureEach {
     inputs.files(fileTree("src/main")).withPathSensitivity(PathSensitivity.RELATIVE)
+    // Robolectric on SDK 37 reaches FileDescriptor internals through SharedSecrets, which Java 21 does not export.
+    jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
 }
 
 tasks.register("qualityGate") {
     group = "verification"
     // detektMain skips test sources, so detekt and detektTest cover them (detektTest: unit and androidTest, typed).
-    dependsOn("spotlessCheck", "detekt", "detektMain", "detektTest", "lintDebug", "testDebugUnitTest", "assembleDebug")
+    dependsOn(
+        "spotlessCheck",
+        "detekt",
+        "detektMain",
+        "detektTest",
+        "lintDebug",
+        "testDebugUnitTest",
+        "testDebugScreenshotTestDefaultTestSuite",
+        "assembleDebug",
+    )
 }

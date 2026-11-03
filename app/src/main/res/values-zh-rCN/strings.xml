@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">Finote</string>
+    <string name="balance_total">总余额</string>
+    <string name="balance_income">收入</string>
+    <string name="balance_expense">支出</string>
+    <string name="cd_loading">加载中</string>
+    <string name="cd_back">返回</string>
+    <string name="action_ok">确定</string>
+    <string name="action_cancel">取消</string>
 </resources>
