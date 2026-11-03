@@ -1,8 +1,6 @@
 package io.github.toanhp123.finote.di
 
 import android.content.Context
-import androidx.room3.Room
-import androidx.sqlite.driver.AndroidSQLiteDriver
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -12,6 +10,7 @@ import io.github.toanhp123.finote.data.FinoteDatabase
 import io.github.toanhp123.finote.data.account.AccountBalanceSnapshotDao
 import io.github.toanhp123.finote.data.account.AccountDao
 import io.github.toanhp123.finote.data.category.CategoryDao
+import io.github.toanhp123.finote.data.createFinoteDatabase
 import io.github.toanhp123.finote.data.transaction.TagDao
 import io.github.toanhp123.finote.data.transaction.TransactionDao
 import javax.inject.Singleton
@@ -23,11 +22,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(
         @ApplicationContext context: Context,
-    ): FinoteDatabase =
-        Room
-            .databaseBuilder<FinoteDatabase>(context, "finote.db")
-            .setDriver(AndroidSQLiteDriver())
-            .build()
+    ): FinoteDatabase = createFinoteDatabase(context)
 
     @Provides
     fun provideAccountDao(db: FinoteDatabase): AccountDao = db.accountDao()

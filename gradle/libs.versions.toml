@@ -28,6 +28,8 @@ robolectric = "4.17"
 room3 = "3.0.3"
 # Same version Room 3.0.3 pulls in (checked in its POM); declared so the driver import is explicit.
 sqlite = "2.7.1"
+# 4.19.1 is the minimum (4.18-4.19.0 return the wrong type for NULL columns); 4.20.0 has the Room 3 driver.
+sqlcipher = "4.20.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -64,6 +66,7 @@ screenshot-validation-api = { group = "com.android.tools.screenshot", name = "sc
 room3-runtime = { group = "androidx.room3", name = "room3-runtime", version.ref = "room3" }
 room3-compiler = { group = "androidx.room3", name = "room3-compiler", version.ref = "room3" }
 sqlite-framework = { group = "androidx.sqlite", name = "sqlite-framework", version.ref = "sqlite" }
+sqlcipher-android = { group = "net.zetetic", name = "sqlcipher-android", version.ref = "sqlcipher" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

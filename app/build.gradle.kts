@@ -129,6 +129,7 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.room3.runtime)
     implementation(libs.sqlite.framework)
+    implementation(libs.sqlcipher.android)
     ksp(libs.room3.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

@@ -85,8 +85,22 @@ Việc:
 2. `feature/db-encryption`: SQLCipher.
    - Sinh khóa 32 byte ngẫu nhiên.
    - Bọc khóa bằng Android Keystore (AES-GCM). Lưu bản đã bọc trong SharedPreferences.
-   - Mở DB bằng driver SQLCipher cho Room 3 (`RoomDatabase.Builder.setDriver(...)`). Room 3 không còn `SupportOpenHelperFactory`. Xác nhận tên class driver trong README `sqlcipher-android` khi làm.
+   - Mở DB bằng driver SQLCipher cho Room 3 (`RoomDatabase.Builder.setDriver(...)`). Room 3 không còn `SupportOpenHelperFactory`.
    - D2 và D8 đã chốt (xem mục 9). Loại DB và file chứa khóa bọc khỏi Auto Backup (`backup_rules.xml`, `data_extraction_rules.xml`).
+   - Máy dev đã có file DB không mã hóa từ `db-schema`. `fallbackToDestructiveMigration` không cứu được: nó chỉ chạy khi lệch version, còn file thường mở bằng khóa sẽ báo `file is not a database`. Cách xử lý: trước khi build DB, nếu file tồn tại và 16 byte đầu là `SQLite format 3\0` (header file không mã hóa) thì gọi `context.deleteDatabase(name)` (xóa cả `-wal`, `-shm`). Chỉ an toàn trước v1.0 vì chưa có dữ liệu người dùng thật. Có test cho nhánh này.
+   - Nghiên cứu (2026-11-03), nguồn: [README](https://github.com/sqlcipher/sqlcipher-android), [`SQLCipherDriver.java`](https://github.com/sqlcipher/sqlcipher-android/blob/master/sqlcipher/src/main/java/net/zetetic/database/sqlcipher/driver/SQLCipherDriver.java):
+     - Dependency: `net.zetetic:sqlcipher-android:4.20.0@aar`, cần `androidx.sqlite` 2.7.0 trở lên (catalog đang 2.7.1). Tối thiểu 4.19.1: bản 4.18–4.19.0 trả sai kiểu cột NULL ([#93](https://github.com/sqlcipher/sqlcipher-android/issues/93)).
+     - Driver: `net.zetetic.database.sqlcipher.driver.SQLCipherDriver(passphrase: ByteArray, hook, errorHandler)`. Gọi `System.loadLibrary("sqlcipher")` một lần trước khi mở DB.
+     - Khóa 32 byte ngẫu nhiên: truyền dạng raw key `"x'<64 hex>'"` để bỏ bước PBKDF2 (256k vòng) mỗi lần mở kết nối. Pool mở nhiều kết nối nên tiết kiệm đáng kể. Kiểm bằng test trên máy thật.
+     - Log: thư viện mặc định ghi Logcat. Gọi `Logger.setTarget(NoopTarget())` ở mọi bản build, kể cả debug (luật Privacy).
+     - Khóa sai không xóa DB: `DefaultDatabaseErrorHandler` bỏ qua xóa khi build có codec. Truyền `errorHandler = null` là được.
+     - Lỗi đã biết, chưa sửa: ở WAL, đọc và transaction chỉ-đọc chiếm kết nối chính, chặn ghi ([#99](https://github.com/sqlcipher/sqlcipher-android/issues/99)). Ảnh hưởng nhỏ với Finote nếu truy vấn ngắn. Truy vấn danh sách lớn dùng phân trang.
+     - Test: Robolectric không chạy được native SQLCipher, cũng không có provider `AndroidKeyStore`. Unit test (JVM): kiểm header file thường, logic sinh/bọc/mở khóa qua `Cipher` giả. Instrumented test: header file trên đĩa khác `SQLite format 3`, mở lại đúng khóa đọc được dữ liệu, khóa sai báo lỗi.
+     - Backup: loại `finote.db`, `finote.db-wal`, `finote.db-shm` và file prefs chứa khóa bọc ở cả `<cloud-backup>` và `<device-transfer>`, và trong `backup_rules.xml` (API < 31). Khóa Keystore không đi theo backup, nên DB khôi phục sẽ không mở được.
+     - D10 đã chốt: mất khóa Keystore thì xóa DB và khóa bọc cũ, sinh khóa mới, tạo DB rỗng. Có test cho các nhánh này.
+       - Xóa ngay: không có alias Keystore, `AEADBadTagException`, `KeyPermanentlyInvalidatedException`, Base64 hỏng, khóa giải ra sai kích thước, blob ngắn hơn IV + tag, hoặc có file DB mà không có khóa bọc.
+       - `UnrecoverableKeyException`: xóa sau 3 lần khởi động liên tiếp đều lỗi. Bộ đếm `unwrap_failures` nằm trong prefs `db_key`. Một lần mở khóa thành công đặt lại về 0.
+       - Lỗi khác (Keystore bận hoặc đang khóa): app dừng, lần khởi động sau thử lại. Không xóa, không đếm.
 3. `feature/balance-engine`: hàm thuần trong domain tính lại số dư:
    `currentBalance = initialBalance + thu − chi − phí + hoàn ± chuyển nội bộ + điều chỉnh`.
    - Dùng để kiểm tra chéo khi ghi DB.
@@ -214,6 +228,7 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 | D7 | Ai chạy benchmark và instrumented test trên máy thật? | User chạy khi tới P3 và P5, theo yêu cầu | P3 |
 | D8 | Room 2.x hay Room 3? `navigation-compose` hay Navigation3? | **Đã chốt (2026-11-02):** Room 3 (stable 3.0.x từ 07/2026, chỉ KSP, driver API) và Navigation3 (stable 1.2.0). Chưa có code dùng nên không tốn chi phí chuyển. Rủi ro: driver SQLCipher cho Room 3 mới có từ 08/2026 | P0 |
 | D9 | Đa ngôn ngữ: spec gốc không ghi, user bổ sung 2026-11-02. Hỗ trợ ngôn ngữ nào? | **Đã chốt (2026-11-02):** `vi` (mặc định, `values/`), `en` (`values-en`), tiếng Trung giản thể (`values-zh-rCN`), tiếng Nhật (`values-ja`). Màn chọn ngôn ngữ trong app: chưa làm | Trước màn đầu tiên có chữ |
+| D10 | Mất khóa Keystore (xóa dữ liệu bảo mật, khôi phục backup sang máy khác) thì DB SQLCipher không giải mã được. Xóa và tạo DB mới, hay báo lỗi và giữ file? | **Đã chốt (2026-11-03):** xóa DB (cả `-wal`, `-shm`) và khóa bọc cũ, sinh khóa mới, tạo DB rỗng. Mất rõ ràng (không có alias, `AEADBadTagException`, `KeyPermanentlyInvalidatedException`, Base64 hỏng, sai kích thước, blob ngắn) thì xóa ngay. `UnrecoverableKeyException` thì xóa sau 3 lần khởi động liên tiếp lỗi. Lỗi khác thì app dừng, thử lại lần sau, không xóa. Không ghi nội dung DB hay khóa vào Logcat | Trước `db-encryption` |
 
 ## 10. Thứ tự làm việc ngay
 
