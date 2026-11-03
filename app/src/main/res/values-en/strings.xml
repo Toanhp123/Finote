@@ -3,4 +3,5 @@
     <string name="balance_total">Total balance</string>
     <string name="balance_income">Income</string>
     <string name="balance_expense">Expense</string>
+    <string name="cd_loading">Loading</string>
 </resources>

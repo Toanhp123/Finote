@@ -176,3 +176,17 @@ private fun BalanceHeroCardNegativePreview() {
         )
     }
 }
+
+@PreviewTest
+@FinotePreviews
+@Composable
+private fun BalanceHeroCardHugePreview() {
+    FinotePreviewSurface {
+        BalanceHeroCard(
+            label = stringResource(R.string.balance_total),
+            balance = 999_999_999_999,
+            income = 1_000_000,
+            expense = 3_500_000,
+        )
+    }
+}

@@ -3,4 +3,5 @@
     <string name="balance_total">Tổng số dư</string>
     <string name="balance_income">Thu</string>
     <string name="balance_expense">Chi</string>
+    <string name="cd_loading">Đang tải</string>
 </resources>

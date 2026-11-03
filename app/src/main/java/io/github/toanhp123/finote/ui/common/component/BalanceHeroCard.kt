@@ -46,6 +46,7 @@ fun BalanceHeroCard(
             amount = balance,
             kind = MoneyKind.Neutral,
             style = FinoteTheme.typography.amountLarge.copy(color = hero.onHero),
+            shrinkToFit = true,
         )
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
