@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.transaction.usecase
 
 import io.github.toanhp123.finote.domain.account.A
+import io.github.toanhp123.finote.domain.account.B
 import io.github.toanhp123.finote.domain.account.tx
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.test.runTest
@@ -59,5 +60,16 @@ class UpdateTransactionUseCaseTest {
             val failure = runCatching { update(stored.copy(timestamp = 0L)) }.exceptionOrNull()
             assertTrue(failure.toString(), failure is IllegalArgumentException)
             assertEquals(0, repo.writes)
+        }
+
+    @Test
+    fun `moving a transaction out of an archived account is rejected before writing`() =
+        runTest {
+            val onlyB = FakeTransactionRepository(activeAccounts = setOf(B))
+            val updateOnlyB = UpdateTransactionUseCase(onlyB, ValidateTransactionUseCase(onlyB, clock), clock)
+            onlyB.stored["tx"] = stored
+            val failure = runCatching { updateOnlyB(stored.copy(accountId = B)) }.exceptionOrNull()
+            assertTrue(failure.toString(), failure is IllegalArgumentException)
+            assertEquals(0, onlyB.writes)
         }
 }

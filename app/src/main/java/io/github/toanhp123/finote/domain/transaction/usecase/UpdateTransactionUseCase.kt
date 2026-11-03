@@ -16,6 +16,10 @@ class UpdateTransactionUseCase
         suspend operator fun invoke(transaction: Transaction) {
             val existing = repository.getTransaction(transaction.id)
             require(existing != null && existing.deletedAt == null) { "transaction does not exist or is deleted" }
+            val old = setOfNotNull(existing.accountId, existing.toAccountId)
+            require(
+                repository.getActiveAccountIds(old).containsAll(old),
+            ) { "account does not exist, is deleted or archived" }
             val updated =
                 transaction.copy(deletedAt = null, createdAt = existing.createdAt, updatedAt = clock.millis())
             validate(updated)

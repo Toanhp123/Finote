@@ -249,6 +249,46 @@ class TransactionRepositoryImplTest {
             assertEquals(snapshotsBefore, snapshotsOf("acc-1"))
         }
 
+    @Test
+    fun `a far future stored snapshot no longer blocks writes`() =
+        runTest {
+            dbRule.db.accountBalanceSnapshotDao().insert(
+                AccountBalanceSnapshotEntity(
+                    id = "snap-far",
+                    accountId = "acc-1",
+                    monthYear = "9999-01",
+                    openingBalance = 1L,
+                    closingBalance = 1L,
+                    totalIncome = 0L,
+                    totalExpense = 0L,
+                    totalTransferIn = 0L,
+                    totalTransferOut = 0L,
+                    updatedAt = 1L,
+                ),
+            )
+            repo.add(domainTx()) // 200k expense in 2026-09
+
+            val far = snapshotsOf("acc-1").single { it.monthYear == "9999-01" }
+            assertEquals(Triple("9999-01", 800_000L, 800_000L), far.figures())
+            assertEquals(
+                listOf(0L, 0L, 0L, 0L),
+                listOf(far.totalIncome, far.totalExpense, far.totalTransferIn, far.totalTransferOut),
+            )
+            assertEquals("snap-far", far.id)
+        }
+
+    @Test
+    fun `a corrupt live transaction can still be deleted`() =
+        runTest {
+            dbRule.db.transactionDao().insert(domainTx(id = "tx-old", at = "1900-01-10T00:00:00Z").toEntity())
+
+            val failure = failureOf { repo.add(domainTx(id = "tx-new")) }
+            assertTrue(failure.toString(), failure is IllegalArgumentException)
+
+            repo.softDelete("tx-old", deletedAt = 2L)
+            assertEquals(1_000_000L, balanceOf("acc-1"))
+        }
+
     private suspend fun failureOf(block: suspend () -> Unit) = runCatching { block() }.exceptionOrNull()
 
     private fun transfer1to2(at: String = "2026-11-02T00:00:00Z") =
@@ -419,6 +459,69 @@ class TransactionRepositoryImplTest {
                 ),
                 snapshotsOf("acc-1").chain(),
             )
+        }
+
+    private suspend fun archive(accountId: String) {
+        val dao = dbRule.db.accountDao()
+        dao.update(checkNotNull(dao.getById(accountId)).copy(isArchived = true))
+    }
+
+    @Test
+    fun `adding to an archived account fails`() =
+        runTest {
+            archive("acc-1")
+            val failure = failureOf { repo.add(domainTx()) }
+            assertTrue(failure.toString(), failure is IllegalArgumentException)
+            assertEquals("account does not exist, is deleted or archived", failure?.message)
+            assertNull(dbRule.db.transactionDao().getById("tx-1"))
+            assertFlat("acc-1")
+        }
+
+    @Test
+    fun `a transfer into an archived account fails`() =
+        runTest {
+            archive("acc-2")
+            val failure = failureOf { repo.add(transfer1to2()) }
+            assertTrue(failure.toString(), failure is IllegalArgumentException)
+            assertNull(dbRule.db.transactionDao().getById("tx-1"))
+            assertFlat("acc-1")
+            assertFlat("acc-2")
+        }
+
+    @Test
+    fun `moving a transaction out of an archived account fails`() =
+        runTest {
+            repo.add(domainTx())
+            archive("acc-1")
+
+            val failure = failureOf { repo.update(domainTx(accountId = "acc-2")) }
+
+            assertTrue(failure.toString(), failure is IllegalArgumentException)
+            assertEquals(
+                "acc-1",
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-1")
+                    ?.accountId,
+            )
+            assertEquals(800_000L, balanceOf("acc-1"))
+            assertFlat("acc-2")
+        }
+
+    @Test
+    fun `deleting a transaction of an archived account works`() =
+        runTest {
+            repo.add(domainTx())
+            archive("acc-1")
+            repo.softDelete("tx-1", deletedAt = 2L)
+            assertEquals(1_000_000L, balanceOf("acc-1"))
+        }
+
+    @Test
+    fun `active account ids skip archived accounts`() =
+        runTest {
+            archive("acc-2")
+            assertEquals(setOf("acc-1"), repo.getActiveAccountIds(setOf("acc-1", "acc-2")))
         }
 
     @Test

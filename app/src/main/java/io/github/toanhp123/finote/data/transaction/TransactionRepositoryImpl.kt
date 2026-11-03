@@ -23,8 +23,7 @@ class TransactionRepositoryImpl
 
         override suspend fun getActiveAccountIds(accountIds: Set<String>): Set<String> =
             accountIds.filterTo(mutableSetOf()) { id ->
-                db.accountDao().getById(id)?.let { it.deletedAt == null } ==
-                    true
+                db.accountDao().getById(id)?.let { it.deletedAt == null && !it.isArchived } == true
             }
 
         override suspend fun getCategoryType(categoryId: String): CategoryType? =
@@ -33,7 +32,7 @@ class TransactionRepositoryImpl
         override suspend fun add(transaction: Transaction) {
             db.withWriteTransaction {
                 val entity = transaction.toEntity()
-                requireActiveAccounts(entity)
+                requireActiveAccounts(entity.accountIds())
                 transactions.insert(entity)
                 rebuilder.rebuild(entity.accountIds())
             }
@@ -44,7 +43,7 @@ class TransactionRepositoryImpl
                 val old = requireNotNull(transactions.getById(transaction.id)) { "transaction does not exist" }
                 require(old.deletedAt == null) { "transaction is deleted" }
                 val entity = transaction.toEntity()
-                requireActiveAccounts(entity)
+                requireActiveAccounts(old.accountIds() + entity.accountIds())
                 transactions.update(entity)
                 rebuilder.rebuild(old.accountIds() + entity.accountIds())
             }
@@ -63,9 +62,10 @@ class TransactionRepositoryImpl
         }
 
         /** Re-checks inside the write transaction: the use case's early check can be stale by now. */
-        private suspend fun requireActiveAccounts(entity: TransactionEntity) {
-            val wanted = entity.accountIds()
-            require(getActiveAccountIds(wanted).containsAll(wanted)) { "account does not exist or is deleted" }
+        private suspend fun requireActiveAccounts(wanted: Set<String>) {
+            require(
+                getActiveAccountIds(wanted).containsAll(wanted),
+            ) { "account does not exist, is deleted or archived" }
         }
 
         private fun TransactionEntity.accountIds() = setOfNotNull(accountId, toAccountId)

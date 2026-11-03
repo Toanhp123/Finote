@@ -136,4 +136,25 @@ class TransactionDaoTest {
             val ids = dao.getActiveByAccount("acc-1").map { it.id }
             assertEquals(listOf("tx-in", "tx-out"), ids.sorted())
         }
+
+    @Test
+    fun `countActiveByAccount counts source and destination and skips deleted`() =
+        runTest {
+            seedAccount()
+            dbRule.db.accountDao().insert(account(id = "acc-2"))
+            dao.insert(transaction(id = "tx-exp", accountId = "acc-1"))
+            dao.insert(
+                transaction(
+                    id = "tx-xfer",
+                    accountId = "acc-1",
+                    toAccountId = "acc-2",
+                    type = TransactionType.TRANSFER,
+                ),
+            )
+            assertEquals(1, dao.countActiveByAccount("acc-2"))
+
+            dao.update(dao.getById("tx-xfer")!!.copy(deletedAt = 9_000L))
+            assertEquals(0, dao.countActiveByAccount("acc-2"))
+            assertEquals(1, dao.countActiveByAccount("acc-1"))
+        }
 }

@@ -10,7 +10,7 @@ import io.github.toanhp123.finote.domain.transaction.model.Transaction
 interface TransactionRepository {
     suspend fun getTransaction(id: String): Transaction?
 
-    /** The subset of [accountIds] that exist and are not soft-deleted. */
+    /** The subset of [accountIds] that exist and are neither soft-deleted nor archived. */
     suspend fun getActiveAccountIds(accountIds: Set<String>): Set<String>
 
     /** Null when the category does not exist. */
