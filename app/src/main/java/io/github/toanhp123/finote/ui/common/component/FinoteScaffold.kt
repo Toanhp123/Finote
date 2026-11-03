@@ -22,22 +22,26 @@ import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 /**
  * A screen frame. [content] fills the area under [topBar] and runs behind [bottomBar],
- * so glass in the bottom bar blurs it. [content] gets padding at the bottom that keeps its last item clear of the bar.
+ * so glass in the bottom bar blurs it. [content] gets padding at the bottom that keeps its last item clear of the bar,
+ * or of the system navigation bar only when [bottomBar] is null.
  */
 @Composable
 fun FinoteScaffold(
     modifier: Modifier = Modifier,
     topBar: @Composable () -> Unit = {},
-    bottomBar: @Composable () -> Unit = {},
+    bottomBar: (@Composable () -> Unit)? = null,
     snackbarState: FinoteSnackbarState? = null,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val hazeState = rememberHazeState()
     // The bar carries its own margin on every side, which is why the margin counts twice here.
+    val systemInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottomSpace =
-        FinoteTheme.sizes.navBarHeight +
-            FinoteTheme.spacing.md * 2 +
-            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        if (bottomBar == null) {
+            systemInset
+        } else {
+            FinoteTheme.sizes.navBarHeight + FinoteTheme.spacing.md * 2 + systemInset
+        }
     CompositionLocalProvider(LocalHazeState provides hazeState) {
         Box(modifier.fillMaxSize()) {
             Column(
@@ -51,7 +55,9 @@ fun FinoteScaffold(
                 topBar()
                 Box(Modifier.weight(1f)) { content(PaddingValues(bottom = bottomSpace)) }
             }
-            Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding()) { bottomBar() }
+            if (bottomBar != null) {
+                Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding()) { bottomBar() }
+            }
             if (snackbarState != null) {
                 FinoteSnackbar(
                     host = snackbarState.host,

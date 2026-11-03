@@ -28,7 +28,7 @@ internal fun finoteColors(
             glass =
                 GlassColors(
                     fill = scheme.surfaceContainerHigh.copy(alpha = 0.70f),
-                    solidFill = scheme.surfaceContainerHigh.copy(alpha = 0.95f),
+                    solidFill = scheme.surfaceContainerHigh,
                     stroke = scheme.onSurface.copy(alpha = 0.08f),
                 ),
             background = scheme.surface,
@@ -43,7 +43,7 @@ internal fun finoteColors(
             glass =
                 GlassColors(
                     fill = scheme.surfaceContainerLowest.copy(alpha = 0.75f),
-                    solidFill = scheme.surfaceContainerLowest.copy(alpha = 0.95f),
+                    solidFill = scheme.surfaceContainerLowest,
                     stroke = scheme.onSurface.copy(alpha = 0.06f),
                 ),
             background = scheme.surfaceContainer,

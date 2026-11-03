@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -138,6 +139,30 @@ private fun FinoteScreenDarkPreview() {
 @Composable
 private fun FinoteScreenBehindBarPreview() {
     SampleScreen(extraRows = EXTRA_ROWS)
+}
+
+/** No bottom bar: the content and the snackbar card sit at the bottom edge, with no 80dp gap. */
+@PreviewTest
+@Preview(name = "Light", device = PHONE)
+@Composable
+private fun FinoteScreenNoBottomBarPreview() {
+    FinoteTheme(dynamicColor = false) {
+        FinoteScaffold(topBar = { FinoteTopBar(title = "Finote") }) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding).padding(horizontal = FinoteTheme.spacing.lg)) {
+                Column(verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm)) {
+                    SampleRow("Food", 45_000, MoneyKind.Expense)
+                    SampleRow("Salary", 15_000_000, MoneyKind.Income)
+                    SampleRow("Fuel", 120_000, MoneyKind.Expense)
+                }
+                SnackbarCard(
+                    message = "Transaction deleted",
+                    actionLabel = "Undo",
+                    onAction = {},
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
+            }
+        }
+    }
 }
 
 /** The home screen of mockup C: top bar, hero, rows, floating nav bar. */

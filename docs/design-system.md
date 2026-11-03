@@ -39,7 +39,7 @@ All are in `ui/common/component/`, one component per file. `modifier: Modifier =
 
 | Component | Signature | Use when |
 |---|---|---|
-| `FinoteScaffold` | `(modifier, topBar, bottomBar, snackbarState, content: (PaddingValues) -> Unit)` | Root of every screen. Owns the blur source. Content gets the padding that clears the floating bar |
+| `FinoteScaffold` | `(modifier, topBar, bottomBar?, snackbarState, content: (PaddingValues) -> Unit)` | Root of every screen. Owns the blur source. Content gets the padding that clears the floating bar, or only the system nav bar when `bottomBar` is null |
 | `FinoteTopBar` | `(title, modifier, onBack?, actions)` | Screen title, back button, right-side actions |
 | `FinoteNavBar` | `(items: List<FinoteNavItem>, selectedIndex, onSelect, modifier)` | Floating bottom navigation. Pass it as `bottomBar` |
 | `FinoteBottomSheet` | `(isVisible, onDismiss, modifier, content)` | Pick or edit something without leaving the screen |
@@ -129,11 +129,13 @@ Run both through the `gradle-run` skill.
 | Android | Behavior |
 |---|---|
 | 31+ | Real blur. `FinoteScaffold` makes a `HazeState` and marks the content as the source. Glass surfaces call Haze `hazeBlur` over it, under `glass.fill` |
-| 26-30 | No blur. The surface draws `glass.solidFill`, almost opaque |
+| 26-30 | No blur. The surface draws `glass.solidFill`, fully opaque |
 | Outside a `FinoteScaffold` | Same as 26-30 |
+| Modal sheet, date picker | Always `glass.solidFill`. `ModalSheet` sets `LocalHazeState` to null |
+| Dialog | Always opaque. It draws `colors.card`, no glass |
 
 - The design must look right without blur. Check the no-blur look first.
-- `FinoteBottomSheet`, `FinoteDatePicker`, and `FinoteDialog` run in their own window. Haze probably cannot blur the scaffold content behind them, so they show the `solidFill` look. Blur behind them is unverified. A faint ghost of text behind a sheet header was seen in dark mode. If it bothers users, give modal sheets an opaque card fill.
+- The nav bar blurs on API 31+ and draws the opaque `solidFill` on 26-30. `FinoteBottomSheet`, `FinoteDatePicker`, and `FinoteDialog` run in their own window and never blur: sheets and the date picker take the opaque `solidFill` path, the dialog is an opaque card. Nothing shows through them.
 - layoutlib cannot open a second window. Screenshots of sheets, dialogs, and the date picker draw the internal surface over a scrim, not the real window.
 - `LocalBlurEnabled` (internal) lets a preview switch blur off.
 
@@ -153,7 +155,7 @@ Every amount on the UI goes through `MoneyText`, which calls `formatMoney(amount
 - The minus is U+2212, not a hyphen. The app writes the sign. `NumberFormat` only formats the absolute value.
 - The value is VND currency, 0 decimals, in the locale of the app (`vi`, `en`, `zh-CN`, `ja`). The position of the dong sign and the non-breaking space (U+00A0) come from the locale.
 - Color follows `kind`: income, expense, transfer colors; `Neutral` uses the text style color or `onSurface`. The sign and color together carry the meaning (color is never the only signal).
-- In tests write ` ` and `−` as escapes. A formatter or a tool write can turn them into raw characters and break the string compare. After `spotlessApply` or any tool write, check that `MoneyFormatTest.kt` and `MoneyFormat.kt` still hold the escapes.
+- In tests write `\u00A0` and `\u2212` as escapes. A formatter or a tool write can turn them into raw characters and break the string compare. After `spotlessApply` or any tool write, check that `MoneyFormatTest.kt` and `MoneyFormat.kt` still hold the escapes.
 - Unit tests use JDK locale data. A device uses ICU. The space or the dong position can differ. Check the four languages by eye on a device once.
 - Money is `Long`. Never `Double`.
 

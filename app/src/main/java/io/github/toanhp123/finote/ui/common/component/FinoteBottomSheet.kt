@@ -15,7 +15,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,8 +30,9 @@ import com.composeunstyled.rememberModalBottomSheetState
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 /**
- * A glass sheet that slides up over a scrim. It closes on a swipe down, a tap outside or Back, and each of them calls
- * [onDismiss]; the caller then sets [isVisible] to false. [content] scrolls when it is taller than the screen.
+ * An opaque sheet that slides up over a scrim. It closes on a swipe down, a tap outside or Back, and each of them
+ * calls [onDismiss]; the caller then sets [isVisible] to false. A hide the caller starts does not call [onDismiss].
+ * [content] scrolls when it is taller than the screen.
  */
 @Composable
 fun FinoteBottomSheet(
@@ -64,12 +68,17 @@ internal fun ModalSheet(
     LaunchedEffect(isVisible) {
         state.animateTo(if (isVisible) SheetDetent.FullyExpanded else SheetDetent.Hidden)
     }
-    UnstyledModalBottomSheet(
-        state = state,
-        onDismiss = onDismiss,
-        overlay = { Scrim(enter = fadeIn(), exit = fadeOut()) },
-    ) {
-        Sheet(modifier = modifier) { SheetSurface(contentPadding = contentPadding, content = content) }
+    // The library also calls onDismiss when the caller hides the sheet; only a user dismiss may reach the caller.
+    val visible by rememberUpdatedState(isVisible)
+    // The sheet has its own window, so it cannot blur the scaffold: no haze state means the opaque solidFill.
+    CompositionLocalProvider(LocalHazeState provides null) {
+        UnstyledModalBottomSheet(
+            state = state,
+            onDismiss = { if (visible) onDismiss() },
+            overlay = { Scrim(enter = fadeIn(), exit = fadeOut()) },
+        ) {
+            Sheet(modifier = modifier) { SheetSurface(contentPadding = contentPadding, content = content) }
+        }
     }
 }
 

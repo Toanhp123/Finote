@@ -147,5 +147,5 @@ Machines cannot enforce these. `reviewer` checks them on every branch.
 - A one-shot `suspend` read is named `getX`.
 - Test fixtures hold no real bank notification, balance, or account number.
 - The hero gradient (`brushes.hero`) is used only by `BalanceHeroCard`, at most once per screen.
-- Glass (`finoteGlass`) is only for floating chrome: nav bar, sheets, snackbar. Never for content cards.
+- Glass (`finoteGlass`) is only for floating chrome: nav bar, snackbar, and the sheet surface. It blurs only in the scaffold; a modal sheet always takes the opaque `solidFill`. Never for content cards.
 - Color is never the only signal. An amount has a sign, a transaction has a type icon, an error has text.
