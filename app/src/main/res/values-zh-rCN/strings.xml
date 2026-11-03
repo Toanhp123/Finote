@@ -4,4 +4,5 @@
     <string name="balance_income">收入</string>
     <string name="balance_expense">支出</string>
     <string name="cd_loading">加载中</string>
+    <string name="cd_back">返回</string>
 </resources>
