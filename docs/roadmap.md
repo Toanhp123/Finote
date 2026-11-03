@@ -109,6 +109,7 @@ Việc:
 4. `feature/transaction-crud`: thêm/sửa/xóa mềm giao dịch. Mỗi thao tác là một `@Transaction` cập nhật `currentBalance` và `AccountBalanceSnapshot`.
    - Sửa/xóa giao dịch ở tháng cũ, kể cả đổi timestamp sang tháng khác, phải tính lại snapshot của tháng đó và mọi tháng sau trong cùng `@Transaction`.
    - Test với Robolectric: thêm, sửa đổi số tiền, đổi tháng, xóa mềm, rollback khi lỗi giữa chừng.
+   - Giới hạn trên cho vòng lặp tháng của `BalanceCalculator.monthlySnapshots`: nó chạy từ tháng giao dịch đầu tới `max(untilMonth, tháng cuối)`, nên một `timestamp` hỏng (ví dụ năm 1970 hay 9999) sinh hàng chục nghìn snapshot. Chặn `timestamp` ngoài khoảng hợp lệ khi ghi giao dịch, và đặt trần số tháng trong vòng lặp. Có test.
 5. `feature/account-crud`: tạo, sửa, lưu trữ (`isArchived`). Đặt `initialBalance` và `isInitialized`.
    - Xóa mềm tài khoản có giao dịch sẽ chặn bằng validation, chỉ cho lưu trữ. Chỉ VND.
 6. `feature/category-seed`: seed cây danh mục chuẩn VN (`isSystemDefault = true`). `parentId` `onDelete = RESTRICT`. Danh mục hệ thống lưu `nameKey` để hiện theo 4 ngôn ngữ (D9). Tối đa 2 cấp, con cùng type với cha, chặn xóa mềm cha còn con, danh mục hệ thống chỉ ẩn.

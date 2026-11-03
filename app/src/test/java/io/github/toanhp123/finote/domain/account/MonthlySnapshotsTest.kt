@@ -5,6 +5,7 @@ import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
@@ -137,5 +138,23 @@ class MonthlySnapshotsTest {
         assertEquals(0L, jan.totalExpense)
         assertEquals(0L, jan.totalTransferOut)
         assertEquals(100_000L, jan.closingBalance)
+    }
+
+    @Test
+    fun `range of exactly the month cap still runs`() {
+        val tx = tx(TransactionType.INCOME, 10_000, at = at("2026-01-05T00:00:00Z"))
+        val until = YearMonth.parse("2026-01").plusMonths(BalanceCalculator.MAX_SNAPSHOT_MONTHS - 1L)
+        val result = BalanceCalculator.monthlySnapshots(A, 1_000_000, listOf(tx), utc, until)
+        assertEquals(BalanceCalculator.MAX_SNAPSHOT_MONTHS, result.size)
+        assertEquals(until.toString(), result.last().monthYear)
+    }
+
+    @Test
+    fun `range over the month cap throws`() {
+        val tx = tx(TransactionType.INCOME, 10_000, at = at("2026-01-05T00:00:00Z"))
+        val until = YearMonth.parse("2026-01").plusMonths(BalanceCalculator.MAX_SNAPSHOT_MONTHS.toLong())
+        assertThrows(IllegalArgumentException::class.java) {
+            BalanceCalculator.monthlySnapshots(A, 1_000_000, listOf(tx), utc, until)
+        }
     }
 }

@@ -1,6 +1,6 @@
 package io.github.toanhp123.finote.domain.transaction.model
 
-/** Only the fields balance math needs. [amount] and [feeAmount] are VND; [timestamp] is epoch ms. */
+/** One ledger entry. [amount] and [feeAmount] are VND; every other `Long` time field is epoch ms. */
 data class Transaction(
     val id: String,
     val amount: Long,
@@ -11,6 +11,14 @@ data class Transaction(
     val toAccountId: String?,
     val timestamp: Long,
     val deletedAt: Long?,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val categoryId: String? = null,
+    val merchantName: String? = null,
+    val note: String = "",
+    val source: TransactionSource = TransactionSource.MANUAL,
+    val isExcludedFromAnalytics: Boolean = false,
+    val reimbursementStatus: ReimbursementStatus = ReimbursementStatus.NONE,
 ) {
     init {
         require(amount > 0) { "amount must be positive" }

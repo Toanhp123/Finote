@@ -18,5 +18,8 @@ interface AccountBalanceSnapshotDao {
     suspend fun getById(id: String): AccountBalanceSnapshotEntity?
 
     @Query("SELECT * FROM account_balance_snapshots WHERE accountId = :accountId ORDER BY monthYear ASC")
+    suspend fun getByAccount(accountId: String): List<AccountBalanceSnapshotEntity>
+
+    @Query("SELECT * FROM account_balance_snapshots WHERE accountId = :accountId ORDER BY monthYear ASC")
     fun observeByAccount(accountId: String): Flow<List<AccountBalanceSnapshotEntity>>
 }

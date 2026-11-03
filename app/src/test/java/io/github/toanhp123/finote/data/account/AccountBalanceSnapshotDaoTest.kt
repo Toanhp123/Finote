@@ -89,4 +89,15 @@ class AccountBalanceSnapshotDaoTest {
             dao.insert(snapshot(id = "snap-2", accountId = "acc-2", monthYear = "2026-11"))
             assertEquals(listOf("snap-1"), dao.observeByAccount("acc-1").first().map { it.id })
         }
+
+    @Test
+    fun `getByAccount returns that account ordered by month`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(id = "acc-1"))
+            dbRule.db.accountDao().insert(account(id = "acc-2"))
+            dao.insert(snapshot(id = "snap-dec", accountId = "acc-1", monthYear = "2026-12"))
+            dao.insert(snapshot(id = "snap-oct", accountId = "acc-1", monthYear = "2026-10"))
+            dao.insert(snapshot(id = "snap-other", accountId = "acc-2", monthYear = "2026-11"))
+            assertEquals(listOf("2026-10", "2026-12"), dao.getByAccount("acc-1").map { it.monthYear })
+        }
 }

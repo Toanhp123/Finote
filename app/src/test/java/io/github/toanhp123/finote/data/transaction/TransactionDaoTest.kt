@@ -120,4 +120,20 @@ class TransactionDaoTest {
             dao.deleteTagRef(tagRef(tagId = "tag-1"))
             assertEquals(listOf(tagRef(tagId = "tag-2")), dao.getTagRefs("tx-1"))
         }
+
+    @Test
+    fun `getActiveByAccount returns source and destination rows and skips deleted and others`() =
+        runTest {
+            seedAccount()
+            dbRule.db.accountDao().insert(account(id = "acc-2"))
+            dbRule.db.accountDao().insert(account(id = "acc-3"))
+            dao.insert(transaction(id = "tx-out", accountId = "acc-1"))
+            val incoming =
+                transaction(id = "tx-in", accountId = "acc-2", toAccountId = "acc-1", type = TransactionType.TRANSFER)
+            dao.insert(incoming)
+            dao.insert(transaction(id = "tx-gone", accountId = "acc-1").copy(deletedAt = 9_000L))
+            dao.insert(transaction(id = "tx-other", accountId = "acc-3"))
+            val ids = dao.getActiveByAccount("acc-1").map { it.id }
+            assertEquals(listOf("tx-in", "tx-out"), ids.sorted())
+        }
 }

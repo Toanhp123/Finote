@@ -15,11 +15,35 @@ internal fun tx(
     account: String = A,
     to: String? = null,
     at: Long = 0,
-) = Transaction("tx", amount, fee, type, null, account, to, at, deletedAt = null)
+) = Transaction(
+    id = "tx",
+    amount = amount,
+    feeAmount = fee,
+    type = type,
+    adjustmentDirection = null,
+    accountId = account,
+    toAccountId = to,
+    timestamp = at,
+    deletedAt = null,
+    createdAt = 0,
+    updatedAt = 0,
+)
 
 internal fun adjustment(
     direction: AdjustmentDirection,
     amount: Long,
     fee: Long = 0,
     at: Long = 0,
-) = Transaction("tx", amount, fee, TransactionType.ADJUSTMENT, direction, A, null, at, deletedAt = null)
+) = Transaction(
+    id = "tx",
+    amount = amount,
+    feeAmount = fee,
+    type = TransactionType.ADJUSTMENT,
+    adjustmentDirection = direction,
+    accountId = A,
+    toAccountId = null,
+    timestamp = at,
+    deletedAt = null,
+    createdAt = 0,
+    updatedAt = 0,
+)

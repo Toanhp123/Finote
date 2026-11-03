@@ -18,6 +18,12 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getById(id: String): TransactionEntity?
 
+    /** Live rows that move this account's balance: it is the source, or the destination of a transfer. */
+    @Query(
+        "SELECT * FROM transactions WHERE deletedAt IS NULL AND (accountId = :accountId OR toAccountId = :accountId)",
+    )
+    suspend fun getActiveByAccount(accountId: String): List<TransactionEntity>
+
     @Query("SELECT * FROM transactions WHERE deletedAt IS NULL ORDER BY timestamp DESC, createdAt DESC")
     fun observeTransactions(): Flow<List<TransactionEntity>>
 

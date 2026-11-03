@@ -7,9 +7,13 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 /** Pure balance math. Same formula for every account type. Long overflow throws [ArithmeticException]. */
 object BalanceCalculator {
+    /** Hard stop for the month loop (100 years). Only reachable when stored data is corrupt. */
+    const val MAX_SNAPSHOT_MONTHS = 1200
+
     fun balance(
         accountId: String,
         initialBalance: Long,
@@ -19,6 +23,7 @@ object BalanceCalculator {
     /**
      * Contiguous months from the first relevant transaction through max(untilMonth, last transaction month),
      * so a transaction after untilMonth is never dropped. No relevant transaction gives an empty list.
+     * A range longer than [MAX_SNAPSHOT_MONTHS] throws [IllegalArgumentException].
      */
     fun monthlySnapshots(
         accountId: String,
@@ -33,10 +38,13 @@ object BalanceCalculator {
                 .groupBy { YearMonth.from(Instant.ofEpochMilli(it.timestamp).atZone(zone)) }
         if (byMonth.isEmpty()) return emptyList()
 
+        val first = byMonth.keys.min()
         val last = maxOf(byMonth.keys.max(), untilMonth)
+        val months = ChronoUnit.MONTHS.between(first, last) + 1
+        require(months <= MAX_SNAPSHOT_MONTHS) { "snapshot range of $months months exceeds $MAX_SNAPSHOT_MONTHS" }
         val snapshots = mutableListOf<MonthlyBalance>()
         var opening = initialBalance
-        var month = byMonth.keys.min()
+        var month = first
         while (month <= last) {
             val totals = totalsOf(accountId, byMonth[month].orEmpty())
             val closing = Math.addExact(opening, totals.net())
