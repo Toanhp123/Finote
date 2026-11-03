@@ -117,7 +117,12 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.junit)
+    testImplementation(libs.androidx.espresso.core)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
     testImplementation(libs.konsist)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
@@ -128,6 +133,8 @@ dependencies {
 // change (for example a new @Suppress line) leaves testDebugUnitTest up to date and the gate green.
 tasks.withType<Test>().configureEach {
     inputs.files(fileTree("src/main")).withPathSensitivity(PathSensitivity.RELATIVE)
+    // Robolectric on SDK 37 reaches FileDescriptor internals through SharedSecrets, which Java 21 does not export.
+    jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
 }
 
 tasks.register("qualityGate") {
