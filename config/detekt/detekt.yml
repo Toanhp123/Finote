@@ -14,3 +14,6 @@ style:
   MagicNumber:
     # Keeps the detekt defaults (tests, kts) and adds the theme package, the only place raw numbers are allowed.
     excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/*.kts', '**/ui/common/theme/**']
+  UnusedPrivateFunction:
+    # Previews are called by the IDE and the screenshot engine, not by code.
+    ignoreAnnotated: ['FinotePreviews']
