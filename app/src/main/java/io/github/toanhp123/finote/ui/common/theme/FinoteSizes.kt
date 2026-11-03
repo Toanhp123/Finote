@@ -8,6 +8,8 @@ data class FinoteSizes(
     val iconMd: Dp = 24.dp,
     val avatar: Dp = 36.dp,
     val touchTarget: Dp = 48.dp,
+    /** Narrowest title a list row keeps next to its trailing content before the trailing content moves below. */
+    val titleMinWidth: Dp = 96.dp,
     val border: Dp = 1.dp,
     val navBarHeight: Dp = 56.dp,
     val emptyIcon: Dp = 72.dp,
