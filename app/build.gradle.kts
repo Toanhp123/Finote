@@ -77,6 +77,14 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
+        screenshotTests.create("screenshotTest") {
+            engineVersion = libs.versions.screenshot.get()
+            targetVariants.add("debug")
+            dependencies {
+                implementation(libs.androidx.compose.ui.tooling)
+                implementation(libs.screenshot.validation.api)
+            }
+        }
     }
 }
 
@@ -124,5 +132,14 @@ tasks.withType<Test>().configureEach {
 tasks.register("qualityGate") {
     group = "verification"
     // detektMain skips test sources, so detekt and detektTest cover them (detektTest: unit and androidTest, typed).
-    dependsOn("spotlessCheck", "detekt", "detektMain", "detektTest", "lintDebug", "testDebugUnitTest", "assembleDebug")
+    dependsOn(
+        "spotlessCheck",
+        "detekt",
+        "detektMain",
+        "detektTest",
+        "lintDebug",
+        "testDebugUnitTest",
+        "testDebugScreenshotTestDefaultTestSuite",
+        "assembleDebug",
+    )
 }

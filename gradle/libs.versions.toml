@@ -23,6 +23,7 @@ composeRules = "0.6.8"
 konsist = "0.18.1"
 haze = "2.1.0"
 composeUnstyled = "2.10.2"
+screenshot = "0.0.1-alpha16"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -51,6 +52,7 @@ haze-blur = { group = "dev.chrisbanes.haze", name = "haze-blur", version.ref = "
 composeunstyled-bottom-sheet = { group = "com.composables", name = "composeunstyled-bottom-sheet", version.ref = "composeUnstyled" }
 composeunstyled-dialog = { group = "com.composables", name = "composeunstyled-dialog", version.ref = "composeUnstyled" }
 composeunstyled-toggle-switch = { group = "com.composables", name = "composeunstyled-toggle-switch", version.ref = "composeUnstyled" }
+screenshot-validation-api = { group = "com.android.tools.screenshot", name = "screenshot-validation-api", version.ref = "screenshot" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
