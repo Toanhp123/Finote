@@ -55,6 +55,7 @@ fun category(
         type = CategoryType.EXPENSE,
         parentId = parentId,
         isSystemDefault = false,
+        isHidden = false,
         sortOrder = sortOrder,
         createdAt = createdAt,
         updatedAt = createdAt,

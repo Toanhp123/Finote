@@ -29,6 +29,7 @@ data class CategoryEntity(
     val type: CategoryType,
     val parentId: String?,
     val isSystemDefault: Boolean,
+    val isHidden: Boolean,
     val sortOrder: Int,
     val createdAt: Long,
     val updatedAt: Long,

@@ -20,12 +20,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.security.KeyStore
+import java.time.Clock
 
 /** Runs against the real SQLCipher library and AndroidKeyStore, with its own file, key prefs and Keystore alias. */
 @RunWith(AndroidJUnit4::class)
 class EncryptedDatabaseTest {
     private val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
     private val dbFile: File = context.getDatabasePath(DB_NAME)
+    private val clock: Clock = Clock.systemUTC()
 
     private fun keyStore() = DatabaseKeyStore(context, KeystoreKeyCipher(TEST_ALIAS), DB_NAME, PREFS_NAME)
 
@@ -58,13 +60,13 @@ class EncryptedDatabaseTest {
     @Test
     fun fileIsEncryptedAndReopensWithSameKey() =
         runBlocking {
-            val first = createFinoteDatabase(context, DB_NAME, keyStore())
+            val first = createFinoteDatabase(context, clock, DB_NAME, keyStore())
             first.accountDao().insert(account())
             first.close()
 
             assertFalse(dbFile.readBytes().copyOf(PLAIN_HEADER.size).contentEquals(PLAIN_HEADER))
 
-            val second = createFinoteDatabase(context, DB_NAME, keyStore())
+            val second = createFinoteDatabase(context, clock, DB_NAME, keyStore())
             assertNotNull(second.accountDao().getById("acc-1"))
             second.close()
         }
@@ -72,7 +74,7 @@ class EncryptedDatabaseTest {
     @Test
     fun wrongKeyFails() {
         runBlocking {
-            val db = createFinoteDatabase(context, DB_NAME, keyStore())
+            val db = createFinoteDatabase(context, clock, DB_NAME, keyStore())
             db.accountDao().insert(account())
             db.close()
         }
@@ -90,12 +92,12 @@ class EncryptedDatabaseTest {
     @Test
     fun lostKeyStartsAnEmptyDatabase() =
         runBlocking {
-            val first = createFinoteDatabase(context, DB_NAME, keyStore())
+            val first = createFinoteDatabase(context, clock, DB_NAME, keyStore())
             first.accountDao().insert(account())
             first.close()
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit(commit = true) { clear() }
 
-            val second = createFinoteDatabase(context, DB_NAME, keyStore())
+            val second = createFinoteDatabase(context, clock, DB_NAME, keyStore())
             assertNull(second.accountDao().getById("acc-1"))
             second.close()
         }
@@ -103,12 +105,12 @@ class EncryptedDatabaseTest {
     @Test
     fun lostAliasWithKeptPrefsStartsAnEmptyUsableDatabase() =
         runBlocking {
-            val first = createFinoteDatabase(context, DB_NAME, keyStore())
+            val first = createFinoteDatabase(context, clock, DB_NAME, keyStore())
             first.accountDao().insert(account())
             first.close()
             KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry(TEST_ALIAS)
 
-            val second = createFinoteDatabase(context, DB_NAME, keyStore())
+            val second = createFinoteDatabase(context, clock, DB_NAME, keyStore())
             assertNull(second.accountDao().getById("acc-1"))
             second.accountDao().insert(account())
             assertNotNull(second.accountDao().getById("acc-1"))

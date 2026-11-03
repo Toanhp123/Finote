@@ -5,20 +5,26 @@ import androidx.room3.Room
 import androidx.room3.useWriterConnection
 import androidx.sqlite.driver.AndroidSQLiteDriver
 import androidx.test.core.app.ApplicationProvider
+import io.github.toanhp123.finote.data.category.SystemCategorySeeder
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
-class InMemoryDatabaseRule : TestWatcher() {
+/** Off by default, so tests that count rows do not depend on the seed. Seed tests and tree-rule tests turn it on. */
+class InMemoryDatabaseRule(
+    private val seedSystemCategories: Boolean = false,
+    private val clock: Clock = Clock.fixed(Instant.parse("2026-11-03T00:00:00Z"), ZoneOffset.UTC),
+) : TestWatcher() {
     lateinit var db: FinoteDatabase
         private set
 
     override fun starting(description: Description) {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        db =
-            Room
-                .inMemoryDatabaseBuilder<FinoteDatabase>(context)
-                .setDriver(AndroidSQLiteDriver())
-                .build()
+        val builder = Room.inMemoryDatabaseBuilder<FinoteDatabase>(context).setDriver(AndroidSQLiteDriver())
+        if (seedSystemCategories) builder.addCallback(SystemCategorySeeder(clock))
+        db = builder.build()
     }
 
     override fun finished(description: Description) {

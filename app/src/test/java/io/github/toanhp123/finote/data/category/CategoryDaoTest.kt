@@ -71,4 +71,28 @@ class CategoryDaoTest {
             assertEquals(listOf("cat-tie-old", "cat-tie-new", "cat-late"), ids)
             assertNotNull(dao.getById("cat-gone"))
         }
+
+    @Test
+    fun `default rule does not seed categories`() =
+        runTest {
+            assertTrue(dao.observeCategories().first().isEmpty())
+        }
+
+    @Test
+    fun `isHidden round-trips`() =
+        runTest {
+            val hidden = category().copy(isHidden = true)
+            dao.insert(hidden)
+            assertEquals(hidden, dao.getById(hidden.id))
+        }
+
+    @Test
+    fun `countLiveChildren ignores soft-deleted children`() =
+        runTest {
+            dao.insert(category(id = "p"))
+            dao.insert(category(id = "c1", parentId = "p"))
+            dao.insert(category(id = "c2", parentId = "p", deletedAt = 9L))
+            assertEquals(1, dao.countLiveChildren("p"))
+            assertEquals(0, dao.countLiveChildren("c1"))
+        }
 }

@@ -112,8 +112,8 @@ Việc:
    - Giới hạn trên cho vòng lặp tháng của `BalanceCalculator.monthlySnapshots`: nó chạy từ tháng giao dịch đầu tới `max(untilMonth, tháng cuối)`, nên một `timestamp` hỏng (ví dụ năm 1970 hay 9999) sinh hàng chục nghìn snapshot. Chặn `timestamp` ngoài khoảng hợp lệ khi ghi giao dịch, và đặt trần số tháng trong vòng lặp. Có test.
 5. `feature/account-crud`: tạo, sửa, lưu trữ (`isArchived`). Đặt `initialBalance` và `isInitialized`.
    - Xóa mềm tài khoản có giao dịch sẽ chặn bằng validation, chỉ cho lưu trữ. Chỉ VND.
-6. `feature/category-seed`: seed cây danh mục chuẩn VN (`isSystemDefault = true`). `parentId` `onDelete = RESTRICT`. Danh mục hệ thống lưu `nameKey` để hiện theo 4 ngôn ngữ (D9). Tối đa 2 cấp, con cùng type với cha, chặn xóa mềm cha còn con, danh mục hệ thống chỉ ẩn.
-   - UI quản lý cây 2 cấp (Must-Have, mục 4).
+6. `feature/category-seed`: seed cây danh mục chuẩn quốc tế (`isSystemDefault = true`). `parentId` `onDelete = RESTRICT`. Danh mục hệ thống lưu `nameKey` để hiện theo 4 ngôn ngữ (D9). Tối đa 2 cấp, con cùng type với cha, chặn xóa mềm cha còn con, danh mục hệ thống chỉ ẩn.
+   - UI quản lý cây 2 cấp: nhánh riêng `feature/category-ui` (Must-Have, mục 4).
 7. `feature/design-system` (xong): token, `FinoteTheme`, `MoneyFormat`, bộ component dùng chung, luật Konsist, screenshot test trong `qualityGate`. Chi tiết ở `docs/design-system.md`.
 8. `feature/cash-entry`: màn nhập tiền mặt có bàn phím số, phép tính `+ − × ÷`, chọn tài khoản và danh mục. Phép chia làm tròn nửa lên về đồng; số tiền cuối > 0.
    - `TileService` và `ShortcutManagerCompat` mở thẳng màn này (Must-Have).

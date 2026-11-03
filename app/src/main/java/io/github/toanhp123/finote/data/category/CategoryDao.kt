@@ -17,6 +17,9 @@ interface CategoryDao {
     @Query("SELECT * FROM categories WHERE id = :id")
     suspend fun getById(id: String): CategoryEntity?
 
+    @Query("SELECT COUNT(*) FROM categories WHERE parentId = :parentId AND deletedAt IS NULL")
+    suspend fun countLiveChildren(parentId: String): Int
+
     @Query("SELECT * FROM categories WHERE deletedAt IS NULL ORDER BY sortOrder ASC, createdAt ASC")
     fun observeCategories(): Flow<List<CategoryEntity>>
 }

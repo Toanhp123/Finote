@@ -13,6 +13,7 @@ import io.github.toanhp123.finote.data.category.CategoryDao
 import io.github.toanhp123.finote.data.createFinoteDatabase
 import io.github.toanhp123.finote.data.transaction.TagDao
 import io.github.toanhp123.finote.data.transaction.TransactionDao
+import java.time.Clock
 import javax.inject.Singleton
 
 @Module
@@ -22,7 +23,8 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(
         @ApplicationContext context: Context,
-    ): FinoteDatabase = createFinoteDatabase(context)
+        clock: Clock,
+    ): FinoteDatabase = createFinoteDatabase(context, clock)
 
     @Provides
     fun provideAccountDao(db: FinoteDatabase): AccountDao = db.accountDao()
