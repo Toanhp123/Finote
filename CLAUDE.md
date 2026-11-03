@@ -69,4 +69,5 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 - IMPORTANT: never write bank notification content, balances, or account numbers to Logcat.
 
 ## Working in this repo
-- Small change: make it directly, no plan. Large feature (one module of spec `2.2`): write a short plan first.
+- Small change: make it directly, no plan.
+- Large feature (one module of spec `2.2`): IMPORTANT: run `superpowers:brainstorming`, then `superpowers:writing-plans`. Never write an ad-hoc plan that skips these skills. Plans go in `docs/superpowers/plans/`.
