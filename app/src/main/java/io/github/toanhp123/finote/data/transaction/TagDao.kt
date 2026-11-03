@@ -1,0 +1,22 @@
+package io.github.toanhp123.finote.data.transaction
+
+import androidx.room3.Dao
+import androidx.room3.Insert
+import androidx.room3.Query
+import androidx.room3.Update
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface TagDao {
+    @Insert
+    suspend fun insert(tag: TagEntity)
+
+    @Update
+    suspend fun update(tag: TagEntity)
+
+    @Query("SELECT * FROM tags WHERE id = :id")
+    suspend fun getById(id: String): TagEntity?
+
+    @Query("SELECT * FROM tags WHERE deletedAt IS NULL ORDER BY name ASC")
+    fun observeTags(): Flow<List<TagEntity>>
+}

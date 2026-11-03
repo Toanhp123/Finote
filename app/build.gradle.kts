@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.androidx.room3)
     alias(libs.plugins.detekt)
     alias(libs.plugins.spotless)
 }
@@ -25,10 +26,20 @@ spotless {
     }
 }
 
+room3 {
+    schemaDirectory("$projectDir/schemas")
+}
+
 kotlin {
     compilerOptions {
         allWarningsAsErrors = true
         extraWarnings = true
+        // Room 3 generates Kotlin (build/generated/ksp) that trips these extraWarnings checkers.
+        // Kotlin has no per-file switch, so they are off project-wide.
+        freeCompilerArgs.addAll(
+            "-Xwarning-level=REDUNDANT_VISIBILITY_MODIFIER:disabled",
+            "-Xwarning-level=CAN_BE_VAL:disabled",
+        )
     }
 }
 
@@ -116,6 +127,9 @@ dependencies {
     implementation(libs.composeunstyled.toggle.switch)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.room3.runtime)
+    implementation(libs.sqlite.framework)
+    ksp(libs.room3.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     testImplementation(libs.junit)

@@ -3,7 +3,7 @@
 Trạng thái: bản nháp v1. Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9; `CLAUDE.md`; `docs/git-workflow.md`.
 
 Hiện trạng (đã kiểm tra):
-- Catalog đã có Compose BOM, Hilt, KSP, detekt, Spotless, Konsist, Navigation3. Chưa có Room 3, SQLCipher, WorkManager, Robolectric, Turbine.
+- Catalog đã có Compose BOM, Hilt, KSP, detekt, Spotless, Konsist, Navigation3. Room 3, Robolectric, Turbine đã có. Chưa có SQLCipher, WorkManager.
 - `app/src/main/java/` chưa có source Kotlin production. Đã có luật Konsist trong `app/src/test/`.
 - `minSdk = 26`, `targetSdk = 37` (spec ghi 35, đã chốt ở mục D3).
 - Git: nhánh `dev` đã có commit khởi tạo, spec, plan và catalog. Xem lịch sử bằng `git log dev`.
@@ -78,15 +78,15 @@ Bảng Room tạo trong phase này (spec mục 3):
 - Bảng còn lại tạo ở phase sau, qua migration.
 
 Việc:
-1. `feature/db-encryption`: SQLCipher.
+1. `feature/db-schema`: entity, DAO, `FinoteDatabase`, `exportSchema = true`.
+   - DoD thêm: chạy luật `@Suppress` của Konsist với code KSP của Hilt và Room trong `build/generated/ksp/`, xác nhận không báo nhầm (spec mục 7).
+   - Kiểm lại test DAO có cần Robolectric không. Room 3 dùng driver API, có thể chạy trên JVM thuần.
+   - Trước v1.0 có thể tăng version và tạo lại DB. Sau v1.0 mọi thay đổi phải có migration và test migration.
+2. `feature/db-encryption`: SQLCipher.
    - Sinh khóa 32 byte ngẫu nhiên.
    - Bọc khóa bằng Android Keystore (AES-GCM). Lưu bản đã bọc trong SharedPreferences.
    - Mở DB bằng driver SQLCipher cho Room 3 (`RoomDatabase.Builder.setDriver(...)`). Room 3 không còn `SupportOpenHelperFactory`. Xác nhận tên class driver trong README `sqlcipher-android` khi làm.
    - D2 và D8 đã chốt (xem mục 9). Loại DB và file chứa khóa bọc khỏi Auto Backup (`backup_rules.xml`, `data_extraction_rules.xml`).
-2. `feature/db-schema`: entity, DAO, `FinoteDatabase`, `exportSchema = true`.
-   - DoD thêm: chạy luật `@Suppress` của Konsist với code KSP của Hilt và Room trong `build/generated/ksp/`, xác nhận không báo nhầm (spec mục 7).
-   - Kiểm lại test DAO có cần Robolectric không. Room 3 dùng driver API, có thể chạy trên JVM thuần.
-   - Trước v1.0 có thể tăng version và tạo lại DB. Sau v1.0 mọi thay đổi phải có migration và test migration.
 3. `feature/balance-engine`: hàm thuần trong domain tính lại số dư:
    `currentBalance = initialBalance + thu − chi − phí + hoàn ± chuyển nội bộ + điều chỉnh`.
    - Dùng để kiểm tra chéo khi ghi DB.
@@ -220,5 +220,5 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 1. D3, D6, D8 đã chốt.
 2. P0: `chore/gradle-catalog`, `chore/quality-gate`, `feature/app-shell`, `feature/mvi-base` đã xong.
 3. D2 đã chốt. Spec P1 đã bổ sung ngày 2026-11-02.
-4. P1 theo thứ tự: `db-encryption` → `db-schema` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `design-system` → `cash-entry` → còn lại.
+4. P1 theo thứ tự: `db-schema` → `db-encryption` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `design-system` → `cash-entry` → còn lại.
 5. P2 chỉ bắt đầu khi P1 xong và D4 đã chốt.

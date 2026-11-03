@@ -25,6 +25,9 @@ haze = "2.1.0"
 composeUnstyled = "2.10.2"
 screenshot = "0.0.1-alpha16"
 robolectric = "4.17"
+room3 = "3.0.3"
+# Same version Room 3.0.3 pulls in (checked in its POM); declared so the driver import is explicit.
+sqlite = "2.7.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -58,6 +61,9 @@ composeunstyled-modal-bottom-sheet = { group = "com.composables", name = "compos
 composeunstyled-dialog = { group = "com.composables", name = "composeunstyled-dialog", version.ref = "composeUnstyled" }
 composeunstyled-toggle-switch = { group = "com.composables", name = "composeunstyled-toggle-switch", version.ref = "composeUnstyled" }
 screenshot-validation-api = { group = "com.android.tools.screenshot", name = "screenshot-validation-api", version.ref = "screenshot" }
+room3-runtime = { group = "androidx.room3", name = "room3-runtime", version.ref = "room3" }
+room3-compiler = { group = "androidx.room3", name = "room3-compiler", version.ref = "room3" }
+sqlite-framework = { group = "androidx.sqlite", name = "sqlite-framework", version.ref = "sqlite" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -67,3 +73,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+androidx-room3 = { id = "androidx.room3", version.ref = "room3" }
