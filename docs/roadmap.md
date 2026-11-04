@@ -120,15 +120,17 @@ Việc:
    - Chốt 2026-11-04: sheet chỉ có Chi và Thu. Chuyển (`TRANSFER`) để sau.
    - Việc sau: thêm Chuyển vào sheet (tài khoản đích, phí). Lý do: rút ATM là cách tiền mặt vào ví chủ yếu. Ngân hàng chỉ báo trừ, ví tiền mặt không có thông báo, nên P2d không ghép được. Không có Chuyển thì user phải ghi Thu, làm lệch báo cáo thu chi. Nên làm cùng hoặc ngay trước P2d.
    - Việc sau: gắn sao tài khoản chính (`isPrimary`, kiểu Cashew). Làm cùng nhánh màn quản lý tài khoản. Thêm vào đầu chuỗi chọn tài khoản mặc định của sheet: gắn sao → dùng lần trước → "Tiền mặt" seed → đầu tiên theo `sortOrder`.
-9. `feature/reconciliation`: điều chỉnh số dư thực tế. Tạo giao dịch `ADJUSTMENT` với `adjustmentDirection` IN hoặc OUT theo chênh lệch.
-10. `feature/reimbursement-flag`: cờ `excludeFromAnalytics` và `reimbursementStatus` (Must-Have, mục 4). Chỉ lưu và lọc. Logic hoàn tiền (REFUND) ở P4.
-11. Danh sách giao dịch cơ bản, lọc theo tài khoản, sắp xếp theo `timestamp DESC`.
+9. `feature/reconciliation` (xong): điều chỉnh số dư thực tế. Tạo giao dịch `ADJUSTMENT` với `adjustmentDirection` IN hoặc OUT theo chênh lệch.
+10. `feature/reimbursement-flag` (xong): cờ `excludeFromAnalytics` và `reimbursementStatus` (Must-Have, mục 4). Chỉ lưu và lọc. Logic hoàn tiền (REFUND) ở P4.
+11. `feature/transaction-list` (xong): danh sách giao dịch cơ bản, lọc theo tài khoản, sắp xếp theo `timestamp DESC`. Kèm thanh 4 tab. Thiết kế: `docs/superpowers/specs/2026-11-04-transaction-list-design.md`.
 
 DoD:
 - Test công thức số dư pass cho mọi loại giao dịch.
 - Test rollback chứng minh `@Transaction` nguyên tử.
 - Giao dịch có `deletedAt` không ảnh hưởng số dư và báo cáo.
 - Nhập tiền mặt mở dưới 0,5 giây trên máy thật (kiểm ở P5, theo dõi từ đây).
+
+Trạng thái (2026-11-04): P1 xong. Ba mục DoD đầu có test và pass trên `dev`. Mục đo 0,5 giây chưa đo, chờ P5. Còn mở: hai "việc sau" của mục 8 (Chuyển trong sheet, gắn sao tài khoản chính); `isSplitParent` chưa có trong model (P4).
 
 ## 4. Phase 2 — Automation Core (v0.2)
 
@@ -239,5 +241,5 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 1. D3, D6, D8 đã chốt.
 2. P0: `chore/gradle-catalog`, `chore/quality-gate`, `feature/app-shell`, `feature/mvi-base` đã xong.
 3. D2 đã chốt. Spec P1 đã bổ sung ngày 2026-11-02.
-4. P1 theo thứ tự: `db-schema` → `db-encryption` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `design-system` → `cash-entry` → còn lại.
+4. P1 đã xong (2026-11-04): `db-schema` → `db-encryption` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `design-system` → `cash-entry` → `reconciliation` → `transaction-list` → `reimbursement-flag`.
 5. P2 chỉ bắt đầu khi P1 xong và D4 đã chốt.
