@@ -15,6 +15,15 @@ class FakeTransactionRepository(
     val lastCategoryIds: MutableMap<TransactionType, String?> = mutableMapOf()
     var writes = 0
         private set
+    val reconcileCalls = mutableListOf<ReconcileCall>()
+    var reconcileResult: Transaction? = null
+
+    data class ReconcileCall(
+        val id: String,
+        val accountId: String,
+        val actualBalance: Long,
+        val now: Long,
+    )
 
     override suspend fun getTransaction(id: String): Transaction? = stored[id]
 
@@ -30,6 +39,16 @@ class FakeTransactionRepository(
     override suspend fun add(transaction: Transaction) {
         writes++
         stored[transaction.id] = transaction
+    }
+
+    override suspend fun reconcile(
+        id: String,
+        accountId: String,
+        actualBalance: Long,
+        now: Long,
+    ): Transaction? {
+        reconcileCalls += ReconcileCall(id, accountId, actualBalance, now)
+        return reconcileResult
     }
 
     override suspend fun update(transaction: Transaction) {

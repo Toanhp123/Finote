@@ -4,6 +4,7 @@ import androidx.room3.withWriteTransaction
 import io.github.toanhp123.finote.data.FinoteDatabase
 import io.github.toanhp123.finote.data.account.AccountBalanceRebuilder
 import io.github.toanhp123.finote.domain.category.model.CategoryType
+import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
@@ -44,6 +45,36 @@ class TransactionRepositoryImpl
             }
         }
 
+        override suspend fun reconcile(
+            id: String,
+            accountId: String,
+            actualBalance: Long,
+            now: Long,
+        ): Transaction? =
+            db.withWriteTransaction {
+                val account = db.accountDao().getById(accountId)
+                require(account != null && account.deletedAt == null && !account.isArchived) { ACCOUNT_INACTIVE }
+                val delta = Math.subtractExact(actualBalance, account.currentBalance)
+                if (delta == 0L) return@withWriteTransaction null
+                val adjustment =
+                    Transaction(
+                        id = id,
+                        amount = if (delta > 0) delta else Math.negateExact(delta),
+                        feeAmount = 0L,
+                        type = TransactionType.ADJUSTMENT,
+                        adjustmentDirection = if (delta > 0) AdjustmentDirection.IN else AdjustmentDirection.OUT,
+                        accountId = accountId,
+                        toAccountId = null,
+                        timestamp = now,
+                        deletedAt = null,
+                        createdAt = now,
+                        updatedAt = now,
+                    )
+                transactions.insert(adjustment.toEntity())
+                rebuilder.rebuild(setOf(accountId))
+                adjustment
+            }
+
         override suspend fun update(transaction: Transaction) {
             db.withWriteTransaction {
                 val old = requireNotNull(transactions.getById(transaction.id)) { "transaction does not exist" }
@@ -69,10 +100,12 @@ class TransactionRepositoryImpl
 
         /** Re-checks inside the write transaction: the use case's early check can be stale by now. */
         private suspend fun requireActiveAccounts(wanted: Set<String>) {
-            require(
-                getActiveAccountIds(wanted).containsAll(wanted),
-            ) { "account does not exist, is deleted or archived" }
+            require(getActiveAccountIds(wanted).containsAll(wanted)) { ACCOUNT_INACTIVE }
         }
 
         private fun TransactionEntity.accountIds() = setOfNotNull(accountId, toAccountId)
+
+        private companion object {
+            const val ACCOUNT_INACTIVE = "account does not exist, is deleted or archived"
+        }
     }

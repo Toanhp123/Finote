@@ -6,8 +6,11 @@ import io.github.toanhp123.finote.data.account
 import io.github.toanhp123.finote.data.account.AccountBalanceSnapshotEntity
 import io.github.toanhp123.finote.data.category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
+import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
+import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -538,5 +541,171 @@ class TransactionRepositoryImplTest {
             dbRule.db.categoryDao().insert(category(id = "cat-1"))
             assertEquals(CategoryType.EXPENSE, repo.getCategoryType("cat-1"))
             assertNull(repo.getCategoryType("ghost"))
+        }
+
+    private suspend fun liveTxCount() =
+        dbRule.db
+            .transactionDao()
+            .observeTransactions()
+            .first()
+            .size
+
+    @Test
+    fun `reconcile above balance writes adjustment in`() =
+        runTest {
+            val tx = repo.reconcile("adj-1", "acc-1", 1_300_000L, clock.millis())
+
+            assertEquals(TransactionType.ADJUSTMENT, tx?.type)
+            assertEquals(AdjustmentDirection.IN, tx?.adjustmentDirection)
+            assertEquals(300_000L, tx?.amount)
+            assertEquals(0L, tx?.feeAmount)
+            assertNull(tx?.categoryId)
+            assertEquals(TransactionSource.MANUAL, tx?.source)
+            assertEquals(clock.millis(), tx?.timestamp)
+            assertEquals(clock.millis(), tx?.createdAt)
+            assertEquals(tx, repo.getTransaction("adj-1"))
+            assertEquals(1_300_000L, balanceOf("acc-1"))
+            val nov = snapshotsOf("acc-1").single()
+            assertEquals(Triple("2026-11", 1_000_000L, 1_300_000L), nov.figures())
+            assertEquals(300_000L, nov.totalIncome)
+        }
+
+    @Test
+    fun `reconcile below balance writes adjustment out`() =
+        runTest {
+            val tx = repo.reconcile("adj-1", "acc-1", 750_000L, clock.millis())
+
+            assertEquals(AdjustmentDirection.OUT, tx?.adjustmentDirection)
+            assertEquals(250_000L, tx?.amount)
+            assertEquals(750_000L, balanceOf("acc-1"))
+            val nov = snapshotsOf("acc-1").single()
+            assertEquals(Triple("2026-11", 1_000_000L, 750_000L), nov.figures())
+            assertEquals(250_000L, nov.totalExpense)
+        }
+
+    @Test
+    fun `reconcile to zero takes the whole balance out`() =
+        runTest {
+            val tx = repo.reconcile("adj-1", "acc-1", 0L, clock.millis())
+
+            assertEquals(AdjustmentDirection.OUT, tx?.adjustmentDirection)
+            assertEquals(1_000_000L, tx?.amount)
+            assertEquals(0L, balanceOf("acc-1"))
+        }
+
+    @Test
+    fun `reconcile negative credit balance`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(id = "card", currentBalance = -500_000L))
+
+            val tx = repo.reconcile("adj-1", "card", -700_000L, clock.millis())
+
+            assertEquals(AdjustmentDirection.OUT, tx?.adjustmentDirection)
+            assertEquals(200_000L, tx?.amount)
+            assertEquals(-700_000L, balanceOf("card"))
+        }
+
+    @Test
+    fun `reconcile equal balance writes nothing`() =
+        runTest {
+            assertNull(repo.reconcile("adj-1", "acc-1", 1_000_000L, clock.millis()))
+
+            assertEquals(0, liveTxCount())
+            assertEquals(emptyList<AccountBalanceSnapshotEntity>(), snapshotsOf("acc-1"))
+            assertEquals(1_000_000L, balanceOf("acc-1"))
+        }
+
+    @Test
+    fun `reconcile twice with the same figure writes once`() =
+        runTest {
+            assertNotNull(repo.reconcile("adj-1", "acc-1", 1_300_000L, clock.millis()))
+            assertNull(repo.reconcile("adj-2", "acc-1", 1_300_000L, clock.millis()))
+
+            assertEquals(1, liveTxCount())
+            assertNull(repo.getTransaction("adj-2"))
+            assertEquals(1_300_000L, balanceOf("acc-1"))
+        }
+
+    @Test
+    fun `reconcile only changes the current month snapshot`() =
+        runTest {
+            repo.add(domainTx())
+            repo.reconcile("adj-1", "acc-1", 900_000L, clock.millis())
+
+            assertEquals(
+                listOf(
+                    Triple("2026-09", 1_000_000L, 800_000L),
+                    Triple("2026-10", 800_000L, 800_000L),
+                    Triple("2026-11", 800_000L, 900_000L),
+                ),
+                snapshotsOf("acc-1").chain(),
+            )
+        }
+
+    @Test
+    fun `reconcile counts future dated transactions in the current balance`() =
+        runTest {
+            repo.add(domainTx(at = "2027-01-10T00:00:00Z"))
+            assertEquals(800_000L, balanceOf("acc-1"))
+
+            val tx = repo.reconcile("adj-1", "acc-1", 1_000_000L, clock.millis())
+
+            assertEquals(AdjustmentDirection.IN, tx?.adjustmentDirection)
+            assertEquals(200_000L, tx?.amount)
+            assertEquals(1_000_000L, balanceOf("acc-1"))
+        }
+
+    @Test
+    fun `reconcile rejects archived, deleted and missing accounts`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(id = "arch"))
+            archive("arch")
+            dbRule.db.accountDao().insert(account(id = "gone", deletedAt = 5L))
+
+            listOf("arch", "gone", "missing").forEach { id ->
+                val failure = failureOf { repo.reconcile("adj-$id", id, 1L, clock.millis()) }
+                assertTrue(failure.toString(), failure is IllegalArgumentException)
+                assertEquals("account does not exist, is deleted or archived", failure?.message)
+            }
+            assertEquals(0, liveTxCount())
+            listOf("arch", "gone").forEach { id ->
+                assertEquals(1_000_000L, balanceOf(id))
+                assertEquals(emptyList<AccountBalanceSnapshotEntity>(), snapshotsOf(id))
+            }
+        }
+
+    @Test
+    fun `reconcile overflow in subtraction writes nothing`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(id = "one", currentBalance = 1L))
+
+            val failure = failureOf { repo.reconcile("adj-1", "one", Long.MIN_VALUE, clock.millis()) }
+
+            assertTrue(failure.toString(), failure is ArithmeticException)
+            assertEquals(1L, balanceOf("one"))
+            assertEquals(0, liveTxCount())
+            assertEquals(emptyList<AccountBalanceSnapshotEntity>(), snapshotsOf("one"))
+        }
+
+    @Test
+    fun `reconcile overflow in negation writes nothing`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(id = "zero", currentBalance = 0L))
+
+            val failure = failureOf { repo.reconcile("adj-1", "zero", Long.MIN_VALUE, clock.millis()) }
+
+            assertTrue(failure.toString(), failure is ArithmeticException)
+            assertEquals(0L, balanceOf("zero"))
+            assertEquals(0, liveTxCount())
+            assertEquals(emptyList<AccountBalanceSnapshotEntity>(), snapshotsOf("zero"))
+        }
+
+    @Test
+    fun `soft deleting the adjustment restores the old balance`() =
+        runTest {
+            repo.reconcile("adj-1", "acc-1", 1_300_000L, clock.millis())
+            repo.softDelete("adj-1", clock.millis())
+
+            assertEquals(1_000_000L, balanceOf("acc-1"))
         }
 }

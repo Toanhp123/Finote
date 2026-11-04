@@ -25,6 +25,17 @@ interface TransactionRepository {
 
     suspend fun add(transaction: Transaction)
 
+    /**
+     * Writes one ADJUSTMENT that brings the account's currentBalance to [actualBalance], all in one
+     * atomic unit. Returns null and writes nothing when the balance already matches.
+     */
+    suspend fun reconcile(
+        id: String,
+        accountId: String,
+        actualBalance: Long,
+        now: Long,
+    ): Transaction?
+
     suspend fun update(transaction: Transaction)
 
     suspend fun softDelete(
