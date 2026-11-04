@@ -70,4 +70,19 @@
     <string name="cash_entry_tile_label">Ghi tiền mặt</string>
     <string name="cash_entry_shortcut_short">Ghi tiền mặt</string>
     <string name="cash_entry_shortcut_long">Ghi khoản tiền mặt</string>
+    <string name="tab_overview">Tổng quan</string>
+    <string name="tab_transactions">Giao dịch</string>
+    <string name="tab_budget">Ngân sách</string>
+    <string name="tab_settings">Cài đặt</string>
+    <string name="coming_soon_title">Sắp có</string>
+    <string name="transactions_all">Tất cả</string>
+    <string name="transactions_today">Hôm nay</string>
+    <string name="transactions_yesterday">Hôm qua</string>
+    <string name="transactions_transfer">Chuyển khoản</string>
+    <string name="transactions_adjustment">Điều chỉnh số dư</string>
+    <string name="transactions_uncategorized">Chưa phân loại</string>
+    <string name="transactions_deleted_account">Tài khoản đã xóa</string>
+    <string name="transactions_empty">Chưa có giao dịch</string>
+    <string name="transactions_empty_account">Tài khoản này chưa có giao dịch</string>
+    <string name="transactions_error">Không tải được giao dịch</string>
 </resources>

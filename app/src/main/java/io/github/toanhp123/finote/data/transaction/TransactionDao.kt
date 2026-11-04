@@ -32,8 +32,13 @@ interface TransactionDao {
     )
     suspend fun countActiveByAccount(accountId: String): Int
 
-    @Query("SELECT * FROM transactions WHERE deletedAt IS NULL ORDER BY timestamp DESC, createdAt DESC")
-    fun observeTransactions(): Flow<List<TransactionEntity>>
+    /** Live rows, newest first. A null [accountId] means every account; else rows as source or transfer destination. */
+    @Query(
+        "SELECT * FROM transactions WHERE deletedAt IS NULL " +
+            "AND (:accountId IS NULL OR accountId = :accountId OR toAccountId = :accountId) " +
+            "ORDER BY timestamp DESC, createdAt DESC, id DESC",
+    )
+    fun observeTransactions(accountId: String?): Flow<List<TransactionEntity>>
 
     /** Account of the newest live manual entry; null when there is none. */
     @Query(

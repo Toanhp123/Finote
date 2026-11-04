@@ -80,6 +80,17 @@ class TransactionRepositoryImplTest {
         domainTx(id = "tx-2", type = TransactionType.INCOME, amount = 50_000L, at = "2026-10-05T00:00:00Z")
 
     @Test
+    fun `observeTransactions maps rows and filters by account`() =
+        runTest {
+            repo.add(domainTx(id = "tx-exp"))
+            repo.add(domainTx(id = "tx-trf", type = TransactionType.TRANSFER, toAccountId = "acc-2"))
+
+            val all = repo.observeTransactions(null).first()
+            assertEquals(setOf("tx-exp", "tx-trf"), all.map { it.id }.toSet())
+            assertEquals(listOf("tx-trf"), repo.observeTransactions("acc-2").first().map { it.id })
+        }
+
+    @Test
     fun `add sets balance and snapshots`() =
         runTest {
             repo.add(domainTx())
@@ -546,7 +557,7 @@ class TransactionRepositoryImplTest {
     private suspend fun liveTxCount() =
         dbRule.db
             .transactionDao()
-            .observeTransactions()
+            .observeTransactions(null)
             .first()
             .size
 

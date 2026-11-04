@@ -83,7 +83,7 @@ class TransactionDaoTest {
             seedAccount()
             dao.insert(transaction(id = "tx-live"))
             dao.insert(transaction(id = "tx-gone").copy(deletedAt = 9_000L))
-            assertEquals(listOf("tx-live"), dao.observeTransactions().first().map { it.id })
+            assertEquals(listOf("tx-live"), dao.observeTransactions(null).first().map { it.id })
             assertNotNull(dao.getById("tx-gone"))
         }
 
@@ -94,8 +94,60 @@ class TransactionDaoTest {
             dao.insert(transaction(id = "tx-old", timestamp = 1_000L).copy(createdAt = 9_000L))
             dao.insert(transaction(id = "tx-tie-early", timestamp = 2_000L).copy(createdAt = 1_000L))
             dao.insert(transaction(id = "tx-tie-late", timestamp = 2_000L).copy(createdAt = 2_000L))
-            val ids = dao.observeTransactions().first().map { it.id }
+            val ids = dao.observeTransactions(null).first().map { it.id }
             assertEquals(listOf("tx-tie-late", "tx-tie-early", "tx-old"), ids)
+        }
+
+    @Test
+    fun `observeTransactions breaks ties by id`() =
+        runTest {
+            seedAccount()
+            dao.insert(transaction(id = "t-old", timestamp = 1_000L))
+            dao.insert(transaction(id = "t-a", timestamp = 2_000L))
+            dao.insert(transaction(id = "t-b", timestamp = 2_000L))
+            assertEquals(listOf("t-b", "t-a", "t-old"), dao.observeTransactions(null).first().map { it.id })
+        }
+
+    @Test
+    fun `observeTransactions by account returns source rows and incoming transfers`() =
+        runTest {
+            seedAccount()
+            dbRule.db.accountDao().insert(account(id = "acc-2"))
+            dao.insert(transaction(id = "tx-out", accountId = "acc-1", timestamp = 1_000L))
+            dao.insert(
+                transaction(
+                    id = "tx-in",
+                    accountId = "acc-2",
+                    toAccountId = "acc-1",
+                    type = TransactionType.TRANSFER,
+                    timestamp = 2_000L,
+                ),
+            )
+            dao.insert(transaction(id = "tx-other", accountId = "acc-2", timestamp = 3_000L))
+            assertEquals(listOf("tx-in", "tx-out"), dao.observeTransactions("acc-1").first().map { it.id })
+        }
+
+    @Test
+    fun `observeTransactions by account hides soft-deleted rows`() =
+        runTest {
+            seedAccount()
+            dao.insert(transaction(id = "tx-live"))
+            dao.insert(transaction(id = "tx-gone").copy(deletedAt = 9_000L))
+            assertEquals(listOf("tx-live"), dao.observeTransactions("acc-1").first().map { it.id })
+        }
+
+    @Test
+    fun `observeTransactions by account orders by timestamp, createdAt, then id`() =
+        runTest {
+            seedAccount()
+            dao.insert(transaction(id = "t-old", timestamp = 1_000L))
+            dao.insert(transaction(id = "t-a", timestamp = 2_000L))
+            dao.insert(transaction(id = "t-b", timestamp = 2_000L))
+            dao.insert(transaction(id = "t-c", timestamp = 2_000L).copy(createdAt = 1_700_000_000_001L))
+            assertEquals(
+                listOf("t-c", "t-b", "t-a", "t-old"),
+                dao.observeTransactions("acc-1").first().map { it.id },
+            )
         }
 
     @Test

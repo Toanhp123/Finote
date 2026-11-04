@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.ui.common.format
 
+import android.content.res.Resources
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
@@ -94,3 +95,9 @@ fun displayName(
     name: String,
     nameKey: String?,
 ): String = nameKey?.let(::systemNameRes)?.let { stringResource(it) } ?: name
+
+/** [displayName] for code that is not a composable, such as a `remember` block. */
+fun Resources.displayName(
+    name: String,
+    nameKey: String?,
+): String = nameKey?.let(::systemNameRes)?.let(::getString) ?: name

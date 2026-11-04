@@ -70,4 +70,19 @@
     <string name="cash_entry_tile_label">记现金</string>
     <string name="cash_entry_shortcut_short">记现金</string>
     <string name="cash_entry_shortcut_long">记录现金交易</string>
+    <string name="tab_overview">概览</string>
+    <string name="tab_transactions">交易</string>
+    <string name="tab_budget">预算</string>
+    <string name="tab_settings">设置</string>
+    <string name="coming_soon_title">即将推出</string>
+    <string name="transactions_all">全部</string>
+    <string name="transactions_today">今天</string>
+    <string name="transactions_yesterday">昨天</string>
+    <string name="transactions_transfer">转账</string>
+    <string name="transactions_adjustment">余额调整</string>
+    <string name="transactions_uncategorized">未分类</string>
+    <string name="transactions_deleted_account">已删除的账户</string>
+    <string name="transactions_empty">暂无交易</string>
+    <string name="transactions_empty_account">该账户暂无交易</string>
+    <string name="transactions_error">无法加载交易</string>
 </resources>

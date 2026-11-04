@@ -8,6 +8,8 @@ import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.time.Clock
 import javax.inject.Inject
 
@@ -35,6 +37,9 @@ class TransactionRepositoryImpl
 
         override suspend fun getLastManualCategoryId(type: TransactionType): String? =
             transactions.getLastManualCategoryId(type)
+
+        override fun observeTransactions(accountId: String?): Flow<List<Transaction>> =
+            transactions.observeTransactions(accountId).map { rows -> rows.map { it.toDomain() } }
 
         override suspend fun add(transaction: Transaction) {
             db.withWriteTransaction {
@@ -103,9 +108,9 @@ class TransactionRepositoryImpl
             require(getActiveAccountIds(wanted).containsAll(wanted)) { ACCOUNT_INACTIVE }
         }
 
-        private fun TransactionEntity.accountIds() = setOfNotNull(accountId, toAccountId)
-
         private companion object {
             const val ACCOUNT_INACTIVE = "account does not exist, is deleted or archived"
         }
     }
+
+private fun TransactionEntity.accountIds() = setOfNotNull(accountId, toAccountId)

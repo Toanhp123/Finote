@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.domain.transaction.repository
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Every write keeps `currentBalance` and the monthly snapshots of each touched account in step,
@@ -22,6 +23,12 @@ interface TransactionRepository {
 
     /** Category of the newest live manual entry of [type] that has a category, or null. */
     suspend fun getLastManualCategoryId(type: TransactionType): String?
+
+    /**
+     * Live transactions, newest first. [accountId] null means every account;
+     * otherwise the ones that leave it or arrive in it as a transfer.
+     */
+    fun observeTransactions(accountId: String?): Flow<List<Transaction>>
 
     suspend fun add(transaction: Transaction)
 

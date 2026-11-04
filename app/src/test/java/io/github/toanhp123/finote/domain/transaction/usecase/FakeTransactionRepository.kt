@@ -4,6 +4,10 @@ import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 
 /** In-memory stand-in. Accounts in [activeAccounts] count as existing and live. */
 class FakeTransactionRepository(
@@ -17,6 +21,11 @@ class FakeTransactionRepository(
         private set
     val reconcileCalls = mutableListOf<ReconcileCall>()
     var reconcileResult: Transaction? = null
+
+    /** Source of [observeTransactions]; a non-null account id keeps rows with that source or transfer destination. */
+    val transactionsFlow = MutableStateFlow<List<Transaction>>(emptyList())
+    val observedAccountIds = mutableListOf<String?>()
+    var failObserve: Throwable? = null
 
     data class ReconcileCall(
         val id: String,
@@ -35,6 +44,18 @@ class FakeTransactionRepository(
     override suspend fun getLastManualAccountId(): String? = lastAccountId
 
     override suspend fun getLastManualCategoryId(type: TransactionType): String? = lastCategoryIds[type]
+
+    override fun observeTransactions(accountId: String?): Flow<List<Transaction>> {
+        observedAccountIds += accountId
+        val failure = failObserve
+        return if (failure != null) {
+            flow { throw failure }
+        } else {
+            transactionsFlow.map { rows ->
+                rows.filter { accountId == null || it.accountId == accountId || it.toAccountId == accountId }
+            }
+        }
+    }
 
     override suspend fun add(transaction: Transaction) {
         writes++

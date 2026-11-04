@@ -70,4 +70,19 @@
     <string name="cash_entry_tile_label">Cash entry</string>
     <string name="cash_entry_shortcut_short">Cash entry</string>
     <string name="cash_entry_shortcut_long">Record a cash transaction</string>
+    <string name="tab_overview">Overview</string>
+    <string name="tab_transactions">Transactions</string>
+    <string name="tab_budget">Budget</string>
+    <string name="tab_settings">Settings</string>
+    <string name="coming_soon_title">Coming soon</string>
+    <string name="transactions_all">All</string>
+    <string name="transactions_today">Today</string>
+    <string name="transactions_yesterday">Yesterday</string>
+    <string name="transactions_transfer">Transfer</string>
+    <string name="transactions_adjustment">Balance adjustment</string>
+    <string name="transactions_uncategorized">Uncategorized</string>
+    <string name="transactions_deleted_account">Deleted account</string>
+    <string name="transactions_empty">No transactions yet</string>
+    <string name="transactions_empty_account">No transactions in this account</string>
+    <string name="transactions_error">Couldn\'t load transactions</string>
 </resources>

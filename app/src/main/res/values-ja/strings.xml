@@ -70,4 +70,19 @@
     <string name="cash_entry_tile_label">現金記録</string>
     <string name="cash_entry_shortcut_short">現金記録</string>
     <string name="cash_entry_shortcut_long">現金の取引を記録</string>
+    <string name="tab_overview">概要</string>
+    <string name="tab_transactions">取引</string>
+    <string name="tab_budget">予算</string>
+    <string name="tab_settings">設定</string>
+    <string name="coming_soon_title">近日公開</string>
+    <string name="transactions_all">すべて</string>
+    <string name="transactions_today">今日</string>
+    <string name="transactions_yesterday">昨日</string>
+    <string name="transactions_transfer">振替</string>
+    <string name="transactions_adjustment">残高調整</string>
+    <string name="transactions_uncategorized">未分類</string>
+    <string name="transactions_deleted_account">削除済みの口座</string>
+    <string name="transactions_empty">取引はまだありません</string>
+    <string name="transactions_empty_account">この口座の取引はありません</string>
+    <string name="transactions_error">取引を読み込めませんでした</string>
 </resources>
