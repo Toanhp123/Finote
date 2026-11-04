@@ -23,6 +23,7 @@ fun account(
     AccountEntity(
         id = id,
         name = name,
+        nameKey = null,
         type = type,
         initialBalance = currentBalance,
         currentBalance = currentBalance,

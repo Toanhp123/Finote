@@ -54,4 +54,20 @@
     <string name="sys_income_investment">Investment &amp; Interest</string>
     <string name="sys_income_gifts">Gifts Received</string>
     <string name="sys_income_other">Other</string>
+    <string name="sys_cash">Cash</string>
+    <string name="cash_entry_expense">Expense</string>
+    <string name="cash_entry_income">Income</string>
+    <string name="cash_entry_save">Save</string>
+    <string name="cash_entry_no_account">No account</string>
+    <string name="cash_entry_no_category">No category</string>
+    <string name="cash_entry_note">Note</string>
+    <string name="cash_entry_today">Today</string>
+    <string name="cash_entry_error_divide_by_zero">Cannot divide by zero</string>
+    <string name="cash_entry_error_overflow">Number too large</string>
+    <string name="cash_entry_error_save">Could not save, try again</string>
+    <string name="cash_entry_done">Done</string>
+    <string name="cash_entry_backspace">Delete</string>
+    <string name="cash_entry_tile_label">Cash entry</string>
+    <string name="cash_entry_shortcut_short">Cash entry</string>
+    <string name="cash_entry_shortcut_long">Record a cash transaction</string>
 </resources>

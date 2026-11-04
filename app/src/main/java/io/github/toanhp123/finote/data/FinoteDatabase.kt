@@ -24,7 +24,7 @@ import io.github.toanhp123.finote.data.transaction.TransactionTagCrossRef
             TagEntity::class,
             TransactionTagCrossRef::class,
         ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class FinoteDatabase : RoomDatabase() {

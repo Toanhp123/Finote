@@ -54,4 +54,20 @@
     <string name="sys_income_investment">Đầu tư &amp; lãi</string>
     <string name="sys_income_gifts">Quà nhận được</string>
     <string name="sys_income_other">Thu nhập khác</string>
+    <string name="sys_cash">Tiền mặt</string>
+    <string name="cash_entry_expense">Chi</string>
+    <string name="cash_entry_income">Thu</string>
+    <string name="cash_entry_save">Lưu</string>
+    <string name="cash_entry_no_account">Chưa có tài khoản</string>
+    <string name="cash_entry_no_category">Không chọn danh mục</string>
+    <string name="cash_entry_note">Ghi chú</string>
+    <string name="cash_entry_today">Hôm nay</string>
+    <string name="cash_entry_error_divide_by_zero">Không chia được cho 0</string>
+    <string name="cash_entry_error_overflow">Số quá lớn</string>
+    <string name="cash_entry_error_save">Không lưu được, thử lại</string>
+    <string name="cash_entry_done">Xong</string>
+    <string name="cash_entry_backspace">Xóa</string>
+    <string name="cash_entry_tile_label">Ghi tiền mặt</string>
+    <string name="cash_entry_shortcut_short">Ghi tiền mặt</string>
+    <string name="cash_entry_shortcut_long">Ghi khoản tiền mặt</string>
 </resources>

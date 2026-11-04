@@ -24,4 +24,10 @@ class AccountMapperTest {
             )
         assertEquals(entity, entity.toDomain().toEntity())
     }
+
+    @Test
+    fun `nameKey survives round trip`() {
+        val entity = account().copy(nameKey = "sys_cash")
+        assertEquals("sys_cash", entity.toDomain().toEntity().nameKey)
+    }
 }

@@ -117,6 +117,9 @@ Việc:
 7. `feature/design-system` (xong): token, `FinoteTheme`, `MoneyFormat`, bộ component dùng chung, luật Konsist, screenshot test trong `qualityGate`. Chi tiết ở `docs/design-system.md`.
 8. `feature/cash-entry`: màn nhập tiền mặt có bàn phím số, phép tính `+ − × ÷`, chọn tài khoản và danh mục. Phép chia làm tròn nửa lên về đồng; số tiền cuối > 0.
    - `TileService` và `ShortcutManagerCompat` mở thẳng màn này (Must-Have).
+   - Chốt 2026-11-04: sheet chỉ có Chi và Thu. Chuyển (`TRANSFER`) để sau.
+   - Việc sau: thêm Chuyển vào sheet (tài khoản đích, phí). Lý do: rút ATM là cách tiền mặt vào ví chủ yếu. Ngân hàng chỉ báo trừ, ví tiền mặt không có thông báo, nên P2d không ghép được. Không có Chuyển thì user phải ghi Thu, làm lệch báo cáo thu chi. Nên làm cùng hoặc ngay trước P2d.
+   - Việc sau: gắn sao tài khoản chính (`isPrimary`, kiểu Cashew). Làm cùng nhánh màn quản lý tài khoản. Thêm vào đầu chuỗi chọn tài khoản mặc định của sheet: gắn sao → dùng lần trước → "Tiền mặt" seed → đầu tiên theo `sortOrder`.
 9. `feature/reconciliation`: điều chỉnh số dư thực tế. Tạo giao dịch `ADJUSTMENT` với `adjustmentDirection` IN hoặc OUT theo chênh lệch.
 10. `feature/reimbursement-flag`: cờ `excludeFromAnalytics` và `reimbursementStatus` (Must-Have, mục 4). Chỉ lưu và lọc. Logic hoàn tiền (REFUND) ở P4.
 11. Danh sách giao dịch cơ bản, lọc theo tài khoản, sắp xếp theo `timestamp DESC`.

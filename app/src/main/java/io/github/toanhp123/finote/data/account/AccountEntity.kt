@@ -9,6 +9,7 @@ import io.github.toanhp123.finote.domain.account.model.AccountType
 data class AccountEntity(
     @PrimaryKey val id: String,
     val name: String,
+    val nameKey: String?,
     val type: AccountType,
     val initialBalance: Long,
     /** Signed. A credit card is negative while it carries debt. */

@@ -54,4 +54,20 @@
     <string name="sys_income_investment">投資・利息</string>
     <string name="sys_income_gifts">受け取ったギフト</string>
     <string name="sys_income_other">その他の収入</string>
+    <string name="sys_cash">現金</string>
+    <string name="cash_entry_expense">支出</string>
+    <string name="cash_entry_income">収入</string>
+    <string name="cash_entry_save">保存</string>
+    <string name="cash_entry_no_account">口座がありません</string>
+    <string name="cash_entry_no_category">カテゴリなし</string>
+    <string name="cash_entry_note">メモ</string>
+    <string name="cash_entry_today">今日</string>
+    <string name="cash_entry_error_divide_by_zero">0で割れません</string>
+    <string name="cash_entry_error_overflow">数値が大きすぎます</string>
+    <string name="cash_entry_error_save">保存できません。もう一度お試しください</string>
+    <string name="cash_entry_done">完了</string>
+    <string name="cash_entry_backspace">削除</string>
+    <string name="cash_entry_tile_label">現金記録</string>
+    <string name="cash_entry_shortcut_short">現金記録</string>
+    <string name="cash_entry_shortcut_long">現金の取引を記録</string>
 </resources>

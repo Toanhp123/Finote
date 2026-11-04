@@ -54,4 +54,20 @@
     <string name="sys_income_investment">投资与利息</string>
     <string name="sys_income_gifts">收到的礼金</string>
     <string name="sys_income_other">其他收入</string>
+    <string name="sys_cash">现金</string>
+    <string name="cash_entry_expense">支出</string>
+    <string name="cash_entry_income">收入</string>
+    <string name="cash_entry_save">保存</string>
+    <string name="cash_entry_no_account">没有账户</string>
+    <string name="cash_entry_no_category">不选分类</string>
+    <string name="cash_entry_note">备注</string>
+    <string name="cash_entry_today">今天</string>
+    <string name="cash_entry_error_divide_by_zero">不能除以零</string>
+    <string name="cash_entry_error_overflow">数字太大</string>
+    <string name="cash_entry_error_save">无法保存，请重试</string>
+    <string name="cash_entry_done">完成</string>
+    <string name="cash_entry_backspace">删除</string>
+    <string name="cash_entry_tile_label">记现金</string>
+    <string name="cash_entry_shortcut_short">记现金</string>
+    <string name="cash_entry_shortcut_long">记录现金交易</string>
 </resources>

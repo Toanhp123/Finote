@@ -5,6 +5,7 @@ import io.github.toanhp123.finote.data.FinoteDatabase
 import io.github.toanhp123.finote.data.account.AccountBalanceRebuilder
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
+import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
 import java.time.Clock
 import javax.inject.Inject
@@ -28,6 +29,11 @@ class TransactionRepositoryImpl
 
         override suspend fun getCategoryType(categoryId: String): CategoryType? =
             db.categoryDao().getById(categoryId)?.type
+
+        override suspend fun getLastManualAccountId(): String? = transactions.getLastManualAccountId()
+
+        override suspend fun getLastManualCategoryId(type: TransactionType): String? =
+            transactions.getLastManualCategoryId(type)
 
         override suspend fun add(transaction: Transaction) {
             db.withWriteTransaction {

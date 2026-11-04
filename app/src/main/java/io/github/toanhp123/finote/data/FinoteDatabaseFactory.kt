@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.data
 
 import android.content.Context
 import androidx.room3.Room
+import io.github.toanhp123.finote.data.account.SystemAccountSeeder
 import io.github.toanhp123.finote.data.category.SystemCategorySeeder
 import io.github.toanhp123.finote.data.security.DatabaseKeyStore
 import io.github.toanhp123.finote.data.security.KeystoreKeyCipher
@@ -32,5 +33,6 @@ fun createFinoteDatabase(
         // shortcut: drops user data on a version change, replace with real migrations before v1.0
         .fallbackToDestructiveMigration(dropAllTables = true)
         .addCallback(SystemCategorySeeder(clock))
+        .addCallback(SystemAccountSeeder(clock))
         .build()
 }

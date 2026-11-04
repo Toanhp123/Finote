@@ -17,7 +17,13 @@ interface AccountRepository {
     /** Stores the account with `currentBalance = initialBalance`. */
     suspend fun add(account: Account)
 
-    /** Keeps `currentBalance`, `createdAt` and `deletedAt` of the stored row. Missing or deleted is rejected. */
+    /**
+     * Keeps `currentBalance`, `createdAt` and `deletedAt` of the stored row. Missing or deleted is rejected.
+     *
+     * Contract for `name`: pass the stored `name` (the English fallback) unchanged unless the user edited the name
+     * field. A different `name` clears `nameKey`. Passing the translated string the UI shows is a different `name`,
+     * so it clears `nameKey` and the account loses its localization.
+     */
     suspend fun update(account: Account)
 
     /** Flips `isArchived` only. A missing or deleted account is rejected. */

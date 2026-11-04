@@ -25,7 +25,7 @@ class AccountRepositoryImpl
             accounts.observeAccounts().map { list -> list.map { it.toDomain() } }
 
         override suspend fun add(account: Account) {
-            accounts.insert(account.toEntity().copy(currentBalance = account.initialBalance))
+            accounts.insert(account.toEntity().copy(currentBalance = account.initialBalance, nameKey = null))
         }
 
         override suspend fun update(account: Account) {
@@ -37,6 +37,7 @@ class AccountRepositoryImpl
                         createdAt = old.createdAt,
                         deletedAt = old.deletedAt,
                         isArchived = old.isArchived,
+                        nameKey = if (account.name == old.name) old.nameKey else null,
                     ),
                 )
                 if (account.initialBalance != old.initialBalance) rebuilder.rebuild(setOf(account.id))

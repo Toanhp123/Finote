@@ -6,6 +6,7 @@ fun AccountEntity.toDomain(): Account =
     Account(
         id = id,
         name = name,
+        nameKey = nameKey,
         type = type,
         initialBalance = initialBalance,
         currentBalance = currentBalance,
@@ -25,6 +26,7 @@ fun Account.toEntity(): AccountEntity =
     AccountEntity(
         id = id,
         name = name,
+        nameKey = nameKey,
         type = type,
         initialBalance = initialBalance,
         currentBalance = currentBalance,

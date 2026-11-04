@@ -85,6 +85,35 @@ class AccountRepositoryImplTest {
         }
 
     @Test
+    fun `add forces nameKey to null`() =
+        runTest {
+            repo.add(domainAccount().copy(nameKey = "sys_x"))
+            val stored = repo.getAccount("acc-1")
+            assertNotNull(stored)
+            assertNull(stored?.nameKey)
+        }
+
+    @Test
+    fun `update with same name keeps nameKey`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(name = "Cash").copy(nameKey = "sys_cash"))
+            repo.update(checkNotNull(repo.getAccount("acc-1")).copy(sortOrder = 5))
+            val row = rowOf("acc-1")
+            assertNotNull(row)
+            assertEquals("sys_cash", row?.nameKey)
+        }
+
+    @Test
+    fun `update with new name clears nameKey`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(name = "Cash").copy(nameKey = "sys_cash"))
+            repo.update(checkNotNull(repo.getAccount("acc-1")).copy(name = "Ví"))
+            val row = rowOf("acc-1")
+            assertNotNull(row)
+            assertNull(row?.nameKey)
+        }
+
+    @Test
     fun `changing initialBalance rebuilds balance and every snapshot`() =
         runTest {
             repo.add(domainAccount())

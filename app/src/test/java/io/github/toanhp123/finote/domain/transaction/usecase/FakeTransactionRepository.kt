@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.domain.transaction.usecase
 
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
+import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
 
 /** In-memory stand-in. Accounts in [activeAccounts] count as existing and live. */
@@ -10,6 +11,8 @@ class FakeTransactionRepository(
     val categories: Map<String, CategoryType> = emptyMap(),
 ) : TransactionRepository {
     val stored = mutableMapOf<String, Transaction>()
+    var lastAccountId: String? = null
+    val lastCategoryIds: MutableMap<TransactionType, String?> = mutableMapOf()
     var writes = 0
         private set
 
@@ -19,6 +22,10 @@ class FakeTransactionRepository(
         accountIds.intersect(activeAccounts)
 
     override suspend fun getCategoryType(categoryId: String): CategoryType? = categories[categoryId]
+
+    override suspend fun getLastManualAccountId(): String? = lastAccountId
+
+    override suspend fun getLastManualCategoryId(type: TransactionType): String? = lastCategoryIds[type]
 
     override suspend fun add(transaction: Transaction) {
         writes++

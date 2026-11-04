@@ -8,11 +8,13 @@ import io.github.toanhp123.finote.data.tag
 import io.github.toanhp123.finote.data.tagRef
 import io.github.toanhp123.finote.data.transaction
 import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
+import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -156,5 +158,71 @@ class TransactionDaoTest {
             dao.update(dao.getById("tx-xfer")!!.copy(deletedAt = 9_000L))
             assertEquals(0, dao.countActiveByAccount("acc-2"))
             assertEquals(1, dao.countActiveByAccount("acc-1"))
+        }
+
+    @Test
+    fun `last manual account skips deleted and non manual rows`() =
+        runTest {
+            seedAccount()
+            dbRule.db.accountDao().insert(account(id = "acc-2"))
+            dbRule.db.accountDao().insert(account(id = "acc-3"))
+            dao.insert(transaction(id = "tx-1", accountId = "acc-1").copy(createdAt = 1L))
+            dao.insert(transaction(id = "tx-2", accountId = "acc-2").copy(createdAt = 2L, deletedAt = 9_000L))
+            dao.insert(
+                transaction(id = "tx-3", accountId = "acc-3")
+                    .copy(createdAt = 3L, source = TransactionSource.NOTIFICATION_PARSER),
+            )
+            assertEquals("acc-1", dao.getLastManualAccountId())
+        }
+
+    @Test
+    fun `last manual category skips null category`() =
+        runTest {
+            seedAccount()
+            dbRule.db.categoryDao().insert(category(id = "cat-1"))
+            dao.insert(transaction(id = "tx-1", categoryId = "cat-1").copy(createdAt = 1L))
+            dao.insert(transaction(id = "tx-2", categoryId = null).copy(createdAt = 2L))
+            assertEquals("cat-1", dao.getLastManualCategoryId(TransactionType.EXPENSE))
+        }
+
+    @Test
+    fun `last manual category filters by type`() =
+        runTest {
+            seedAccount()
+            dbRule.db.categoryDao().insert(category(id = "cat-exp"))
+            dbRule.db.categoryDao().insert(category(id = "cat-inc"))
+            dao.insert(
+                transaction(id = "tx-1", categoryId = "cat-inc", type = TransactionType.INCOME).copy(createdAt = 1L),
+            )
+            dao.insert(transaction(id = "tx-2", categoryId = "cat-exp").copy(createdAt = 2L))
+            assertEquals("cat-inc", dao.getLastManualCategoryId(TransactionType.INCOME))
+        }
+
+    @Test
+    fun `last manual account is the newest createdAt not the last inserted`() =
+        runTest {
+            seedAccount()
+            dbRule.db.accountDao().insert(account(id = "acc-2"))
+            dao.insert(transaction(id = "tx-1", accountId = "acc-1").copy(createdAt = 5L))
+            dao.insert(transaction(id = "tx-2", accountId = "acc-2").copy(createdAt = 1L))
+            assertEquals("acc-1", dao.getLastManualAccountId())
+        }
+
+    @Test
+    fun `last manual category is the newest createdAt not the last inserted`() =
+        runTest {
+            seedAccount()
+            dbRule.db.categoryDao().insert(category(id = "cat-1"))
+            dbRule.db.categoryDao().insert(category(id = "cat-2"))
+            dao.insert(transaction(id = "tx-1", categoryId = "cat-1").copy(createdAt = 5L))
+            dao.insert(transaction(id = "tx-2", categoryId = "cat-2").copy(createdAt = 1L))
+            assertEquals("cat-1", dao.getLastManualCategoryId(TransactionType.EXPENSE))
+        }
+
+    @Test
+    fun `last manual queries return null on empty table`() =
+        runTest {
+            assertNull(dao.getLastManualAccountId())
+            assertNull(dao.getLastManualCategoryId(TransactionType.EXPENSE))
         }
 }

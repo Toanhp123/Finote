@@ -42,6 +42,7 @@ class EncryptedDatabaseTest {
         AccountEntity(
             id = "acc-1",
             name = "Test account",
+            nameKey = null,
             type = AccountType.BANK,
             initialBalance = 1_000_000L,
             currentBalance = 1_000_000L,

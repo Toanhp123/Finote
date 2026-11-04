@@ -47,7 +47,7 @@ All are in `ui/common/component/`, one component per file. `modifier: Modifier =
 | `FinoteDatePicker` | `(isVisible, selected: LocalDate, onConfirm: (LocalDate), onDismiss, modifier)` | Date input. Never expose `DatePickerState` |
 | `FinoteButton` | `(text, onClick, modifier, style, enabled, isLoading, leadingIcon?)` | Every button. `style`: `Primary`, `Secondary`, `Ghost`, `Danger` |
 | `FinoteIconButton` | `(iconRes, contentDescription, onClick, modifier, enabled)` | Icon-only action. 48dp touch target |
-| `FinoteTextField` | `(value, onValueChange, label, modifier, placeholder?, errorText?, maxLength?, singleLine, keyboardOptions)` | Text input with label, hint, error, counter |
+| `FinoteTextField` | `(value, onValueChange, label, modifier, placeholder?, errorText?, maxLength?, singleLine, keyboardOptions, keyboardActions)` | Text input with label, hint, error, counter |
 | `FinoteSwitch` | `(checked, onCheckedChange, modifier, enabled)` | On/off setting |
 | `FinoteChip` | `(text, selected, onClick, modifier, iconRes?)` | Filter or single choice in a row |
 | `FinoteSegmented` | `<T>(options, selected, onSelect, label, modifier)` | Pick one of 2-3 modes (expense, income, transfer) |
