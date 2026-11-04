@@ -85,4 +85,10 @@
     <string name="transactions_empty">No transactions yet</string>
     <string name="transactions_empty_account">No transactions in this account</string>
     <string name="transactions_error">Couldn\'t load transactions</string>
+    <string name="reimbursement_title">Reimbursable</string>
+    <string name="reimbursement_normal">Normal</string>
+    <string name="reimbursement_pending">Pending</string>
+    <string name="reimbursement_settled">Repaid</string>
+    <string name="reimbursement_save_error">Couldn\'t save</string>
+    <string name="transactions_empty_pending">Nothing pending</string>
 </resources>

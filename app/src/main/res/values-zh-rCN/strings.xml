@@ -85,4 +85,10 @@
     <string name="transactions_empty">暂无交易</string>
     <string name="transactions_empty_account">该账户暂无交易</string>
     <string name="transactions_error">无法加载交易</string>
+    <string name="reimbursement_title">代付</string>
+    <string name="reimbursement_normal">普通</string>
+    <string name="reimbursement_pending">待还款</string>
+    <string name="reimbursement_settled">已还款</string>
+    <string name="reimbursement_save_error">无法保存</string>
+    <string name="transactions_empty_pending">没有待还款项目</string>
 </resources>

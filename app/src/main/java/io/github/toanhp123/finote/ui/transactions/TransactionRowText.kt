@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.ui.transactions
 
 import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
+import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
@@ -48,11 +49,16 @@ fun moneyKindOf(transaction: Transaction): MoneyKind =
         }
     }
 
-/** [accountName] resolves an id to a display name, null when the account is gone. */
+/**
+ * [accountName] resolves an id to a display name, null when the account is gone. A reimbursement status adds its
+ * label ([pendingLabel], [settledLabel]) after the accounts and before the note.
+ */
 fun rowSubtitle(
     transaction: Transaction,
     accountName: (String) -> String?,
     deletedLabel: String,
+    pendingLabel: String,
+    settledLabel: String,
 ): String {
     fun name(id: String) = accountName(id) ?: deletedLabel
 
@@ -62,5 +68,11 @@ fun rowSubtitle(
         } else {
             name(transaction.accountId)
         }
-    return if (transaction.note.isBlank()) accounts else "$accounts · ${transaction.note}"
+    val label =
+        when (transaction.reimbursementStatus) {
+            ReimbursementStatus.NONE -> null
+            ReimbursementStatus.PENDING -> pendingLabel
+            ReimbursementStatus.SETTLED -> settledLabel
+        }
+    return listOfNotNull(accounts, label, transaction.note.takeIf { it.isNotBlank() }).joinToString(" · ")
 }

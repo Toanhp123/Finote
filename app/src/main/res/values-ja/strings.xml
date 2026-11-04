@@ -85,4 +85,10 @@
     <string name="transactions_empty">取引はまだありません</string>
     <string name="transactions_empty_account">この口座の取引はありません</string>
     <string name="transactions_error">取引を読み込めませんでした</string>
+    <string name="reimbursement_title">立替</string>
+    <string name="reimbursement_normal">通常</string>
+    <string name="reimbursement_pending">返済待ち</string>
+    <string name="reimbursement_settled">返済済み</string>
+    <string name="reimbursement_save_error">保存できませんでした</string>
+    <string name="transactions_empty_pending">返済待ちの項目はありません</string>
 </resources>

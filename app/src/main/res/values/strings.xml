@@ -85,4 +85,10 @@
     <string name="transactions_empty">Chưa có giao dịch</string>
     <string name="transactions_empty_account">Tài khoản này chưa có giao dịch</string>
     <string name="transactions_error">Không tải được giao dịch</string>
+    <string name="reimbursement_title">Chi hộ</string>
+    <string name="reimbursement_normal">Bình thường</string>
+    <string name="reimbursement_pending">Chờ trả</string>
+    <string name="reimbursement_settled">Đã trả</string>
+    <string name="reimbursement_save_error">Không lưu được</string>
+    <string name="transactions_empty_pending">Không có khoản chờ trả</string>
 </resources>

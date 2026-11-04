@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -69,29 +68,42 @@ fun TransactionListScreen(
             LoadingRows()
         } else {
             // The chips stay on an error: picking another account retries.
-            AccountChips(state, onIntent)
+            TransactionFilterChips(state, onIntent)
             when {
                 state.hasError -> {
                     FinoteEmptyState(R.drawable.ic_receipt_long, stringResource(R.string.transactions_error))
                 }
 
                 state.days.isEmpty() -> {
-                    val title =
-                        if (state.selectedAccountId == null) {
-                            R.string.transactions_empty
-                        } else {
-                            R.string.transactions_empty_account
-                        }
-                    FinoteEmptyState(R.drawable.ic_receipt_long, stringResource(title))
+                    FinoteEmptyState(R.drawable.ic_receipt_long, stringResource(state.emptyTitle()))
                 }
 
                 else -> {
-                    DayList(state, contentPadding)
+                    DayList(state, onIntent, contentPadding)
                 }
             }
         }
     }
+    val editing = remember(state.days, state.editingId) { state.editingTransaction()?.reimbursementChoice() }
+    ReimbursementSheet(
+        isVisible = state.editingId != null,
+        selected = editing,
+        hasSaveError = state.hasSaveError,
+        onPick = { onIntent(TransactionListIntent.ReimbursementPicked(it)) },
+        onDismiss = { onIntent(TransactionListIntent.SheetDismissed) },
+    )
 }
+
+@StringRes
+private fun TransactionListState.emptyTitle(): Int =
+    when {
+        isPendingOnly -> R.string.transactions_empty_pending
+        selectedAccountId == null -> R.string.transactions_empty
+        else -> R.string.transactions_empty_account
+    }
+
+private fun TransactionListState.editingTransaction(): Transaction? =
+    days.asSequence().flatMap { it.transactions }.firstOrNull { it.id == editingId }
 
 @Composable
 private fun LoadingRows() {
@@ -104,37 +116,14 @@ private fun LoadingRows() {
 }
 
 @Composable
-private fun AccountChips(
-    state: TransactionListState,
-    onIntent: (TransactionListIntent) -> Unit,
-) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = FinoteTheme.spacing.lg),
-        horizontalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
-    ) {
-        item(key = "all") {
-            FinoteChip(
-                text = stringResource(R.string.transactions_all),
-                selected = state.selectedAccountId == null,
-                onClick = { onIntent(TransactionListIntent.SelectAccount(null)) },
-            )
-        }
-        items(state.accounts, key = { it.id }) { account ->
-            FinoteChip(
-                text = displayName(account.name, account.nameKey),
-                selected = state.selectedAccountId == account.id,
-                onClick = { onIntent(TransactionListIntent.SelectAccount(account.id)) },
-            )
-        }
-    }
-}
-
-@Composable
 private fun DayList(
     state: TransactionListState,
+    onIntent: (TransactionListIntent) -> Unit,
     contentPadding: PaddingValues,
 ) {
     val resources = LocalResources.current
+    // An archived or missing account cannot be written to, so its rows do not open the sheet.
+    val openableAccountIds = remember(state.accounts) { state.accounts.mapTo(HashSet()) { it.id } }
     val accountNames =
         remember(state.accountsById, resources) {
             state.accountsById.mapValues { resources.displayName(it.value.name, it.value.nameKey) }
@@ -144,12 +133,19 @@ private fun DayList(
         verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
     ) {
         state.days.forEach { day ->
-            item(key = "day-${day.date}") { DayHeader(day, state.today) }
+            item(key = "day-${day.date}") { DayHeader(day, state.today, showNet = !state.isPendingOnly) }
             items(day.transactions, key = { it.id }) { transaction ->
+                val canOpen = transaction.type == TransactionType.EXPENSE && transaction.accountId in openableAccountIds
                 TransactionItem(
                     transaction = transaction,
                     category = transaction.categoryId?.let(state.categoriesById::get),
                     accountNames = accountNames,
+                    onClick =
+                        if (canOpen) {
+                            { onIntent(TransactionListIntent.RowClicked(transaction.id)) }
+                        } else {
+                            null
+                        },
                 )
             }
         }
@@ -160,6 +156,7 @@ private fun DayList(
 private fun DayHeader(
     day: TransactionDay,
     today: LocalDate,
+    showNet: Boolean,
 ) {
     val label =
         when (val label = dayLabel(day.date, today, LocalConfiguration.current.locales[0])) {
@@ -181,7 +178,7 @@ private fun DayHeader(
             color = FinoteTheme.scheme.onSurfaceVariant,
             style = FinoteTheme.typography.material.titleSmall,
         )
-        DayNet(day.net)
+        if (showNet) DayNet(day.net)
     }
 }
 
@@ -200,18 +197,26 @@ private fun TransactionItem(
     transaction: Transaction,
     category: Category?,
     accountNames: Map<String, String>,
+    onClick: (() -> Unit)?,
 ) {
     val deletedLabel = stringResource(R.string.transactions_deleted_account)
     val title = category?.let { displayName(it.name, it.nameKey) } ?: stringResource(transaction.type.fallbackTitle())
     TransactionRow(
         title = title,
-        subtitle = rowSubtitle(transaction, accountNames::get, deletedLabel),
+        subtitle =
+            rowSubtitle(
+                transaction,
+                accountNames::get,
+                deletedLabel,
+                pendingLabel = stringResource(R.string.reimbursement_pending),
+                settledLabel = stringResource(R.string.reimbursement_settled),
+            ),
         amount = transaction.amount,
         kind = moneyKindOf(transaction),
         iconRes = category?.let { iconRes(it.icon) } ?: transaction.type.fallbackIcon(),
         colorArgb = category?.color ?: FinoteTheme.scheme.onSurfaceVariant.toArgb(),
         modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg),
-        onClick = null,
+        onClick = onClick,
     )
 }
 

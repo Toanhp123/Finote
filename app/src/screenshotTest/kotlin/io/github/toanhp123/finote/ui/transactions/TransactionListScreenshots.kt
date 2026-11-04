@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
@@ -16,10 +17,12 @@ import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.groupByDay
 import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
+import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.common.component.PreviewGreenArgb
 import io.github.toanhp123.finote.ui.common.component.PreviewRedArgb
+import io.github.toanhp123.finote.ui.common.component.SheetSurface
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -27,6 +30,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 
 private const val PHONE = "spec:width=360dp,height=640dp"
+private const val SCRIM_ALPHA = 0.6f
 
 @Preview(name = "Light", device = PHONE)
 @Preview(name = "Dark", device = PHONE, uiMode = Configuration.UI_MODE_NIGHT_YES)
@@ -59,6 +63,57 @@ private fun TransactionListErrorPreview() = Frame(populated().copy(days = emptyL
 @Composable
 private fun TransactionListLoadingPreview() = Frame(TransactionListState(today = TODAY))
 
+@PreviewTest
+@Preview(name = "Light", device = PHONE)
+@Composable
+private fun TransactionListReimbursementPreview() = Frame(populated(withReimbursement = true))
+
+@PreviewTest
+@Preview(name = "Light", device = PHONE)
+@Composable
+private fun TransactionListPendingPreview() = Frame(pendingMode(populated(withReimbursement = true)))
+
+@PreviewTest
+@Preview(name = "Light", device = PHONE)
+@Composable
+private fun TransactionListPendingEmptyPreview() =
+    Frame(pendingMode(populated(withReimbursement = true)).copy(days = emptyList()))
+
+@PreviewTest
+@Preview(name = "Light", device = PHONE)
+@Preview(name = "Dark", device = PHONE, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ReimbursementSheetPreview() = SheetOverList(ReimbursementChoice.PENDING, hasSaveError = false)
+
+@PreviewTest
+@Preview(name = "Light", device = PHONE)
+@Composable
+private fun ReimbursementSheetErrorPreview() = SheetOverList(ReimbursementChoice.NORMAL, hasSaveError = true)
+
+/** layoutlib has no second window: the sheet is drawn as its content over a scrim, like the other overlays. */
+@Composable
+private fun SheetOverList(
+    selected: ReimbursementChoice,
+    hasSaveError: Boolean,
+) {
+    Box {
+        Frame(populated(withReimbursement = true))
+        FinoteTheme(dynamicColor = false) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(FinoteTheme.scheme.scrim.copy(alpha = SCRIM_ALPHA)),
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                val spacing = FinoteTheme.spacing
+                SheetSurface(
+                    contentPadding = PaddingValues(start = spacing.lg, end = spacing.lg, bottom = spacing.lg),
+                ) {
+                    ReimbursementSheetContent(selected = selected, hasSaveError = hasSaveError, onPick = {})
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun Frame(state: TransactionListState) {
     FinoteTheme(dynamicColor = false) {
@@ -86,13 +141,30 @@ private fun at(
         .toInstant()
         .toEpochMilli()
 
-private fun populated(): TransactionListState {
+private fun pendingMode(all: TransactionListState): TransactionListState {
+    val pending =
+        all.days
+            .flatMap { it.transactions }
+            .filter { it.reimbursementStatus == ReimbursementStatus.PENDING }
+    return all.copy(selectedAccountId = null, isPendingOnly = true, days = groupByDay(pending, zone, null))
+}
+
+// withReimbursement marks two expenses; the plain list keeps the references of the list screenshots unchanged.
+private fun populated(withReimbursement: Boolean = false): TransactionListState {
     val yesterday = TODAY.minusDays(1)
     val older = LocalDate.of(2026, 10, 29)
     val rows =
         listOf(
             row("t1", TransactionType.INCOME, 15_000_000, at(TODAY, 9), category = "sys_income_salary"),
-            row("t2", TransactionType.EXPENSE, 45_000, at(TODAY, 8), category = "sys_food_coffee", note = "Latte"),
+            row(
+                "t2",
+                TransactionType.EXPENSE,
+                45_000,
+                at(TODAY, 8),
+                category = "sys_food_coffee",
+                note = "Latte",
+                status = if (withReimbursement) ReimbursementStatus.PENDING else ReimbursementStatus.NONE,
+            ),
             row(
                 "t3",
                 TransactionType.TRANSFER,
@@ -103,9 +175,21 @@ private fun populated(): TransactionListState {
                 fee = 1_000,
             ),
             row("t4", TransactionType.ADJUSTMENT, 120_000, at(yesterday, 10), direction = AdjustmentDirection.OUT),
-            row("t5", TransactionType.EXPENSE, 80_000, at(older, 12), category = "sys_food_coffee"),
+            row(
+                "t5",
+                TransactionType.EXPENSE,
+                80_000,
+                at(older, 12),
+                category = "sys_food_coffee",
+                status = if (withReimbursement) ReimbursementStatus.SETTLED else ReimbursementStatus.NONE,
+            ),
             row("t6", TransactionType.EXPENSE, 30_000, at(older, 9)),
-        )
+        ) +
+            if (withReimbursement) {
+                listOf(row("t7", TransactionType.EXPENSE, 60_000, at(older, 8), status = ReimbursementStatus.PENDING))
+            } else {
+                emptyList()
+            }
     return TransactionListState(
         isLoading = false,
         today = TODAY,
@@ -126,6 +210,7 @@ private fun row(
     note: String = "",
     fee: Long = 0,
     direction: AdjustmentDirection? = null,
+    status: ReimbursementStatus = ReimbursementStatus.NONE,
 ) = Transaction(
     id = id,
     amount = amount,
@@ -140,6 +225,8 @@ private fun row(
     updatedAt = at,
     categoryId = category,
     note = note,
+    isExcludedFromAnalytics = status != ReimbursementStatus.NONE,
+    reimbursementStatus = status,
 )
 
 private fun account(

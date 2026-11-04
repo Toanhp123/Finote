@@ -5,6 +5,7 @@ import io.github.toanhp123.finote.domain.account.B
 import io.github.toanhp123.finote.domain.account.adjustment
 import io.github.toanhp123.finote.domain.account.tx
 import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
+import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import org.junit.Assert.assertEquals
@@ -16,6 +17,8 @@ class TransactionRowTextTest {
     private val today = LocalDate.of(2026, 11, 4)
     private val names = mapOf(A to "Vietcombank", B to "MoMo", "cash" to "Tiền mặt")
     private val deleted = "Tài khoản đã xóa"
+    private val pendingLabel = "Chờ trả"
+    private val settledLabel = "Đã trả"
 
     private fun label(date: LocalDate) = dayLabel(date, today, Locale.ENGLISH)
 
@@ -49,22 +52,25 @@ class TransactionRowTextTest {
     fun `subtitle is the account name and the note`() {
         val expense = tx(TransactionType.EXPENSE, 1, account = "cash")
 
-        assertEquals("Tiền mặt", rowSubtitle(expense, names::get, deleted))
-        assertEquals("Tiền mặt · Bún bò", rowSubtitle(expense.copy(note = "Bún bò"), names::get, deleted))
+        assertEquals("Tiền mặt", rowSubtitle(expense, names::get, deleted, pendingLabel, settledLabel))
+        assertEquals(
+            "Tiền mặt · Bún bò",
+            rowSubtitle(expense.copy(note = "Bún bò"), names::get, deleted, pendingLabel, settledLabel),
+        )
     }
 
     @Test
     fun `a blank note adds no separator`() {
         val expense = tx(TransactionType.EXPENSE, 1, account = "cash").copy(note = "  ")
 
-        assertEquals("Tiền mặt", rowSubtitle(expense, names::get, deleted))
+        assertEquals("Tiền mặt", rowSubtitle(expense, names::get, deleted, pendingLabel, settledLabel))
     }
 
     @Test
     fun `transfer subtitle shows source and destination`() {
         val transfer = tx(TransactionType.TRANSFER, 1, account = A, to = B)
 
-        assertEquals("Vietcombank → MoMo", rowSubtitle(transfer, names::get, deleted))
+        assertEquals("Vietcombank → MoMo", rowSubtitle(transfer, names::get, deleted, pendingLabel, settledLabel))
     }
 
     @Test
@@ -72,7 +78,20 @@ class TransactionRowTextTest {
         val expense = tx(TransactionType.EXPENSE, 1, account = "gone")
         val transfer = tx(TransactionType.TRANSFER, 1, account = A, to = "gone")
 
-        assertEquals(deleted, rowSubtitle(expense, names::get, deleted))
-        assertEquals("Vietcombank → $deleted", rowSubtitle(transfer, names::get, deleted))
+        assertEquals(deleted, rowSubtitle(expense, names::get, deleted, pendingLabel, settledLabel))
+        assertEquals("Vietcombank → $deleted", rowSubtitle(transfer, names::get, deleted, pendingLabel, settledLabel))
+    }
+
+    @Test
+    fun `a reimbursement status adds its label after the account and before the note`() {
+        val expense = tx(TransactionType.EXPENSE, 1, account = "cash")
+        val pending = expense.copy(reimbursementStatus = ReimbursementStatus.PENDING)
+        val settled = expense.copy(note = "Bún bò", reimbursementStatus = ReimbursementStatus.SETTLED)
+
+        assertEquals("Tiền mặt · Chờ trả", rowSubtitle(pending, names::get, deleted, pendingLabel, settledLabel))
+        assertEquals(
+            "Tiền mặt · Đã trả · Bún bò",
+            rowSubtitle(settled, names::get, deleted, pendingLabel, settledLabel),
+        )
     }
 }
