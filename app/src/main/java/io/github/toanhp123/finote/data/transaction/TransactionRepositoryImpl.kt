@@ -108,9 +108,9 @@ class TransactionRepositoryImpl
             require(getActiveAccountIds(wanted).containsAll(wanted)) { ACCOUNT_INACTIVE }
         }
 
+        private fun TransactionEntity.accountIds() = setOfNotNull(accountId, toAccountId)
+
         private companion object {
             const val ACCOUNT_INACTIVE = "account does not exist, is deleted or archived"
         }
     }
-
-private fun TransactionEntity.accountIds() = setOfNotNull(accountId, toAccountId)

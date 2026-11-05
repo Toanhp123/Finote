@@ -2,7 +2,7 @@ package io.github.toanhp123.finote.ui.transactions
 
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.category.model.Category
-import io.github.toanhp123.finote.domain.transaction.TransactionDay
+import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import java.time.LocalDate
 
 /**

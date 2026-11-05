@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.domain.transaction
+package io.github.toanhp123.finote.ui.cashentry
 
 /** Cash-entry keypad calculator. Operators are stored as '+', '−', '×', '÷'. All money is whole VND. */
 object AmountExpression {
@@ -110,4 +110,44 @@ object AmountExpression {
             else -> expression + "0".repeat(minOf(GROUP_ZEROS, MAX_DIGITS - tail.length))
         }
     }
+}
+
+sealed interface AmountResult {
+    data object Empty : AmountResult
+
+    data class Ok(
+        val amount: Long,
+    ) : AmountResult
+
+    data class NotPositive(
+        val value: Long,
+    ) : AmountResult
+
+    data class Invalid(
+        val reason: InvalidReason,
+    ) : AmountResult
+}
+
+enum class InvalidReason { DIVIDE_BY_ZERO, OVERFLOW }
+
+enum class CalcKey(
+    /** The digit this key types, or null for a key that is not a single digit. */
+    val digit: Char? = null,
+) {
+    D0('0'),
+    D1('1'),
+    D2('2'),
+    D3('3'),
+    D4('4'),
+    D5('5'),
+    D6('6'),
+    D7('7'),
+    D8('8'),
+    D9('9'),
+    TRIPLE_ZERO,
+    BACKSPACE,
+    PLUS,
+    MINUS,
+    TIMES,
+    DIVIDE,
 }

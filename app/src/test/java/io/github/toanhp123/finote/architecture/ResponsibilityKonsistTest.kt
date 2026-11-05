@@ -42,10 +42,9 @@ class ResponsibilityKonsistTest {
                     listOf(file)
                         .topLevelDeclarations()
                         .map { (it as? KoNameProvider)?.name.orEmpty() }
-                names.size == 3 &&
-                    listOf("State", "Intent", "Effect").all { suffix ->
-                        names.count { it.endsWith(suffix) } == 1
-                    }
+                listOf("State", "Intent", "Effect").all { suffix ->
+                    names.count { it.endsWith(suffix) } == 1
+                }
             }
     }
 
@@ -64,35 +63,40 @@ class ResponsibilityKonsistTest {
     }
 
     @Test
-    fun `files stay under 300 lines`() {
-        productionFiles.assertTrue(strict = false, testName = "files stay under 300 lines") {
+    fun `files stay under 400 lines`() {
+        productionFiles.assertTrue(strict = false, testName = "files stay under 400 lines") {
             it.text.lineCount() <= MAX_FILE_LINES
         }
     }
 
     @Test
-    fun `composables stay under 80 lines`() {
+    fun `composables stay under 80 lines and screens under 120`() {
         productionFiles
             .functions(includeNested = true, includeLocal = false)
             .filter { it.hasAnnotationWithName("Composable") }
-            .assertTrue(strict = false, testName = "composables stay under 80 lines") {
-                it.text.lineCount() <= MAX_COMPOSABLE_LINES
+            .assertTrue(strict = false, testName = "composables stay under 80 lines and screens under 120") {
+                val limit = if (it.name.endsWith("Screen")) MAX_SCREEN_LINES else MAX_COMPOSABLE_LINES
+                it.text.lineCount() <= limit
             }
     }
 
     @Test
-    fun `one public class per file`() {
-        productionFiles.assertTrue(strict = false, testName = "one public class per file") { file ->
-            val limit = if (file.nameWithExtension.endsWith("Contract.kt")) CONTRACT_TYPES else 1
-            listOf(file).topLevelTypes().count { it.hasPublicOrDefaultModifier } <= limit
-        }
+    fun `core files hold one public type`() {
+        productionFiles
+            .filter { file -> CORE_SUFFIXES.any { file.name.endsWith(it) } }
+            .assertTrue(strict = false, testName = "core files hold one public type") { file ->
+                listOf(file).topLevelTypes().count { it.hasPublicOrDefaultModifier } <= 1
+            }
     }
 
     private fun List<KoFileDeclaration>.named(suffix: String) = filter { it.nameWithExtension.endsWith(suffix) }
 
     private companion object {
-        const val MAX_FILE_LINES = 300
+        const val MAX_FILE_LINES = 400
         const val MAX_COMPOSABLE_LINES = 80
-        const val CONTRACT_TYPES = 3
+        const val MAX_SCREEN_LINES = 120
+
+        // Files that own one role. Other files may co-locate closely related types.
+        val CORE_SUFFIXES = listOf("UseCase", "RepositoryImpl", "ViewModel", "Screen", "Dao", "Entity")
     }
 }

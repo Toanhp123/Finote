@@ -95,7 +95,7 @@ Token:
 1. Put it in the matching class in `ui/common/theme/` (`FinoteSizes`, `FinoteSpacing`, and so on). Every token group is its own class in its own file.
 2. Expose it through `FinoteTheme` if it is a new group.
 3. A constant token gets a default and is not provided. Only tokens that follow the color scheme are provided in `FinoteTheme`.
-4. A new `CompositionLocal` in `ui/common/` needs an allowlist line in `.editorconfig` for compose-rules. That edit goes in its own commit. `@Suppress` is banned.
+4. A new `CompositionLocal` in `ui/common/` needs an allowlist line in `.editorconfig` for compose-rules. That edit goes in its own commit. Never suppress a compose-rules finding; `@Suppress` is allowed only for the detekt size rules in `docs/architecture.md`.
 
 Component:
 1. One file in `ui/common/component/`, named after the component. Tokens only, no raw numbers or colors.

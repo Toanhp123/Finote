@@ -20,7 +20,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import io.github.toanhp123.finote.R
-import io.github.toanhp123.finote.domain.transaction.CalcKey
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 private val KeyRows =

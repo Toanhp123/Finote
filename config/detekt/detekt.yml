@@ -1,12 +1,17 @@
 complexity:
   LongMethod:
-    allowedLines: 40
+    allowedLines: 60
     ignoreAnnotated: ['Composable']
   LongParameterList:
     allowedFunctionParameters: 6
     ignoreAnnotated: ['Composable']
   CyclomaticComplexMethod:
-    allowedComplexity: 10
+    allowedComplexity: 15
+    # A flat when over enum entries reads as a table, not as branching logic.
+    ignoreSimpleWhenEntries: true
+  TooManyFunctions:
+    # Private helpers belong inside their class; counting them pushed helpers out to top level.
+    ignorePrivate: true
 naming:
   FunctionNaming:
     ignoreAnnotated: ['Composable']

@@ -5,6 +5,7 @@ import com.lemonappdev.konsist.api.ext.list.classes
 import com.lemonappdev.konsist.api.ext.list.functions
 import com.lemonappdev.konsist.api.ext.list.properties
 import com.lemonappdev.konsist.api.verify.assertTrue
+import org.junit.Assert
 import org.junit.Test
 
 class ProjectRulesKonsistTest {
@@ -64,10 +65,36 @@ class ProjectRulesKonsistTest {
     }
 
     @Test
-    fun `suppress is forbidden`() {
-        productionFiles.assertTrue(strict = false, testName = "suppress is forbidden") {
-            !suppress.containsMatchIn(it.text)
+    fun `suppress only allowed detekt rules with a reason`() {
+        productionFiles.assertTrue(
+            strict = false,
+            testName = "suppress only allowed detekt rules with a reason",
+        ) { file ->
+            file.text
+                .lines()
+                .filter { suppress.containsMatchIn(it) }
+                .all { ALLOWED_SUPPRESS.containsMatchIn(it) }
         }
+    }
+
+    @Test
+    fun `allowed suppress pattern`() {
+        val ok =
+            listOf(
+                """@Suppress("LongMethod") // why: flat mapping of every enum entry""",
+                """    @Suppress("LongMethod", "CyclomaticComplexMethod") // why: one state machine step""",
+            )
+        val bad =
+            listOf(
+                """@Suppress("LongMethod")""",
+                """@Suppress("LongMethod") // why: short""",
+                """@Suppress("konsist.layers") // why: needed for some reason""",
+                """@file:Suppress("LongMethod") // why: whole file is a big table""",
+                """@SuppressLint("NewApi") // why: checked at runtime already""",
+                """@Suppress("MagicNumber") // why: numbers are fine right here""",
+            )
+        Assert.assertTrue(ok.all { ALLOWED_SUPPRESS.containsMatchIn(it) })
+        Assert.assertTrue(bad.none { ALLOWED_SUPPRESS.containsMatchIn(it) })
     }
 
     private fun String.isMoneyName() = MONEY_WORDS.any { contains(it, ignoreCase = true) }
@@ -94,6 +121,11 @@ class ProjectRulesKonsistTest {
             .orEmpty()
 
     private companion object {
+        const val RULE = "(LongMethod|CyclomaticComplexMethod|LongParameterList)"
+
+        // Only detekt size rules, never Konsist or Lint, and always with a reason of 10+ chars.
+        val ALLOWED_SUPPRESS = Regex("""^\s*@Suppress\("$RULE"(, "$RULE")*\)\s*// why: \S.{9,}""")
+
         val MONEY_WORDS = listOf("amount", "balance", "limit", "fee")
     }
 }

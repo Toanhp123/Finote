@@ -1,6 +1,19 @@
 package io.github.toanhp123.finote.ui.navigation
 
 import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
+
+@Serializable
+data object Overview : NavKey
+
+@Serializable
+data object Transactions : NavKey
+
+@Serializable
+data object Budget : NavKey
+
+@Serializable
+data object Settings : NavKey
 
 /** The tabs of the bottom bar, in display order. */
 val TopLevelTabs: List<NavKey> = listOf(Overview, Transactions, Budget, Settings)

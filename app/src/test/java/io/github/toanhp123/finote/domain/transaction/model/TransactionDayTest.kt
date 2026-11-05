@@ -1,12 +1,9 @@
-package io.github.toanhp123.finote.domain.transaction
+package io.github.toanhp123.finote.domain.transaction.model
 
 import io.github.toanhp123.finote.domain.account.A
 import io.github.toanhp123.finote.domain.account.B
 import io.github.toanhp123.finote.domain.account.adjustment
 import io.github.toanhp123.finote.domain.account.tx
-import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
-import io.github.toanhp123.finote.domain.transaction.model.Transaction
-import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -14,7 +11,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-class TransactionDaysTest {
+class TransactionDayTest {
     private val vn = ZoneId.of("Asia/Ho_Chi_Minh")
     private val noon = ms("2026-11-04T05:00:00Z")
 

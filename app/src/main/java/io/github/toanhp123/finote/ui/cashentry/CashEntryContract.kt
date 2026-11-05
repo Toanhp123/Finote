@@ -2,8 +2,6 @@ package io.github.toanhp123.finote.ui.cashentry
 
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.category.model.Category
-import io.github.toanhp123.finote.domain.transaction.AmountResult
-import io.github.toanhp123.finote.domain.transaction.CalcKey
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import java.time.LocalDate
 
@@ -70,3 +68,6 @@ sealed interface CashEntryIntent {
 sealed interface CashEntryEffect {
     data object Close : CashEntryEffect
 }
+
+/** The content the cash-entry sheet shows. Only [KEYPAD] shows the calculator keypad. */
+enum class CashEntryPage { KEYPAD, ACCOUNT, CATEGORY, NOTE }

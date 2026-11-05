@@ -76,3 +76,14 @@ fun rowSubtitle(
         }
     return listOfNotNull(accounts, label, transaction.note.takeIf { it.isNotBlank() }).joinToString(" · ")
 }
+
+/** What a day header says. Today and yesterday are words the screen takes from `strings.xml`. */
+sealed interface DayLabel {
+    data object Today : DayLabel
+
+    data object Yesterday : DayLabel
+
+    data class Date(
+        val text: String,
+    ) : DayLabel
+}

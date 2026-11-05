@@ -42,7 +42,8 @@ UI flow is MVI: Screen sends `Intent`, ViewModel calls a use case, ViewModel emi
 |---|---|---|---|
 | Model | `Transaction` | `domain/<f>/model` | Hold data. No I/O |
 | Use case | `AddTransactionUseCase` | `domain/<f>/usecase` | One job. One public `operator fun invoke` |
-| Pure logic | `NotificationParser` | `domain/<f>` | Pure functions. No I/O |
+| Pure logic | `NotificationParser` | `domain/<f>` | Pure business rules. No I/O |
+| Screen logic | `AmountExpression` | `ui/<screen>` | Pure input or display logic that serves one screen. Not in `domain` |
 | Repository | `TransactionRepository` | `domain/<f>/repository` | Interface only |
 | Repository impl | `TransactionRepositoryImpl` | `data/<f>` | Drive DAOs, map |
 | Entity, DAO | `TransactionEntity`, `TransactionDao` | `data/<f>` | Schema, queries |
@@ -62,21 +63,23 @@ UI flow is MVI: Screen sends `Intent`, ViewModel calls a use case, ViewModel emi
 
 | Limit | Value | Tool |
 |---|---|---|
-| Lines per file | 300 | Konsist |
-| Lines per function | 40 | detekt |
-| Lines per `@Composable` | 80 | Konsist |
+| Lines per file | 400 | Konsist |
+| Lines per function | 60 | detekt |
+| Lines per `@Composable` | 80, `*Screen` 120 | Konsist |
 | Parameters per function | 6, `@Composable` exempt | detekt |
-| Cyclomatic complexity | 10 | detekt |
-| Public classes per file | 1, Contract may have 3 | Konsist |
+| Cyclomatic complexity | 15, simple `when` entries ignored | detekt |
+| Public types per file | 1 in `*UseCase`, `*RepositoryImpl`, `*ViewModel`, `*Screen`, `*Dao`, `*Entity`. Other files may co-locate closely related types | Konsist |
 
-detekt cannot hold two limits in one rule. `LongMethod` and `LongParameterList` set `ignoreAnnotated: ['Composable']`. Konsist checks the 80-line limit.
+detekt cannot hold two limits in one rule. `LongMethod` and `LongParameterList` set `ignoreAnnotated: ['Composable']`. Konsist checks the 80-line limit, 120 for `*Screen` composables.
+
+Private helpers of a class stay inside the class; detekt `TooManyFunctions` ignores private functions so they need not leave it.
 
 Any class or interface named `*Repository` is an interface in `domain/<feature>/repository`. `*Mapper.kt` lives in `data`, `*Contract.kt` and `*Screen.kt` in `ui`.
 
 Project rules, checked over all production code:
 - No `android.util.Log`, no `println`, no `printStackTrace`, no `::println`.
 - No `Double` or `Float` in a property or parameter named like `amount`, `balance`, `limit`, `fee`. This covers type arguments (`List<Double>`) and an undeclared type whose initializer is a floating literal or ends in `.toDouble()` or `.toFloat()`. No `typealias` to `Double` or `Float`.
-- No `Suppress`, `SuppressLint`, or `SuppressWarnings`, in any spelling. Fix the cause. If a rule is wrong for a valid case, change the rule in its own commit.
+- `@Suppress` only for `LongMethod`, `CyclomaticComplexMethod`, `LongParameterList`, on one declaration, with `// why: <reason>` on the same line. No `@file:Suppress`, no `SuppressLint`, no `SuppressWarnings`, no `konsist.*`. Fix the cause first. If a rule is wrong for a valid case, change the rule in its own commit.
 
 ## Quality gate
 

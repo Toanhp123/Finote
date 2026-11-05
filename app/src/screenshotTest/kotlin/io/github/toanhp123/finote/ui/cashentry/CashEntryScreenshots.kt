@@ -13,8 +13,6 @@ import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
-import io.github.toanhp123.finote.domain.transaction.AmountResult
-import io.github.toanhp123.finote.domain.transaction.InvalidReason
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.common.component.PreviewGreenArgb
 import io.github.toanhp123.finote.ui.common.component.PreviewRedArgb

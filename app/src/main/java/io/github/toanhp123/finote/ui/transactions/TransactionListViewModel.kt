@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
-import io.github.toanhp123.finote.domain.transaction.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
+import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
@@ -22,16 +22,6 @@ import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
-
-private const val SELECTED_ACCOUNT_KEY = "selected_account_id"
-private const val PENDING_ONLY_KEY = "pending_only"
-
-/** The list for one filter choice; a null [days] is a failed list. */
-private data class Listing(
-    val accountId: String?,
-    val isPendingOnly: Boolean,
-    val days: List<TransactionDay>?,
-)
 
 @HiltViewModel
 class TransactionListViewModel
@@ -172,7 +162,19 @@ class TransactionListViewModel
                     }
                 }
         }
-    }
 
-private fun List<TransactionDay>.containsTransaction(id: String?): Boolean =
-    id != null && any { day -> day.transactions.any { it.id == id } }
+        private fun List<TransactionDay>.containsTransaction(id: String?): Boolean =
+            id != null && any { day -> day.transactions.any { it.id == id } }
+
+        /** The list for one filter choice; a null [days] is a failed list. */
+        private data class Listing(
+            val accountId: String?,
+            val isPendingOnly: Boolean,
+            val days: List<TransactionDay>?,
+        )
+
+        private companion object {
+            const val SELECTED_ACCOUNT_KEY = "selected_account_id"
+            const val PENDING_ONLY_KEY = "pending_only"
+        }
+    }

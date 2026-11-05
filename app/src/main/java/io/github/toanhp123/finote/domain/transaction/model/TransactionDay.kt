@@ -1,8 +1,7 @@
-package io.github.toanhp123.finote.domain.transaction
+package io.github.toanhp123.finote.domain.transaction.model
 
-import io.github.toanhp123.finote.domain.transaction.model.Transaction
-import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 
 /**
@@ -41,3 +40,10 @@ private fun netOf(
     if (net == Long.MIN_VALUE) throw ArithmeticException("net out of range")
     return net
 }
+
+/** One local day of the list. [net] is VND: positive means more came in than went out. */
+data class TransactionDay(
+    val date: LocalDate,
+    val net: Long,
+    val transactions: List<Transaction>,
+)
