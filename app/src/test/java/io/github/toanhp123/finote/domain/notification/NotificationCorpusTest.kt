@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.domain.notification
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
@@ -153,9 +154,44 @@ class NotificationCorpusTest {
         assertNotNull("MoMo dedup item must exist", momo)
         assertNotNull("VCB dedup item must exist", vcb)
         assertEquals(momo?.expected?.amount, vcb?.expected?.amount)
-        assertEquals(momo?.expected?.accountMask, vcb?.expected?.accountMask)
         assertEquals(momo?.expected?.sign, vcb?.expected?.sign)
         val gapMs = kotlin.math.abs(momo!!.postTime - vcb!!.postTime)
-        assertTrue("Dedup pair must be within 5 minutes, gap was $gapMs ms", gapMs <= 5 * 60_000L)
+        assertTrue("Dedup pair must be within 30 seconds, gap was $gapMs ms", gapMs <= 30_000L)
+    }
+
+    @Test
+    fun `available credit chains per package and account mask`() {
+        val groups =
+            NotificationCorpusFixtures
+                .financialTransactions()
+                .filter { it.expected.availableCredit != null }
+                .groupBy { it.packageName to it.expected.accountMask }
+        assertTrue("Expected credit-card items with availableCredit", groups.isNotEmpty())
+        for ((key, group) in groups) {
+            var prev: Long? = null
+            for (item in group.sortedBy { it.postTime }) {
+                val e = item.expected
+                val credit = e.availableCredit
+                assertNull("A credit limit must not feed postBalance: ${item.id}", e.postBalance)
+                val delta = (e.amount ?: 0L) * if (e.sign == "-") -1L else 1L
+                if (credit != null && prev != null) {
+                    assertEquals("Credit chain broken at ${item.id} in $key", prev + delta, credit)
+                }
+                prev = credit
+            }
+        }
+    }
+
+    @Test
+    fun `merchant and note are verbatim substrings of the notification text`() {
+        for (item in NotificationCorpusFixtures.all) {
+            val text = item.bigText ?: item.content
+            item.expected.merchant?.let {
+                assertTrue("merchant '$it' is not a substring of the text for ${item.id}", it in text)
+            }
+            item.expected.note?.let {
+                assertTrue("note '$it' is not a substring of the text for ${item.id}", it in text)
+            }
+        }
     }
 }

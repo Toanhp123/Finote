@@ -75,7 +75,7 @@
       "accountMask": "9876",
       "postBalance": 7850000,
       "merchant": "SHOPEE",
-      "note": "GD tai SHOPEE",
+      "note": null,
       "reference": null,
       "transactionType": "EXPENSE"
     }
@@ -136,7 +136,7 @@
       "accountMask": "9876",
       "postBalance": 8000000,
       "merchant": "SHOPEE",
-      "note": "hoan tien tu SHOPEE",
+      "note": null,
       "reference": null,
       "transactionType": "REFUND"
     }
@@ -247,7 +247,7 @@
     "postTime": 1793923600000,
     "channelId": "PROMOTION",
     "title": "VCB Digibank",
-    "content": "Vietcombank chuc mung sinh nhat Quy khach Tran Van An! Tang voucher 100k khi chi tieu qua the.",
+    "content": "Vietcombank chuc mung sinh nhat Quy khach Nguyen Van A! Tang voucher 100k khi chi tieu qua the.",
     "expected": {
       "shouldIgnore": true,
       "ignoreReason": "PROMOTION",
@@ -295,7 +295,7 @@
       "amount": 500000,
       "accountMask": "4567",
       "postBalance": 19944000,
-      "merchant": "MoMo",
+      "merchant": "VI MOMO",
       "note": "NAP TIEN VAO VI MOMO",
       "reference": "MBVCB.887766554",
       "transactionType": "TRANSFER"
@@ -315,7 +315,7 @@
       "amount": 120000,
       "accountMask": "4567",
       "postBalance": 19824000,
-      "merchant": "GrabFood",
+      "merchant": "GRABFOOD",
       "note": "GRABFOOD thanh toan don hang",
       "reference": "MBVCB.665544332",
       "transactionType": "EXPENSE"
@@ -416,9 +416,10 @@
       "sign": "-",
       "amount": 320000,
       "accountMask": "1234",
-      "postBalance": 24680000,
+      "postBalance": null,
+      "availableCredit": 24680000,
       "merchant": "LOTTE MART",
-      "note": "GD thanh cong tai LOTTE MART",
+      "note": null,
       "reference": null,
       "transactionType": "EXPENSE"
     }
@@ -456,9 +457,10 @@
       "sign": "+",
       "amount": 320000,
       "accountMask": "1234",
-      "postBalance": 25000000,
+      "postBalance": null,
+      "availableCredit": 25000000,
       "merchant": "LOTTE MART",
-      "note": "hoan tien tu LOTTE MART",
+      "note": null,
       "reference": null,
       "transactionType": "REFUND"
     }
@@ -638,7 +640,7 @@
       "accountMask": "1234",
       "postBalance": 420000,
       "merchant": "Highlands Coffee",
-      "note": "Thanh toan Highlands Coffee",
+      "note": null,
       "reference": null,
       "transactionType": "EXPENSE"
     }
@@ -658,7 +660,7 @@
       "accountMask": "1234",
       "postBalance": 368000,
       "merchant": "Circle K",
-      "note": "Thanh toan Circle K",
+      "note": null,
       "reference": null,
       "transactionType": "EXPENSE"
     }
@@ -679,7 +681,7 @@
       "accountMask": "1234",
       "postBalance": 218000,
       "merchant": "Shopee",
-      "note": "Thanh toan Don hang Shopee",
+      "note": null,
       "reference": null,
       "transactionType": "EXPENSE"
     }
@@ -699,7 +701,7 @@
       "accountMask": "4567",
       "postBalance": null,
       "merchant": "GrabFood",
-      "note": "Thanh toan GrabFood",
+      "note": null,
       "reference": null,
       "transactionType": "EXPENSE"
     }
@@ -740,7 +742,7 @@
       "accountMask": "1234",
       "postBalance": 718000,
       "merchant": "Vietcombank",
-      "note": "Nap tien tu Vietcombank",
+      "note": null,
       "reference": null,
       "transactionType": "TRANSFER"
     }
@@ -759,8 +761,8 @@
       "amount": 50000,
       "accountMask": "1234",
       "postBalance": 668000,
-      "merchant": "Viettel",
-      "note": "Nap tien dien thoai 0901234567",
+      "merchant": null,
+      "note": null,
       "reference": null,
       "transactionType": "EXPENSE"
     }
@@ -780,7 +782,7 @@
       "accountMask": "1234",
       "postBalance": 713000,
       "merchant": "Grab",
-      "note": "Hoan tien chuyen di bi huy",
+      "note": null,
       "reference": null,
       "transactionType": "REFUND"
     }
@@ -959,7 +961,7 @@
       "amount": 55000,
       "accountMask": "7890",
       "postBalance": 20745000,
-      "merchant": "Phuc Long",
+      "merchant": "Phuc Long Coffee and Tea",
       "note": "Thanh toan QR tai Phuc Long Coffee and Tea",
       "reference": null,
       "transactionType": "EXPENSE"
@@ -1018,9 +1020,10 @@
       "sign": "-",
       "amount": 450000,
       "accountMask": "3456",
-      "postBalance": 45550000,
+      "postBalance": null,
+      "availableCredit": 45550000,
       "merchant": "LOTTE CINEMA",
-      "note": "GD thanh cong tai LOTTE CINEMA",
+      "note": null,
       "reference": null,
       "transactionType": "EXPENSE"
     }
@@ -1038,9 +1041,10 @@
       "sign": "+",
       "amount": 450000,
       "accountMask": "3456",
-      "postBalance": 46000000,
+      "postBalance": null,
+      "availableCredit": 46000000,
       "merchant": "LOTTE CINEMA",
-      "note": "hoan tien tu LOTTE CINEMA",
+      "note": null,
       "reference": null,
       "transactionType": "REFUND"
     }

@@ -3,6 +3,12 @@ package io.github.toanhp123.finote.domain.notification
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+/**
+ * Parser-scored fields: sign, amount, accountMask, postBalance, availableCredit, merchant, note, reference.
+ * [merchant] and [note] are raw substrings of the text (bigText when present), case preserved; normalization is later.
+ * [availableCredit] is a credit-card remaining limit; it is never a balance, so [postBalance] stays null for it.
+ * [transactionType] is the end-to-end pipeline label (pairing, refund detection); do not use it to score the parser.
+ */
 @Serializable
 data class ExpectedNotification(
     val shouldIgnore: Boolean,
@@ -11,6 +17,7 @@ data class ExpectedNotification(
     val amount: Long? = null,
     val accountMask: String? = null,
     val postBalance: Long? = null,
+    val availableCredit: Long? = null,
     val merchant: String? = null,
     val note: String? = null,
     val reference: String? = null,
