@@ -70,4 +70,4 @@ sealed interface CashEntryEffect {
 }
 
 /** The content the cash-entry sheet shows. Only [KEYPAD] shows the calculator keypad. */
-enum class CashEntryPage { KEYPAD, ACCOUNT, CATEGORY, NOTE }
+enum class CashEntryPage { KEYPAD, ACCOUNT, CATEGORY, DATE, NOTE }

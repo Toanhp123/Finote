@@ -35,6 +35,11 @@ private fun CashEntryCategoryPreview() = SheetOverScrim(keypadState().copy(page 
 @PreviewTest
 @CashEntryPreviews
 @Composable
+private fun CashEntryDatePreview() = SheetOverScrim(keypadState().copy(page = CashEntryPage.DATE))
+
+@PreviewTest
+@CashEntryPreviews
+@Composable
 private fun CashEntryNotePreview() = SheetOverScrim(keypadState().copy(page = CashEntryPage.NOTE, note = "Lunch"))
 
 @PreviewTest
@@ -67,7 +72,7 @@ private fun SheetOverScrim(state: CashEntryState) {
         ) {
             val spacing = FinoteTheme.spacing
             SheetSurface(contentPadding = PaddingValues(start = spacing.lg, end = spacing.lg, bottom = spacing.lg)) {
-                CashEntrySheet(state = state, onIntent = {})
+                CashEntrySheet(state = state, onIntent = {}, onPageClose = {})
             }
         }
     }

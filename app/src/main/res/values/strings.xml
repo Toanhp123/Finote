@@ -58,8 +58,11 @@
     <string name="cash_entry_expense">Chi</string>
     <string name="cash_entry_income">Thu</string>
     <string name="cash_entry_save">Lưu</string>
+    <string name="cash_entry_account">Tài khoản</string>
+    <string name="cash_entry_category">Danh mục</string>
     <string name="cash_entry_no_account">Chưa có tài khoản</string>
     <string name="cash_entry_no_category">Không chọn danh mục</string>
+    <string name="cash_entry_date">Ngày</string>
     <string name="cash_entry_note">Ghi chú</string>
     <string name="cash_entry_today">Hôm nay</string>
     <string name="cash_entry_error_divide_by_zero">Không chia được cho 0</string>

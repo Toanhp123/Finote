@@ -66,7 +66,9 @@ class CashEntryViewModel
                 }
 
                 is CashEntryIntent.DatePicked -> {
-                    setState { copy(date = intent.date, isToday = intent.date == LocalDate.now(clock)) }
+                    setState {
+                        copy(date = intent.date, isToday = intent.date == LocalDate.now(clock)).backToKeypad()
+                    }
                 }
 
                 is CashEntryIntent.NoteChanged -> {

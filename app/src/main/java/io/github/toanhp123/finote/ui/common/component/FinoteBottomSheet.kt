@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -51,7 +52,7 @@ fun FinoteBottomSheet(
     )
 }
 
-/** The sheet without the side padding, for content such as the date picker that is as wide as a phone screen. */
+/** The sheet without the side padding, for content that is as wide as a phone screen (see [FinoteDatePicker]). */
 @Composable
 internal fun ModalSheet(
     isVisible: Boolean,
@@ -63,7 +64,7 @@ internal fun ModalSheet(
     val state =
         rememberModalBottomSheetState(
             initialDetent = if (isVisible) SheetDetent.FullyExpanded else SheetDetent.Hidden,
-            animationSpec = FinoteTheme.motion.emphasized,
+            animationSpec = FinoteTheme.motion.standard,
         )
     LaunchedEffect(isVisible) {
         state.animateTo(if (isVisible) SheetDetent.FullyExpanded else SheetDetent.Hidden)
@@ -92,6 +93,8 @@ internal fun SheetSurface(
         modifier =
             modifier
                 .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(top = FinoteTheme.sizes.touchTarget)
                 .finoteGlass(FinoteTheme.shapes.sheet)
                 .navigationBarsPadding(),
     ) {

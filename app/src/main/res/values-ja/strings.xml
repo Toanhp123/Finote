@@ -58,8 +58,11 @@
     <string name="cash_entry_expense">支出</string>
     <string name="cash_entry_income">収入</string>
     <string name="cash_entry_save">保存</string>
+    <string name="cash_entry_account">口座</string>
+    <string name="cash_entry_category">カテゴリ</string>
     <string name="cash_entry_no_account">口座がありません</string>
     <string name="cash_entry_no_category">カテゴリなし</string>
+    <string name="cash_entry_date">日付</string>
     <string name="cash_entry_note">メモ</string>
     <string name="cash_entry_today">今日</string>
     <string name="cash_entry_error_divide_by_zero">0で割れません</string>

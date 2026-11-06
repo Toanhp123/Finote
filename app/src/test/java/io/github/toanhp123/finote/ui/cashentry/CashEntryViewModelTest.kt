@@ -239,6 +239,20 @@ class CashEntryViewModelTest {
         }
 
     @Test
+    fun `date page then DatePicked sets the date and returns to the keypad`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val viewModel = open()
+            viewModel.onIntent(CashEntryIntent.PageOpened(CashEntryPage.DATE))
+            assertEquals(CashEntryPage.DATE, viewModel.current.page)
+
+            viewModel.onIntent(CashEntryIntent.DatePicked(LocalDate.of(2026, 10, 1)))
+
+            assertEquals(LocalDate.of(2026, 10, 1), viewModel.current.date)
+            assertEquals(CashEntryPage.KEYPAD, viewModel.current.page)
+        }
+
+    @Test
     fun `save on past date uses noon local time`() =
         runTest(mainRule.dispatcher) {
             seed()

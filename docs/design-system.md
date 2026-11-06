@@ -23,7 +23,7 @@ Code outside `ui/common/theme/` reads tokens through `FinoteTheme`. It never cal
 | Sizes | `FinoteSizes.kt` | `FinoteTheme.sizes.touchTarget`, `.iconMd`, `.avatar`, `.navBarHeight`, and more |
 | Radii | `FinoteRadii.kt` | `FinoteTheme.radii.md` (`Dp`: `sm` 12, `md` 16, `lg` 20, `xl` 24) |
 | Shapes | `FinoteShapes.kt` | `FinoteTheme.shapes.md` (`sm`, `md`, `lg`, `xl`, `full`, `sheet`) |
-| Motion | `FinoteMotion.kt` | `FinoteTheme.motion.standard`, `.emphasized`, `.pressedScale` (0.96), `.shimmerMillis` |
+| Motion | `FinoteMotion.kt` | `FinoteTheme.motion.standard`, `.emphasized`, `.emphasizedDecelerate`, `.pressedScale` (0.96), `.shimmerMillis` |
 | Category palette | `CategoryPalette.kt` | `CategoryPalette` (14 colors; the only colors a user may pick) |
 
 - `FinoteTheme { }` is the root. It uses Dynamic Color on Android 12+ and the brand scheme (seed `#006A6A`, TonalSpot, in `BrandColors.kt`) on API 26-30. `dynamicColor = false` forces the brand scheme.
@@ -45,6 +45,7 @@ All are in `ui/common/component/`, one component per file. `modifier: Modifier =
 | `FinoteBottomSheet` | `(isVisible, onDismiss, modifier, content)` | Pick or edit something without leaving the screen |
 | `FinoteDialog` | `(isVisible, title, onDismiss, confirm, modifier, text?, dismiss?)` | Confirm a destructive or irreversible action |
 | `FinoteDatePicker` | `(isVisible, selected: LocalDate, onConfirm: (LocalDate), onDismiss, modifier)` | Date input. Never expose `DatePickerState` |
+| `FinoteCalendar` | `(selected: LocalDate, onPick: (LocalDate), modifier)` | Bare calendar page without chrome |
 | `FinoteButton` | `(text, onClick, modifier, style, enabled, isLoading, leadingIcon?)` | Every button. `style`: `Primary`, `Secondary`, `Ghost`, `Danger` |
 | `FinoteIconButton` | `(iconRes, contentDescription, onClick, modifier, enabled)` | Icon-only action. 48dp touch target |
 | `FinoteTextField` | `(value, onValueChange, label, modifier, placeholder?, errorText?, maxLength?, singleLine, keyboardOptions, keyboardActions)` | Text input with label, hint, error, counter |

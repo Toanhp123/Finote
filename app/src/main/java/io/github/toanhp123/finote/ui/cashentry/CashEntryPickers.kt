@@ -11,8 +11,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
@@ -47,6 +48,7 @@ import java.time.format.FormatStyle
 
 private const val CHILD_DEPTH = 1
 private const val NOTE_MAX_LINES = 2
+private const val NO_CATEGORY_KEY = "no_category"
 
 @Composable
 internal fun AccountList(
@@ -55,8 +57,8 @@ internal fun AccountList(
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        accounts.forEach { account ->
+    LazyColumn(modifier = modifier) {
+        items(accounts, key = { it.id }) { account ->
             PickerRow(
                 title = displayName(account.name, account.nameKey),
                 isSelected = account.id == selectedId,
@@ -77,13 +79,15 @@ internal fun CategoryList(
     modifier: Modifier = Modifier,
 ) {
     val rows = remember(categories) { categories.asTree() }
-    Column(modifier = modifier) {
-        PickerRow(
-            title = stringResource(R.string.cash_entry_no_category),
-            isSelected = selectedId == null,
-            onClick = { onPick(null) },
-        )
-        rows.forEach { (category, depth) ->
+    LazyColumn(modifier = modifier) {
+        item(key = NO_CATEGORY_KEY) {
+            PickerRow(
+                title = stringResource(R.string.cash_entry_no_category),
+                isSelected = selectedId == null,
+                onClick = { onPick(null) },
+            )
+        }
+        items(rows, key = { (category, _) -> category.id }) { (category, depth) ->
             PickerRow(
                 title = displayName(category.name, category.nameKey),
                 isSelected = category.id == selectedId,
@@ -144,10 +148,7 @@ internal fun NotePage(
 ) {
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(focusRequester) { focusRequester.requestFocus() }
-    Column(
-        modifier = modifier.imePadding(),
-        verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.md),
-    ) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.md)) {
         FinoteTextField(
             value = note,
             onValueChange = onNoteChange,

@@ -58,8 +58,11 @@
     <string name="cash_entry_expense">Expense</string>
     <string name="cash_entry_income">Income</string>
     <string name="cash_entry_save">Save</string>
+    <string name="cash_entry_account">Account</string>
+    <string name="cash_entry_category">Category</string>
     <string name="cash_entry_no_account">No account</string>
     <string name="cash_entry_no_category">No category</string>
+    <string name="cash_entry_date">Date</string>
     <string name="cash_entry_note">Note</string>
     <string name="cash_entry_today">Today</string>
     <string name="cash_entry_error_divide_by_zero">Cannot divide by zero</string>
