@@ -155,7 +155,7 @@ Mục tiêu: bắt giao dịch từ thông báo ngân hàng và ví mà không c
 - Chạy rule theo `priority`. Không khớp rule nào thì `status = FAILED`, lưu `failureReason`.
 - Failed Inbox: màn hình liệt kê `FAILED`, user bấm chuyển thành giao dịch thủ công.
 - OTA: WorkManager tải JSON rule từ GitHub/CDN. Không ghi đè rule có `isUserCustom = true`.
-- Corpus test: 30–50 mẫu thông báo đã ẩn số (mục D4). Đạt 98% bóc tách đúng (mục 6).
+- Corpus test: ~60+ mẫu tổng hợp (mục D4), có cả dạng thu gọn (`EXTRA_TEXT`) và mở rộng (`EXTRA_BIG_TEXT`). Đạt 98% bóc tách đúng (mục 6).
 
 ### P2c — `feature/account-dedup-balance` (Module 5, 6, 8)
 - Dedup nằm ở `domain/notification`, không phụ thuộc `android.*`.
@@ -228,7 +228,7 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 | D1 | FTS4 hay FTS5? Room annotation chỉ hỗ trợ FTS4. FTS5 cần SQL thô trong migration. Chưa kiểm Room 3 còn `@Fts4` không. | FTS4 (đơn giản, đủ cho mục tiêu 50 ms) | P3 |
 | D2 | Khóa SQLCipher lưu ở đâu? | **Đã chốt (2026-11-02):** 32 byte ngẫu nhiên, bọc bằng Android Keystore (AES-GCM), không bắt sinh trắc học (listener ghi DB khi máy khóa). DB và khóa bọc bị loại khỏi Auto Backup | P1 |
 | D3 | `targetSdk`: spec ghi 35, build đang 37. `CLAUDE.md` ghi 37 là có chủ đích. | **Đã chốt:** giữ 37. Ghi chú này là lý do, spec không sửa | P0 |
-| D4 | Mẫu thông báo thật để đạt 98%? Không có mẫu thì không đo được. | User cung cấp mẫu đã ẩn số. Nếu không có, mình tự tạo mẫu tổng hợp và ghi rõ là tổng hợp | P2b |
+| D4 | Mẫu thông báo thật để đạt 98%? Không có mẫu thì không đo được. | **Đã chốt (2026-11-06):** Dùng Synthetic Corpus (~60 mẫu tổng hợp của VCB, MB, MoMo, Techcombank + OTP/Spam) làm baseline. Người dùng bổ sung mẫu thực tế qua Failed Inbox khi dogfooding. 98% trên corpus tổng hợp chỉ là baseline; chỉ tiêu thật đo trên mẫu dogfooding. Techcombank là phần thêm, chỉ tiêu 98% chỉ tính VCB, MB, MoMo (spec L407) | P2b |
 | D5 | Import XLSX có cần ngay ở P4? | CSV trước, XLSX sau | P4 |
 | D6 | DI: Hilt hay Koin? | **Đã chốt:** Hilt (theo `CLAUDE.md`) | P0 |
 | D7 | Ai chạy benchmark và instrumented test trên máy thật? | User chạy khi tới P3 và P5, theo yêu cầu | P3 |
@@ -242,4 +242,4 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 2. P0: `chore/gradle-catalog`, `chore/quality-gate`, `feature/app-shell`, `feature/mvi-base` đã xong.
 3. D2 đã chốt. Spec P1 đã bổ sung ngày 2026-11-02.
 4. P1 đã xong (2026-11-04): `db-schema` → `db-encryption` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `design-system` → `cash-entry` → `reconciliation` → `transaction-list` → `reimbursement-flag`.
-5. P2 chỉ bắt đầu khi P1 xong và D4 đã chốt.
+5. D4 đã chốt (2026-11-06). P1 đã xong. Bắt đầu P2: `notif-capture` (P2a) → `parser-engine` (P2b) → `account-dedup-balance` (P2c) → `transfer-pairing` (P2d).

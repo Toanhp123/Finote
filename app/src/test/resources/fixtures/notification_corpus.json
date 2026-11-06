@@ -1,0 +1,1228 @@
+[
+  {
+    "id": "vcb-debit-01",
+    "packageName": "com.VCB",
+    "postTime": 1793931323000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "VCB Digibank",
+    "content": "SD TK 0011001234567 -50,000 VND lúc 06-11-2026 09:15:20. Số dư 20,32…",
+    "bigText": "SD TK 0011001234567 -50,000 VND lúc 06-11-2026 09:15:20. Số dư 20,324,000 VND. Ref MBVCB.123456789. ND: Nguyen Van A chuyen tien an trua",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 50000,
+      "accountMask": "4567",
+      "postBalance": 20324000,
+      "merchant": null,
+      "note": "Nguyen Van A chuyen tien an trua",
+      "reference": "MBVCB.123456789",
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "vcb-debit-qr-02",
+    "packageName": "com.VCB",
+    "postTime": 1793935803000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "VCB Digibank",
+    "content": "Biến động số dư: TK 0123456789 -35,000 VND vào 06/11/2026 10:30:00. Số dư: 8,465,000 VND. Giao dịch: Thanh toan QR tai Highlands Coffee",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 35000,
+      "accountMask": "6789",
+      "postBalance": 8465000,
+      "merchant": "Highlands Coffee",
+      "note": "Thanh toan QR tai Highlands Coffee",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "vcb-debit-fee-03",
+    "packageName": "com.VCB",
+    "postTime": 1793469603000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "VCB Digibank",
+    "content": "SD TK 0011001234567 -11,000 VND lúc 01-11-2026 01:00:00. Số dư 5,374,000 VND. Ref MBVCB.112233445. ND: PHI DUY TRI DICH VU VCB DIGIBANK T10.2026",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 11000,
+      "accountMask": "4567",
+      "postBalance": 5374000,
+      "merchant": null,
+      "note": "PHI DUY TRI DICH VU VCB DIGIBANK T10.2026",
+      "reference": "MBVCB.112233445",
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "vcb-debit-card-04",
+    "packageName": "com.VCB",
+    "postTime": 1793953213000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "VCB Digibank",
+    "content": "Thẻ VCB Visa Debit 412975...9876 GD -150,000 VND tại SHOPEE lúc 06/11/2026 15:20:10. Số dư khả dụng: 7,850,000 VND.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 150000,
+      "accountMask": "9876",
+      "postBalance": 7850000,
+      "merchant": "SHOPEE",
+      "note": "GD tai SHOPEE",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "vcb-credit-salary-05",
+    "packageName": "com.VCB",
+    "postTime": 1793872815000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "VCB Digibank",
+    "content": "SD TK 0011001234567 +15,000,000 VND lúc 05-11-2026 17:00:12. Số dư 20,374,000 VND. Ref MBVCB.987654321. ND: CONG TY ABC TRA LUONG THANG 10",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 15000000,
+      "accountMask": "4567",
+      "postBalance": 20374000,
+      "merchant": null,
+      "note": "CONG TY ABC TRA LUONG THANG 10",
+      "reference": "MBVCB.987654321",
+      "transactionType": "INCOME"
+    }
+  },
+  {
+    "id": "vcb-credit-transfer-06",
+    "packageName": "com.VCB",
+    "postTime": 1793943903000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "VCB Digibank",
+    "content": "SD TK 0011001234567 +120,000 VND lúc 06-11-2026 12:45:00. Số dư 20,444,000 VND. Ref MBVCB.5544…",
+    "bigText": "SD TK 0011001234567 +120,000 VND lúc 06-11-2026 12:45:00. Số dư 20,444,000 VND. Ref MBVCB.554433221. ND: Tran Thi B gui tien share tien an",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 120000,
+      "accountMask": "4567",
+      "postBalance": 20444000,
+      "merchant": null,
+      "note": "Tran Thi B gui tien share tien an",
+      "reference": "MBVCB.554433221",
+      "transactionType": "INCOME"
+    }
+  },
+  {
+    "id": "vcb-refund-07",
+    "packageName": "com.VCB",
+    "postTime": 1793955603000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "VCB Digibank",
+    "content": "Thẻ VCB Visa Debit 412975...9876 hoàn tiền +150,000 VND từ SHOPEE lúc 06/11/2026 16:00:00. Số dư khả dụng: 8,000,000 VND.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 150000,
+      "accountMask": "9876",
+      "postBalance": 8000000,
+      "merchant": "SHOPEE",
+      "note": "hoan tien tu SHOPEE",
+      "reference": null,
+      "transactionType": "REFUND"
+    }
+  },
+  {
+    "id": "vcb-debit-large-08",
+    "packageName": "com.VCB",
+    "postTime": 1793957403000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "VCB Digibank",
+    "content": "SD TK 0011001234567 -15,000,000 VND lúc 06-11-2026 16:30:00. Số dư 4,824,000 VND. Ref MBVCB.778899001. ND: Dat coc mua xe o to",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 15000000,
+      "accountMask": "4567",
+      "postBalance": 4824000,
+      "merchant": null,
+      "note": "Dat coc mua xe o to",
+      "reference": "MBVCB.778899001",
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "vcb-otp-09",
+    "packageName": "com.VCB",
+    "postTime": 1793919600000,
+    "channelId": "SECURITY_ALERT",
+    "title": "VCB Digibank",
+    "content": "Ma OTP xac thuc kich hoat VCB Digibank cua Quy khach la 849201. Ma co hieu luc trong 3 phut. KHONG chia se ma nay cho bat ky ai.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "OTP",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "vcb-smart-otp-10",
+    "packageName": "com.VCB",
+    "postTime": 1793920600000,
+    "channelId": "SECURITY_ALERT",
+    "title": "VCB Digibank",
+    "content": "Kich hoat Smart OTP thanh cong tren thiet bi moi. Ma xac thuc: 582910.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "SMART_OTP",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "vcb-login-alert-11",
+    "packageName": "com.VCB",
+    "postTime": 1793921600000,
+    "channelId": "SECURITY_ALERT",
+    "title": "VCB Digibank",
+    "content": "Canh bao: Tai khoan VCB Digibank cua Quy khach vua dang nhap tren thiet bi la (Pixel 8 Pro). Neu khong phai ban, vui long khoa tai khoan ngay.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "LOGIN_ALERT",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "vcb-promo-12",
+    "packageName": "com.VCB",
+    "postTime": 1793922600000,
+    "channelId": "PROMOTION",
+    "title": "VCB Digibank",
+    "content": "Uu dai dac quyen: Mo the tin dung VCB Visa Platinum ngay hom nay nhan uu dai hoan tien toi 1 trieu dong. Chi tiet xem tai app.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "vcb-birthday-13",
+    "packageName": "com.VCB",
+    "postTime": 1793923600000,
+    "channelId": "PROMOTION",
+    "title": "VCB Digibank",
+    "content": "Vietcombank chuc mung sinh nhat Quy khach Tran Van An! Tang voucher 100k khi chi tieu qua the.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "vcb-loan-reminder-14",
+    "packageName": "com.VCB",
+    "postTime": 1793924600000,
+    "channelId": "NOTIFICATION",
+    "title": "VCB Digibank",
+    "content": "Nhac no tu dong: Quy khach co khoan vay so 123456 den han thanh toan ngay 10/11/2026. So tien: 2,500,000 VND.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PAYMENT_REMINDER",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "vcb-pairing-debit-15",
+    "packageName": "com.VCB",
+    "postTime": 1793946803000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "VCB Digibank",
+    "content": "SD TK 0011001234567 -500,000 VND lúc 06-11-2026 13:33:20. Số dư 19,944,000 VND. Ref MBVCB.887766554. ND: NAP TIEN VAO VI MOMO",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 500000,
+      "accountMask": "4567",
+      "postBalance": 19944000,
+      "merchant": "MoMo",
+      "note": "NAP TIEN VAO VI MOMO",
+      "reference": "MBVCB.887766554",
+      "transactionType": "TRANSFER"
+    }
+  },
+  {
+    "id": "vcb-dedup-grabfood-16",
+    "packageName": "com.VCB",
+    "postTime": 1793949048000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "VCB Digibank",
+    "content": "SD TK 0011001234567 -120,000 VND lúc 06-11-2026 14:10:45. Số dư 19,824,000 VND. Ref MBVCB.665544332. ND: GRABFOOD thanh toan don hang",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 120000,
+      "accountMask": "4567",
+      "postBalance": 19824000,
+      "merchant": "GrabFood",
+      "note": "GRABFOOD thanh toan don hang",
+      "reference": "MBVCB.665544332",
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "mb-debit-01",
+    "packageName": "com.mbmobile",
+    "postTime": 1793938803000,
+    "channelId": "BALANCE_FLUCTUATION",
+    "title": "MBBank",
+    "content": "TK 034123456789 GD: -100,000VND 06/11/26 11:20. SD: 4,68…",
+    "bigText": "TK 034123456789 GD: -100,000VND 06/11/26 11:20. SD: 4,685,200VND. ND: NAPAS247 chuyen tien mua xang",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 100000,
+      "accountMask": "6789",
+      "postBalance": 4685200,
+      "merchant": null,
+      "note": "NAPAS247 chuyen tien mua xang",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "mb-credit-02",
+    "packageName": "com.mbmobile",
+    "postTime": 1793949303000,
+    "channelId": "BALANCE_FLUCTUATION",
+    "title": "MBBank",
+    "content": "TK 034123456789 GD: +500,000VND 06/11/26 14:15. SD: 5,180,200VND. ND: TRAN VAN B chuyen tien tiec toi",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 500000,
+      "accountMask": "6789",
+      "postBalance": 5180200,
+      "merchant": null,
+      "note": "TRAN VAN B chuyen tien tiec toi",
+      "reference": null,
+      "transactionType": "INCOME"
+    }
+  },
+  {
+    "id": "mb-atm-cash-03",
+    "packageName": "com.mbmobile",
+    "postTime": 1793962803000,
+    "channelId": "BALANCE_FLUCTUATION",
+    "title": "MBBank",
+    "content": "TK 034123456789 GD: -2,000,000VND 06/11/26 18:00. SD: 3,180,200VND. ND: RUT TIEN ATM TAI…",
+    "bigText": "TK 034123456789 GD: -2,000,000VND 06/11/26 18:00. SD: 3,180,200VND. ND: RUT TIEN ATM TAI CAY DONG DA",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 2000000,
+      "accountMask": "6789",
+      "postBalance": 3180200,
+      "merchant": null,
+      "note": "RUT TIEN ATM TAI CAY DONG DA",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "mb-utility-04",
+    "packageName": "com.mbmobile",
+    "postTime": 1793884203000,
+    "channelId": "BALANCE_FLUCTUATION",
+    "title": "MBBank",
+    "content": "TK 034123456789 GD: -680,000VND 05/11/26 20:10. SD: 4,785,200VND. ND: THANH TOAN HOA DON TIEN DIEN EVN HN MA KH PD0123456",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 680000,
+      "accountMask": "6789",
+      "postBalance": 4785200,
+      "merchant": "EVN HN",
+      "note": "THANH TOAN HOA DON TIEN DIEN EVN HN MA KH PD0123456",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "mb-credit-card-05",
+    "packageName": "com.mbmobile",
+    "postTime": 1793945405000,
+    "channelId": "CREDIT_CARD_ALERT",
+    "title": "MBBank",
+    "content": "The tin dung MB Visa 472074...1234 GD thanh cong: -320.000 VND tai LOTTE MART. Han muc con lai: 24.680.000 VND.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 320000,
+      "accountMask": "1234",
+      "postBalance": 24680000,
+      "merchant": "LOTTE MART",
+      "note": "GD thanh cong tai LOTTE MART",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "mb-interest-06",
+    "packageName": "com.mbmobile",
+    "postTime": 1793466303000,
+    "channelId": "BALANCE_FLUCTUATION",
+    "title": "MBBank",
+    "content": "TK 034123456789 GD: +15,200VND 01/11/26 00:05. SD: 5,465,200VND. ND: TRA LAI TIEN GUI THANG 10",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 15200,
+      "accountMask": "6789",
+      "postBalance": 5465200,
+      "merchant": null,
+      "note": "TRA LAI TIEN GUI THANG 10",
+      "reference": null,
+      "transactionType": "INCOME"
+    }
+  },
+  {
+    "id": "mb-credit-refund-07",
+    "packageName": "com.mbmobile",
+    "postTime": 1793953812000,
+    "channelId": "CREDIT_CARD_ALERT",
+    "title": "MBBank",
+    "content": "The tin dung MB Visa 472074...1234 hoan tien thanh cong: +320.000 VND tu LOTTE MART. Han muc con lai: 25.000.000 VND.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 320000,
+      "accountMask": "1234",
+      "postBalance": 25000000,
+      "merchant": "LOTTE MART",
+      "note": "hoan tien tu LOTTE MART",
+      "reference": null,
+      "transactionType": "REFUND"
+    }
+  },
+  {
+    "id": "mb-debit-small-08",
+    "packageName": "com.mbmobile",
+    "postTime": 1793941803000,
+    "channelId": "BALANCE_FLUCTUATION",
+    "title": "MBBank",
+    "content": "TK 034123456789 GD: -5,000VND 06/11/26 12:10. SD: 4,680,200VND. ND: Gui xe may tai benh vien",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 5000,
+      "accountMask": "6789",
+      "postBalance": 4680200,
+      "merchant": null,
+      "note": "Gui xe may tai benh vien",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "mb-otp-09",
+    "packageName": "com.mbmobile",
+    "postTime": 1793920100000,
+    "channelId": "SECURITY",
+    "title": "MBBank",
+    "content": "Ma xac thuc Digital OTP cua ban la 638291. Ma co hieu luc trong 2 phut. Vui long khong cung cap cho bat ky ai.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "DIGITAL_OTP",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "mb-smart-otp-10",
+    "packageName": "com.mbmobile",
+    "postTime": 1793921100000,
+    "channelId": "SECURITY",
+    "title": "MBBank",
+    "content": "Smart OTP: Ma OTP cua ban la 192834 dung de xac thuc giao dich.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "SMART_OTP",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "mb-login-alert-11",
+    "packageName": "com.mbmobile",
+    "postTime": 1793922100000,
+    "channelId": "SECURITY",
+    "title": "MBBank",
+    "content": "Canh bao bao mat: MB phat hien truy cap tai khoan tu IP la. Neu khong phai ban, hay doi mat khau ngay.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "LOGIN_ALERT",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "mb-promo-12",
+    "packageName": "com.mbmobile",
+    "postTime": 1793923100000,
+    "channelId": "PROMOTION",
+    "title": "MBBank",
+    "content": "Nhanh tay mo tai khoan so dep phong thuy mien phi tren App MBBank ngay hom nay!",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "mb-loan-promo-13",
+    "packageName": "com.mbmobile",
+    "postTime": 1793924100000,
+    "channelId": "PROMOTION",
+    "title": "MBBank",
+    "content": "Quy khach da duoc phe duyet han muc vay tieu dung online len toi 50 trieu dong. Nhan ngay tai App MBBank.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "mb-priority-14",
+    "packageName": "com.mbmobile",
+    "postTime": 1793925100000,
+    "channelId": "NOTIFICATION",
+    "title": "MBBank",
+    "content": "Chuc mung Quy khach da thuc hien thanh cong dang ky goi hoi vien MB Priority.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "NOTIFICATION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "mb-device-link-15",
+    "packageName": "com.mbmobile",
+    "postTime": 1793926100000,
+    "channelId": "SECURITY",
+    "title": "MBBank",
+    "content": "Thiet bi Galaxy S24 Ultra da duoc lien ket thanh cong voi tai khoan MB cua ban.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "DEVICE_LINK",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "momo-pos-highlands-01",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793928014000,
+    "channelId": "TRANSACTION",
+    "title": "MoMo",
+    "content": "Bạn đã thanh toán 35.000đ cho Highlands Coffee từ Ví MoMo (090***1234). Số dư ví: 420.000đ.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 35000,
+      "accountMask": "1234",
+      "postBalance": 420000,
+      "merchant": "Highlands Coffee",
+      "note": "Thanh toan Highlands Coffee",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "momo-pos-circlek-02",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793937031000,
+    "channelId": "TRANSACTION",
+    "title": "MoMo",
+    "content": "Bạn đã thanh toán 52.000đ cho Circle K từ Ví MoMo (090***1234). Số dư ví: 368.000đ.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 52000,
+      "accountMask": "1234",
+      "postBalance": 368000,
+      "merchant": "Circle K",
+      "note": "Thanh toan Circle K",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "momo-shopee-order-03",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793942407000,
+    "channelId": "TRANSACTION",
+    "title": "MoMo",
+    "content": "Bạn đã thanh toán 150.000đ cho Đơn hàng Shopee. Nguồn tiền: Ví MoMo (090***1…",
+    "bigText": "Bạn đã thanh toán 150.000đ cho Đơn hàng Shopee. Nguồn tiền: Ví MoMo (090***1234). Số dư: 218.000đ.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 150000,
+      "accountMask": "1234",
+      "postBalance": 218000,
+      "merchant": "Shopee",
+      "note": "Thanh toan Don hang Shopee",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "momo-dedup-grabfood-04",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793949030000,
+    "channelId": "TRANSACTION",
+    "title": "MoMo",
+    "content": "Bạn đã thanh toán 120.000đ cho GrabFood. Nguồn tiền: Vietcombank (***4567).",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 120000,
+      "accountMask": "4567",
+      "postBalance": null,
+      "merchant": "GrabFood",
+      "note": "Thanh toan GrabFood",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "momo-p2p-received-05",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793959809000,
+    "channelId": "TRANSACTION",
+    "title": "MoMo",
+    "content": "Bạn đã nhận được 200.000đ từ LE THI C (098***5678). Lời nhắn: Tien ca…",
+    "bigText": "Bạn đã nhận được 200.000đ từ LE THI C (098***5678). Lời nhắn: Tien ca phe hom qua.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 200000,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": "LE THI C",
+      "note": "Tien ca phe hom qua",
+      "reference": null,
+      "transactionType": "INCOME"
+    }
+  },
+  {
+    "id": "momo-pairing-topup-06",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793946810000,
+    "channelId": "TRANSACTION",
+    "title": "MoMo",
+    "content": "Bạn vừa nạp 500.000đ vào Ví MoMo (090***1234) từ Ngân hàng Vietcombank (***4567). Số dư ví: 718.000đ.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 500000,
+      "accountMask": "1234",
+      "postBalance": 718000,
+      "merchant": "Vietcombank",
+      "note": "Nap tien tu Vietcombank",
+      "reference": null,
+      "transactionType": "TRANSFER"
+    }
+  },
+  {
+    "id": "momo-phone-topup-07",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793954422000,
+    "channelId": "TRANSACTION",
+    "title": "MoMo",
+    "content": "Bạn vừa nạp 50.000đ cho số thuê bao 0901234567 qua Ví MoMo (090***1234). Số dư: 668.000đ.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 50000,
+      "accountMask": "1234",
+      "postBalance": 668000,
+      "merchant": "Viettel",
+      "note": "Nap tien dien thoai 0901234567",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "momo-refund-08",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793957448000,
+    "channelId": "TRANSACTION",
+    "title": "MoMo",
+    "content": "Bạn đã nhận được hoàn tiền 45.000đ từ Grab cho chuyến đi bị hủy vào Ví MoMo (090***1234). Số dư ví: 713.000đ.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 45000,
+      "accountMask": "1234",
+      "postBalance": 713000,
+      "merchant": "Grab",
+      "note": "Hoan tien chuyen di bi huy",
+      "reference": null,
+      "transactionType": "REFUND"
+    }
+  },
+  {
+    "id": "momo-otp-09",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793919700000,
+    "channelId": "SECURITY",
+    "title": "MoMo",
+    "content": "Mã OTP xác thực đăng nhập MoMo là 582194. Tuyệt đối KHÔNG chia sẻ mã này cho bất kỳ ai kể cả nhân viên MoMo.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "OTP",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "momo-voucher-promo-10",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793920700000,
+    "channelId": "PROMOTION",
+    "title": "MoMo",
+    "content": "Quà tặng bạn mới! Nhận gói voucher 500.000đ thanh toán hóa đơn điện nước khi mở app ngay hôm nay.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "momo-game-promo-11",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793921700000,
+    "channelId": "PROMOTION",
+    "title": "MoMo",
+    "content": "Bạn có 3 lượt lắc xì may mắn hôm nay! Mở MoMo ngay để rinh quà khủng lên đến 10 triệu đồng.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "momo-debt-reminder-12",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793922700000,
+    "channelId": "NOTIFICATION",
+    "title": "MoMo",
+    "content": "Nhắc nợ: Bạn nhận được yêu cầu chuyển tiền 50.000đ từ Nguyen Van B cho bữa trưa.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PAYMENT_REMINDER",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "momo-birthday-13",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793923700000,
+    "channelId": "PROMOTION",
+    "title": "MoMo",
+    "content": "Chúc mừng sinh nhật! MoMo tặng bạn voucher giảm 50% khi xem phim tại CGV Cinema.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "momo-cashback-gold-14",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793924700000,
+    "channelId": "PROMOTION",
+    "title": "MoMo",
+    "content": "Thu thập heo vàng đổi quà hấp dẫn! Bạn vừa nhận được 5 heo vàng từ giao dịch thanh toán.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "momo-security-pin-15",
+    "packageName": "com.mservice.momotransfer",
+    "postTime": 1793934908000,
+    "channelId": "SECURITY",
+    "title": "MoMo",
+    "content": "Cảnh báo bảo mật: Bạn vừa đổi mã PIN MoMo thành công lúc 10:15 ngày 06/11/2026.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "SECURITY_ALERT",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "tcb-debit-01",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793934933000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "Techcombank",
+    "content": "Giao dịch thành công: TK 19031234567890 -200,000 VND lúc 06/11/2026 10:15:30. Số dư khả dụng: 20,800,000 VND. ND: Nguyen Van A chuyen tien an trua",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 200000,
+      "accountMask": "7890",
+      "postBalance": 20800000,
+      "merchant": null,
+      "note": "Nguyen Van A chuyen tien an trua",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "tcb-debit-qr-02",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793941203000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "Techcombank",
+    "content": "TK 19031234567890 GD: -55,000 VND lúc 06/11/2026 12:00:00. Số dư: 20,745,000 VND. ND: Thanh toan QR tai Phuc Long Coffee and Tea",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 55000,
+      "accountMask": "7890",
+      "postBalance": 20745000,
+      "merchant": "Phuc Long",
+      "note": "Thanh toan QR tai Phuc Long Coffee and Tea",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "tcb-credit-salary-03",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793871913000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "Techcombank",
+    "content": "Giao dịch thành công: TK 19031234567890 +18,000,000 VND lúc 05/11/2026 16:45:10. Số dư khả dụng: 21,000,000 VND. ND: CONG TY TNHH XYZ TRA LUONG T10",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 18000000,
+      "accountMask": "7890",
+      "postBalance": 21000000,
+      "merchant": null,
+      "note": "CONG TY TNHH XYZ TRA LUONG T10",
+      "reference": null,
+      "transactionType": "INCOME"
+    }
+  },
+  {
+    "id": "tcb-credit-transfer-04",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793946003000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "Techcombank",
+    "content": "TK 19031234567890 GD: +250,000 VND lúc 06/11/2026 13:20:00. Số dư: 20,995,000 VND. ND: Pham Van D gui tien xem phim",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 250000,
+      "accountMask": "7890",
+      "postBalance": 20995000,
+      "merchant": null,
+      "note": "Pham Van D gui tien xem phim",
+      "reference": null,
+      "transactionType": "INCOME"
+    }
+  },
+  {
+    "id": "tcb-credit-card-05",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793968203000,
+    "channelId": "CREDIT_ALERT",
+    "title": "Techcombank",
+    "content": "Thẻ tín dụng Techcombank Visa Platinum (...3456) GD thành công: -450,000 VND tại LOTTE CINEMA lúc 06/11/2026 19:30:00. Hạn mức khả dụng: 45,550,000 VND.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 450000,
+      "accountMask": "3456",
+      "postBalance": 45550000,
+      "merchant": "LOTTE CINEMA",
+      "note": "GD thanh cong tai LOTTE CINEMA",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "tcb-credit-refund-06",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793970003000,
+    "channelId": "CREDIT_ALERT",
+    "title": "Techcombank",
+    "content": "Thẻ tín dụng Techcombank Visa Platinum (...3456) hoàn tiền: +450,000 VND từ LOTTE CINEMA lúc 06/11/2026 20:00:00. Hạn mức khả dụng: 46,000,000 VND.",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 450000,
+      "accountMask": "3456",
+      "postBalance": 46000000,
+      "merchant": "LOTTE CINEMA",
+      "note": "hoan tien tu LOTTE CINEMA",
+      "reference": null,
+      "transactionType": "REFUND"
+    }
+  },
+  {
+    "id": "tcb-atm-cash-07",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793961003000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "Techcombank",
+    "content": "TK 19031234567890 GD: -1,000,000 VND lúc 06/11/2026 17:30:00. Số dư: 19,995,000 VND. ND: Rut tien tai ATM Techcombank Ba Trieu",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 1000000,
+      "accountMask": "7890",
+      "postBalance": 19995000,
+      "merchant": null,
+      "note": "Rut tien tai ATM Techcombank Ba Trieu",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "tcb-utility-08",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793757603000,
+    "channelId": "TRANSACTION_ALERT",
+    "title": "Techcombank",
+    "content": "TK 19031234567890 GD: -350,000 VND lúc 04/11/2026 09:00:00. Số dư: 3,000,000 VND. ND: Thanh toan hoa don Internet VNPT thang 10",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 350000,
+      "accountMask": "7890",
+      "postBalance": 3000000,
+      "merchant": "VNPT",
+      "note": "Thanh toan hoa don Internet VNPT thang 10",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "tcb-smart-otp-09",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793919650000,
+    "channelId": "SECURITY",
+    "title": "Techcombank",
+    "content": "Xác thực giao dịch: Mã Smart OTP Techcombank là 918234. Tuyệt đối KHÔNG chia sẻ mã này với bất kỳ ai.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "SMART_OTP",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "tcb-login-otp-10",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793920650000,
+    "channelId": "SECURITY",
+    "title": "Techcombank",
+    "content": "Mã OTP xác thực đăng nhập ứng dụng Techcombank Mobile của bạn là 452189. Mã có hiệu lực trong 3 phút.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "OTP",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "tcb-login-alert-11",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793921650000,
+    "channelId": "SECURITY",
+    "title": "Techcombank",
+    "content": "Cảnh báo: Tài khoản của bạn vừa đăng nhập trên thiết bị iPhone 15 Pro Max. Nếu không phải bạn, hãy liên hệ 1800588822 để khóa thẻ/tài khoản.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "LOGIN_ALERT",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "tcb-promo-birthday-12",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793922650000,
+    "channelId": "PROMOTION",
+    "title": "Techcombank",
+    "content": "Ưu đãi sinh nhật: Techcombank tặng bạn mã giảm giá 100K khi thanh toán hóa đơn qua Techcombank Mobile.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "tcb-auto-earning-promo-13",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793923650000,
+    "channelId": "PROMOTION",
+    "title": "Techcombank",
+    "content": "Sinh lời mỗi ngày với Tính năng Sinh lời Tự động Auto-Earning lãi suất tới 4.5%/năm. Mở ngay trên app!",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "tcb-rewards-promo-14",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793924650000,
+    "channelId": "PROMOTION",
+    "title": "Techcombank",
+    "content": "Techcombank Rewards: Bạn có 500 điểm thưởng sắp hết hạn. Đổi quà ngay tại mục Rewards trên app!",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "tcb-card-due-reminder-15",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1793925650000,
+    "channelId": "NOTIFICATION",
+    "title": "Techcombank",
+    "content": "Nhắc hạn thanh toán thẻ tín dụng: Khoản dư nợ sao kê 5,200,000 VND thẻ tín dụng Techcombank của bạn sẽ đến hạn vào ngày 15/11/2026.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PAYMENT_REMINDER",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  }
+]
