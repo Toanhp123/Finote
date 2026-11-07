@@ -7,6 +7,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import io.github.toanhp123.finote.R
+import io.github.toanhp123.finote.ui.common.component.display.FinoteCard
+import io.github.toanhp123.finote.ui.common.component.display.FinoteListRow
+import io.github.toanhp123.finote.ui.common.component.finance.BalanceHeroCard
+import io.github.toanhp123.finote.ui.common.component.finance.CategoryIcon
+import io.github.toanhp123.finote.ui.common.component.finance.MoneyText
+import io.github.toanhp123.finote.ui.common.component.finance.TransactionRow
+import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviewSurface
+import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviews
+import io.github.toanhp123.finote.ui.common.component.preview.PreviewGreenArgb
+import io.github.toanhp123.finote.ui.common.component.preview.PreviewRedArgb
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
 
 // 16 characters five times: an 80-character title.

@@ -12,6 +12,8 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
+import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
+import io.github.toanhp123.finote.ui.transactions.component.applyTo
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch

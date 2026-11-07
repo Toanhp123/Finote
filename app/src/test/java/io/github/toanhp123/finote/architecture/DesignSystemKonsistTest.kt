@@ -51,6 +51,16 @@ class DesignSystemKonsistTest {
             }
     }
 
+    @Test
+    fun `shared components live in a role subpackage`() {
+        val groups =
+            listOf("control", "overlay", "layout", "display", "finance", "glass", "preview")
+                .map { "$UI_COMPONENT.$it" }
+        filesIn(UI_COMPONENT).assertTrue(testName = "shared components live in a role subpackage") { file ->
+            groups.any { file.packageName() == it }
+        }
+    }
+
     /** File text without `package` and `import` lines; they name `dp` and `Color` legitimately. */
     private fun KoFileDeclaration.codeText(): String =
         text

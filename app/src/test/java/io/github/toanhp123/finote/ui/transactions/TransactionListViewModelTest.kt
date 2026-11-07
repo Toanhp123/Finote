@@ -19,6 +19,7 @@ import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionL
 import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ValidateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
+import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent

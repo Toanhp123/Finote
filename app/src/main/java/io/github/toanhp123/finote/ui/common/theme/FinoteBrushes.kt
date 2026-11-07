@@ -1,6 +1,8 @@
 package io.github.toanhp123.finote.ui.common.theme
 
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import io.github.toanhp123.finote.ui.common.theme.color.FinoteColors
 
 data class FinoteBrushes(
     val hero: Brush,
@@ -8,3 +10,19 @@ data class FinoteBrushes(
 
 internal fun finoteBrushes(colors: FinoteColors): FinoteBrushes =
     FinoteBrushes(hero = Brush.linearGradient(listOf(colors.hero.start, colors.hero.end)))
+
+private const val SHIMMER_ALPHA = 0.5f
+
+/** A soft band of [highlight], one [width] wide. It sweeps left to right across the block as [progress] runs 0 to 1. */
+internal fun shimmerBrush(
+    highlight: Color,
+    progress: Float,
+    width: Float,
+): Brush {
+    val start = (progress * 2f - 1f) * width
+    return Brush.horizontalGradient(
+        colors = listOf(Color.Transparent, highlight.copy(alpha = SHIMMER_ALPHA), Color.Transparent),
+        startX = start,
+        endX = start + width,
+    )
+}

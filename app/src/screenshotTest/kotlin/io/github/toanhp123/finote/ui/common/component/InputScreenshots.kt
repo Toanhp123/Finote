@@ -8,6 +8,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.android.tools.screenshot.PreviewTest
 import io.github.toanhp123.finote.R
+import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
+import io.github.toanhp123.finote.ui.common.component.control.FinoteButtonStyle
+import io.github.toanhp123.finote.ui.common.component.control.FinoteChip
+import io.github.toanhp123.finote.ui.common.component.control.FinoteIconButton
+import io.github.toanhp123.finote.ui.common.component.control.FinoteSegmented
+import io.github.toanhp123.finote.ui.common.component.control.FinoteSwitch
+import io.github.toanhp123.finote.ui.common.component.control.FinoteTextField
+import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviewSurface
+import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviews
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 @PreviewTest

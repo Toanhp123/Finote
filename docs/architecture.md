@@ -34,6 +34,23 @@ di/                  Hilt module
 
 `ui/<feature>` may use `ui/common`. `ui/common` must not use `ui/<feature>`.
 
+### Folder rules
+
+1. Split a package into subfolders only when it mixes two or more roles.
+2. A subfolder should hold three or more files. Exceptions: infrastructure groups (`glass/`, `preview/`) and the `component/` folder of a feature, so every feature has the same shape.
+3. Do not split when the file suffix already names the role (`Dao`, `Entity`, `Mapper`, `RepositoryImpl`). `data/<feature>/` stays flat.
+4. At most one level of subfolder under `component/`, `theme/`, or a feature.
+
+### Feature template
+
+```text
+ui/<feature>/
+├── component/   # sub-composables used by this feature only
+└── (root)       # *Contract, *ViewModel, *Screen, *Activity, *TileService, pure screen logic (*Defaults, AmountExpression)
+```
+
+A new feature follows this shape. Shared components are grouped by role in `ui/common/component/<group>/` (docs/design-system.md). Theme colors are in `ui/common/theme/color/`.
+
 UI flow is MVI: Screen sends `Intent`, ViewModel calls a use case, ViewModel emits `State` and `Effect`, Screen draws.
 
 ## Naming and roles
@@ -73,6 +90,8 @@ UI flow is MVI: Screen sends `Intent`, ViewModel calls a use case, ViewModel emi
 detekt cannot hold two limits in one rule. `LongMethod` and `LongParameterList` set `ignoreAnnotated: ['Composable']`. Konsist checks the 80-line limit, 120 for `*Screen` composables.
 
 Private helpers of a class stay inside the class; detekt `TooManyFunctions` ignores private functions so they need not leave it.
+
+When a file co-locates types, the declaration the file is named after comes first and the serving types (style enum, item class, state holder) go below it. detekt `MatchingDeclarationName` (`mustBeFirst`) relies on this order: a file that starts with its only class must be named after that class.
 
 Any class or interface named `*Repository` is an interface in `domain/<feature>/repository`. `*Mapper.kt` lives in `data`, `*Contract.kt` and `*Screen.kt` in `ui`.
 

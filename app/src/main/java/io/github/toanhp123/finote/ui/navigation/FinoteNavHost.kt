@@ -13,9 +13,9 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.github.toanhp123.finote.R
-import io.github.toanhp123.finote.ui.common.component.FinoteNavBar
-import io.github.toanhp123.finote.ui.common.component.FinoteNavItem
-import io.github.toanhp123.finote.ui.common.component.FinoteScaffold
+import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavBar
+import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavItem
+import io.github.toanhp123.finote.ui.common.component.layout.FinoteScaffold
 import io.github.toanhp123.finote.ui.transactions.TransactionListRoute
 
 @Composable

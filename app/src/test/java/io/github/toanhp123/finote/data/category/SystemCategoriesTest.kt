@@ -2,7 +2,7 @@ package io.github.toanhp123.finote.data.category
 
 import androidx.compose.ui.graphics.toArgb
 import io.github.toanhp123.finote.domain.category.model.CategoryType
-import io.github.toanhp123.finote.ui.common.theme.CategoryPalette
+import io.github.toanhp123.finote.ui.common.theme.color.CategoryPalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

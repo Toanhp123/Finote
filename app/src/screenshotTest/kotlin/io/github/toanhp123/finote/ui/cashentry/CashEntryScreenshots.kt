@@ -14,9 +14,9 @@ import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
-import io.github.toanhp123.finote.ui.common.component.PreviewGreenArgb
-import io.github.toanhp123.finote.ui.common.component.PreviewRedArgb
-import io.github.toanhp123.finote.ui.common.component.SheetSurface
+import io.github.toanhp123.finote.ui.common.component.overlay.SheetSurface
+import io.github.toanhp123.finote.ui.common.component.preview.PreviewGreenArgb
+import io.github.toanhp123.finote.ui.common.component.preview.PreviewRedArgb
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import java.time.LocalDate
 

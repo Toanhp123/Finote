@@ -8,6 +8,8 @@ import kotlin.math.abs
 private const val PLUS = "+"
 private const val MINUS = "\u2212"
 
+enum class MoneyKind { Income, Expense, Transfer, Neutral }
+
 /** Formats a VND amount for [locale]. The sign goes first: `+` for income, U+2212 for expense or any negative. */
 fun formatMoney(
     amount: Long,

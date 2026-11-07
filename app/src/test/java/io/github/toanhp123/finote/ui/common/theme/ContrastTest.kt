@@ -4,6 +4,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import io.github.toanhp123.finote.ui.common.theme.color.CategoryPalette
+import io.github.toanhp123.finote.ui.common.theme.color.DarkBrandScheme
+import io.github.toanhp123.finote.ui.common.theme.color.LightBrandScheme
+import io.github.toanhp123.finote.ui.common.theme.color.categoryIconColors
+import io.github.toanhp123.finote.ui.common.theme.color.finoteColors
 import org.junit.Assert.assertTrue
 import org.junit.Test
 

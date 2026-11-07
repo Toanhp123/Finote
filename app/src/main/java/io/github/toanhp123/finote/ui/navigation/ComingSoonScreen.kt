@@ -7,8 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.toanhp123.finote.R
-import io.github.toanhp123.finote.ui.common.component.FinoteEmptyState
-import io.github.toanhp123.finote.ui.common.component.FinoteTopBar
+import io.github.toanhp123.finote.ui.common.component.display.FinoteEmptyState
+import io.github.toanhp123.finote.ui.common.component.layout.FinoteTopBar
 
 /** Placeholder for a tab that has no screen yet. */
 @Composable

@@ -12,6 +12,10 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
+import io.github.toanhp123.finote.ui.common.theme.color.DarkBrandScheme
+import io.github.toanhp123.finote.ui.common.theme.color.FinoteColors
+import io.github.toanhp123.finote.ui.common.theme.color.LightBrandScheme
+import io.github.toanhp123.finote.ui.common.theme.color.finoteColors
 
 // Constant tokens have defaults. Only the ones that follow the color scheme are provided.
 private val LocalFinoteColors = staticCompositionLocalOf<FinoteColors> { error("FinoteTheme is missing") }

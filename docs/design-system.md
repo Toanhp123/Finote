@@ -8,14 +8,14 @@ Everything lives in `ui/common/`. A feature screen in `ui/<feature>` draws with 
 
 Code outside `ui/common/theme/` reads tokens through `FinoteTheme`. It never calls `MaterialTheme`, never writes `Color(...)`, `.dp`, `.sp`, `TextStyle(...)`, `RoundedCornerShape(...)`, or `Brush.`.
 
-| Token | File in `ui/common/theme/` | Call |
+| Token | File in `ui/common/theme/` (colors in `color/`) | Call |
 |---|---|---|
 | M3 color role | `FinoteTheme.kt` | `FinoteTheme.scheme.surface` |
-| Income, expense, transfer | `FinoteColors.kt`, `MoneyColorRole.kt` | `FinoteTheme.colors.income.color` (also `onColor`, `container`, `onContainer`) |
-| Hero card colors | `HeroColors.kt` | `FinoteTheme.colors.hero.start`, `.end`, `.onHero`, `.chipContainer` |
-| Glass colors | `GlassColors.kt` | `FinoteTheme.colors.glass.fill`, `.solidFill`, `.stroke` |
-| Screen background, card | `FinoteColors.kt` | `FinoteTheme.colors.background`, `FinoteTheme.colors.card` |
-| Disabled alpha | `FinoteColors.kt` | `FinoteTheme.colors.disabledAlpha` (0.38) |
+| Income, expense, transfer | `color/FinoteColors.kt` (values in `color/BrandColors.kt`) | `FinoteTheme.colors.income.color` (also `onColor`, `container`, `onContainer`) |
+| Hero card colors | `color/FinoteColors.kt` | `FinoteTheme.colors.hero.start`, `.end`, `.onHero`, `.chipContainer` |
+| Glass colors | `color/FinoteColors.kt` | `FinoteTheme.colors.glass.fill`, `.solidFill`, `.stroke` |
+| Screen background, card | `color/FinoteColors.kt` | `FinoteTheme.colors.background`, `FinoteTheme.colors.card` |
+| Disabled alpha | `color/FinoteColors.kt` | `FinoteTheme.colors.disabledAlpha` (0.38) |
 | Hero gradient | `FinoteBrushes.kt` | `FinoteTheme.brushes.hero` |
 | Dark flag | `FinoteTheme.kt` | `FinoteTheme.isDark` |
 | Text styles | `FinoteTypography.kt` | `FinoteTheme.typography.material.bodyLarge`, `.amountLarge`, `.amountMedium`, `.amountSmall` |
@@ -24,18 +24,30 @@ Code outside `ui/common/theme/` reads tokens through `FinoteTheme`. It never cal
 | Radii | `FinoteRadii.kt` | `FinoteTheme.radii.md` (`Dp`: `sm` 12, `md` 16, `lg` 20, `xl` 24) |
 | Shapes | `FinoteShapes.kt` | `FinoteTheme.shapes.md` (`sm`, `md`, `lg`, `xl`, `full`, `sheet`) |
 | Motion | `FinoteMotion.kt` | `FinoteTheme.motion.standard`, `.emphasized`, `.emphasizedDecelerate`, `.pressedScale` (0.96), `.shimmerMillis` |
-| Category palette | `CategoryPalette.kt` | `CategoryPalette` (14 colors; the only colors a user may pick) |
+| Category palette | `color/CategoryColors.kt` | `CategoryPalette` (14 colors; the only colors a user may pick) |
 
-- `FinoteTheme { }` is the root. It uses Dynamic Color on Android 12+ and the brand scheme (seed `#006A6A`, TonalSpot, in `BrandColors.kt`) on API 26-30. `dynamicColor = false` forces the brand scheme.
+- `FinoteTheme { }` is the root. It uses Dynamic Color on Android 12+ and the brand scheme (seed `#006A6A`, TonalSpot, in `color/BrandColors.kt`) on API 26-30. `dynamicColor = false` forces the brand scheme.
 - Income, expense, and transfer colors are fixed. They do not follow Dynamic Color. Hero, glass, background, and card follow the scheme.
 - Amount styles use tabular figures (`tnum`) so digits line up.
 - `CategoryIcon` takes the category color as `colorArgb: Int` and derives its tile and tint. `ContrastTest` checks every palette color.
 - Depth is flat. No shadows. Layers are told apart by color: screen background, then card, then floating glass.
-- `FixedColors.kt`, `CategoryIconColors.kt`, `ShimmerBrush.kt` are `internal` helpers of the theme.
+- The fixed money colors in `color/BrandColors.kt` and `shimmerBrush` in `FinoteBrushes.kt` are `internal` helpers of the theme.
 
 ## Components
 
-All are in `ui/common/component/`, one component per file. `modifier: Modifier = Modifier` is the first optional parameter. Signatures below are shortened.
+All are in `ui/common/component/<group>/`, one main component per file; a small type that serves it sits in the same file. `modifier: Modifier = Modifier` is the first optional parameter. Signatures below are shortened.
+
+| Group | What goes there |
+|---|---|
+| `control/` | Input and actions: `FinoteButton`, `FinoteIconButton`, `FinoteTextField`, `FinoteSwitch`, `FinoteChip`, `FinoteSegmented`. `FinoteButtonStyle` is in `FinoteButton.kt` |
+| `overlay/` | Layers and messages: `FinoteBottomSheet`, `FinoteDialog`, `FinoteDatePicker`, `FinoteSnackbar` with its state in the same file, helper `DatePickerDates` |
+| `layout/` | Screen frame: `FinoteScaffold`, `FinoteTopBar`, `FinoteNavBar` (`FinoteNavItem` is in the same file) |
+| `display/` | Generic display with no finance meaning: `FinoteCard`, `FinoteListRow`, `FinoteEmptyState`, `FinoteSkeleton`, helper `ListRowLayout` |
+| `finance/` | Finance widgets: `BalanceHeroCard`, `TransactionRow`, `MoneyText`, `CategoryIcon` |
+| `glass/` | Glass effect infrastructure: `HazeLocals` (holds `LocalBlurEnabled`) |
+| `preview/` | Preview infrastructure: `FinotePreviews` (holds `FinotePreviewSurface`) |
+
+A component file sits directly in one group. No group has a sub-group. `DesignSystemKonsistTest` checks this.
 
 | Component | Signature | Use when |
 |---|---|---|
@@ -64,7 +76,7 @@ All are in `ui/common/component/`, one component per file. `modifier: Modifier =
 
 - Features may import only `Text` and `Icon` from `androidx.compose.material3`. A feature never holds a type of Material 3, Haze, or Compose Unstyled. The wrappers keep that state.
 - Icons are vector drawables named `ic_<name>.xml`. `material-icons-extended` is not used.
-- A component used by one feature only (the cash-entry keypad) lives in `ui/<feature>` and still uses tokens. When a second feature needs it, move it to `ui/common/component/`.
+- A component used by one feature only (the cash-entry keypad) lives in `ui/<feature>/component/` and still uses tokens. When a second feature needs it, move it to the matching group in `ui/common/component/`.
 - Internal helpers (`FinoteSnackbar`, `finoteGlass`, `SheetSurface`, `DialogCard`, `DatePickerContent`, `SnackbarCard`) are not API. Do not call them from a feature.
 
 ## Usage rules
@@ -99,7 +111,7 @@ Token:
 4. A new `CompositionLocal` in `ui/common/` needs an allowlist line in `.editorconfig` for compose-rules. That edit goes in its own commit. Never suppress a compose-rules finding; `@Suppress` is allowed only for the detekt size rules in `docs/architecture.md`.
 
 Component:
-1. One file in `ui/common/component/`, named after the component. Tokens only, no raw numbers or colors.
+1. One file in the matching group of `ui/common/component/` (`control/`, `overlay/`, `layout/`, `display/`, `finance/`), named after the component. Tokens only, no raw numbers or colors.
 2. Add a `@FinotePreviews` preview (light, dark, font scale 2) inside `FinotePreviewSurface`. Rule 4 fails without it.
 3. Add a `@PreviewTest` function in `app/src/screenshotTest/kotlin/io/github/toanhp123/finote/ui/common/component/`. Group related components per file (`InputScreenshots.kt`, `DisplayScreenshots.kt`, `FrameScreenshots.kt`, `OverlayScreenshots.kt`). Use `@FinotePreviews` for the three variants, or a plain `@Preview` for one case such as a locale.
 4. Generate the reference images (next section), look at them, then run the gate.
