@@ -38,8 +38,10 @@ import io.github.toanhp123.finote.ui.common.component.layout.FinoteTopBar
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import io.github.toanhp123.finote.ui.common.format.displayName
 import io.github.toanhp123.finote.ui.common.format.iconRes
+import io.github.toanhp123.finote.ui.common.rememberNotificationListenerEnabled
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.transactions.component.DayLabel
+import io.github.toanhp123.finote.ui.transactions.component.ListenerOffBanner
 import io.github.toanhp123.finote.ui.transactions.component.ReimbursementSheet
 import io.github.toanhp123.finote.ui.transactions.component.TransactionFilterChips
 import io.github.toanhp123.finote.ui.transactions.component.dayLabel
@@ -53,23 +55,39 @@ private const val SKELETON_ROWS = 6
 @Composable
 fun TransactionListRoute(
     viewModel: TransactionListViewModel,
+    onOpenSetup: () -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    TransactionListScreen(state, viewModel::onIntent, modifier, contentPadding)
+    TransactionListScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        modifier = modifier,
+        contentPadding = contentPadding,
+        isListenerOff = !rememberNotificationListenerEnabled(),
+        onOpenSetup = onOpenSetup,
+    )
 }
 
-/** [contentPadding] keeps the last row clear of the floating nav bar. */
+/** [contentPadding] keeps the last row clear of the floating nav bar. [isListenerOff] shows the banner. */
 @Composable
 fun TransactionListScreen(
     state: TransactionListState,
     onIntent: (TransactionListIntent) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
+    isListenerOff: Boolean = false,
+    onOpenSetup: () -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         FinoteTopBar(title = stringResource(R.string.tab_transactions))
+        if (isListenerOff) {
+            ListenerOffBanner(
+                onClick = onOpenSetup,
+                modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg, vertical = FinoteTheme.spacing.sm),
+            )
+        }
         if (state.isLoading) {
             LoadingRows()
         } else {

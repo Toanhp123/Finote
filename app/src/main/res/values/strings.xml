@@ -94,4 +94,16 @@
     <string name="reimbursement_settled">Đã trả</string>
     <string name="reimbursement_save_error">Không lưu được</string>
     <string name="transactions_empty_pending">Không có khoản chờ trả</string>
+    <string name="setup_title">Tự động ghi giao dịch</string>
+    <string name="setup_body">Finote đọc thông báo của app ngân hàng để tự ghi giao dịch.</string>
+    <string name="setup_point_banks">Chỉ đọc app đã hỗ trợ: Vietcombank, MB Bank, MoMo, Techcombank.</string>
+    <string name="setup_point_otp">Bỏ qua OTP và mã xác thực, không lưu.</string>
+    <string name="setup_point_local">Dữ liệu nằm trên máy, đã mã hóa, không gửi đi đâu.</string>
+    <string name="setup_howto">Tìm Finote trong danh sách và bật.</string>
+    <string name="setup_restricted_hint">Nếu thấy \"Restricted setting\": Thông tin ứng dụng → ⋮ → Cho phép cài đặt hạn chế.</string>
+    <string name="setup_enable">Bật tự động ghi</string>
+    <string name="setup_retry">Thử lại</string>
+    <string name="setup_later">Để sau, tôi nhập tay</string>
+    <string name="setup_granted">Đã bật</string>
+    <string name="transactions_listener_off">Tự động ghi đang tắt. Bấm để bật.</string>
 </resources>

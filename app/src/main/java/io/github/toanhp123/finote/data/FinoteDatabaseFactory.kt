@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room3.Room
 import io.github.toanhp123.finote.data.account.SystemAccountSeeder
 import io.github.toanhp123.finote.data.category.SystemCategorySeeder
+import io.github.toanhp123.finote.data.notification.ParserRuleSeeder
 import io.github.toanhp123.finote.data.security.DatabaseKeyStore
 import io.github.toanhp123.finote.data.security.KeystoreKeyCipher
 import io.github.toanhp123.finote.data.security.deletePlaintextDatabase
@@ -34,5 +35,6 @@ fun createFinoteDatabase(
         .fallbackToDestructiveMigration(dropAllTables = true)
         .addCallback(SystemCategorySeeder(clock))
         .addCallback(SystemAccountSeeder(clock))
+        .addCallback(ParserRuleSeeder())
         .build()
 }

@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.ui.navigation
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -16,11 +17,16 @@ import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavBar
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavItem
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteScaffold
+import io.github.toanhp123.finote.ui.setup.SetupRoute
 import io.github.toanhp123.finote.ui.transactions.TransactionListRoute
 
 @Composable
-fun FinoteNavHost(modifier: Modifier = Modifier) {
-    val backStack = rememberNavBackStack(Overview)
+fun FinoteNavHost(
+    shouldStartAtSetup: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val start: NavKey = if (shouldStartAtSetup) Setup(isFromOnboarding = true) else Overview
+    val backStack = rememberNavBackStack(start)
     FinoteScaffold(
         modifier = modifier,
         bottomBar =
@@ -49,9 +55,22 @@ fun FinoteNavHost(modifier: Modifier = Modifier) {
             entryProvider =
                 entryProvider<NavKey> {
                     entry<Overview> { ComingSoonScreen(R.string.tab_overview) }
-                    entry<Transactions> { TransactionListRoute(hiltViewModel(), contentPadding = padding) }
+                    entry<Transactions> {
+                        TransactionListRoute(
+                            viewModel = hiltViewModel(),
+                            onOpenSetup = { openSetup(backStack) },
+                            contentPadding = padding,
+                        )
+                    }
                     entry<Budget> { ComingSoonScreen(R.string.tab_budget) }
                     entry<Settings> { ComingSoonScreen(R.string.tab_settings) }
+                    entry<Setup> { key ->
+                        SetupRoute(
+                            viewModel = hiltViewModel(),
+                            onFinish = { finishSetup(backStack, key) },
+                            modifier = Modifier.padding(padding),
+                        )
+                    }
                 },
         )
     }

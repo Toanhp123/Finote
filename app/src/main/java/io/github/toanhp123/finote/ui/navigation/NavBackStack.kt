@@ -1,19 +1,6 @@
 package io.github.toanhp123.finote.ui.navigation
 
 import androidx.navigation3.runtime.NavKey
-import kotlinx.serialization.Serializable
-
-@Serializable
-data object Overview : NavKey
-
-@Serializable
-data object Transactions : NavKey
-
-@Serializable
-data object Budget : NavKey
-
-@Serializable
-data object Settings : NavKey
 
 /** The tabs of the bottom bar, in display order. */
 val TopLevelTabs: List<NavKey> = listOf(Overview, Transactions, Budget, Settings)
@@ -32,4 +19,22 @@ fun selectTab(
     if (currentTab(backStack) == tab) return
     backStack.clear()
     backStack.addAll(backStackFor(tab))
+}
+
+/** Opens the banner flow of [Setup]. A second call while it is on top does nothing, so a double tap cannot stack it. */
+fun openSetup(backStack: MutableList<NavKey>) {
+    if (backStack.lastOrNull() !is Setup) backStack.add(Setup(isFromOnboarding = false))
+}
+
+/** Leaves [key]: onboarding replaces the stack with [Overview], the banner flow goes back to the screen below. */
+fun finishSetup(
+    backStack: MutableList<NavKey>,
+    key: Setup,
+) {
+    if (key.isFromOnboarding) {
+        backStack.clear()
+        backStack.add(Overview)
+    } else {
+        backStack.removeLastOrNull()
+    }
 }

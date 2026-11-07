@@ -8,6 +8,10 @@ import io.github.toanhp123.finote.data.account.AccountDao
 import io.github.toanhp123.finote.data.account.AccountEntity
 import io.github.toanhp123.finote.data.category.CategoryDao
 import io.github.toanhp123.finote.data.category.CategoryEntity
+import io.github.toanhp123.finote.data.notification.NotificationLogDao
+import io.github.toanhp123.finote.data.notification.NotificationLogEntity
+import io.github.toanhp123.finote.data.notification.ParserRuleDao
+import io.github.toanhp123.finote.data.notification.ParserRuleEntity
 import io.github.toanhp123.finote.data.transaction.TagDao
 import io.github.toanhp123.finote.data.transaction.TagEntity
 import io.github.toanhp123.finote.data.transaction.TransactionDao
@@ -23,8 +27,10 @@ import io.github.toanhp123.finote.data.transaction.TransactionTagCrossRef
             TransactionEntity::class,
             TagEntity::class,
             TransactionTagCrossRef::class,
+            ParserRuleEntity::class,
+            NotificationLogEntity::class,
         ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class FinoteDatabase : RoomDatabase() {
@@ -37,4 +43,8 @@ abstract class FinoteDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
 
     abstract fun tagDao(): TagDao
+
+    abstract fun parserRuleDao(): ParserRuleDao
+
+    abstract fun notificationLogDao(): NotificationLogDao
 }

@@ -144,8 +144,11 @@ Mục tiêu: bắt giao dịch từ thông báo ngân hàng và ví mà không c
 - Lấy `EXTRA_TITLE`, `EXTRA_TEXT`, `EXTRA_BIG_TEXT`, `EXTRA_TEXT_LINES`.
 - Bảng `NotificationLog` (3.7). `contentHash` SHA-256 của `packageName + postTime + content`, unique index.
 - `onListenerConnected()` gọi `getActiveNotifications()`, bỏ qua hash đã có.
-- Màn hướng dẫn cấp quyền Notification Listener (mức tối thiểu; đầy đủ ở P5).
+- Màn setup đầu tiên, một bước: xin quyền Notification Listener (đầy đủ ở P5). Banner nhắc trên danh sách giao dịch khi thiếu quyền.
+- Tạo bảng `ParserRule` (3.8) ngay ở đây, chỉ cột lọc (`packageName`, `channelIdAllowlist`, `ignoreKeywords`). P2b thêm cột regex.
+- Chỉ lưu `PENDING`, chưa bóc tách. Thông báo bị chặn lưu `IGNORED_SPAM` không kèm nội dung.
 - Test: lọc OTP và quảng cáo, không tạo bản ghi lỗi giả. Test quét lại không tạo trùng.
+- Thiết kế: `docs/superpowers/specs/2026-11-07-notif-capture-design.md`.
 
 ### P2b — `feature/parser-engine` (Module 4, Failed Inbox)
 - Parser nằm ở `domain/notification`, không phụ thuộc `android.*`.
@@ -206,7 +209,8 @@ DoD (spec mục 8):
 
 - `feature/app-lock`: `BiometricPrompt`, nút ẩn số dư (`***`), `FLAG_SECURE`, làm mờ khi vào Recent Apps (mục 9). Must-Have.
 - `feature/perf`: đo cold start dưới 1,2 giây bằng Macrobenchmark. Đo mở nhập tiền mặt dưới 0,5 giây từ Tile và Shortcut.
-- `feature/onboarding-permission`: hướng dẫn Android 13+ (Allow Restricted Settings) và tắt tối ưu pin trên ROM tùy biến. Could-Have, nhưng cần để P2 dùng được trên máy thật.
+- `feature/onboarding-permission`: hướng dẫn Android 13+ (Allow Restricted Settings) và tắt tối ưu pin trên ROM tùy biến. Could-Have, nhưng cần để P2 dùng được trên máy thật. Thêm bước vào màn setup có sẵn từ P2a, không làm màn mới.
+- Trang chính sách quyền riêng tư và link trong màn setup. Bắt buộc trước khi lên Google Play (prominent disclosure).
 - `chore/audit`: test đối soát đầy đủ. Công thức số dư khớp mọi tài khoản, mọi thời điểm (mục 7).
 - `release/1.0.0`: theo release flow.
 

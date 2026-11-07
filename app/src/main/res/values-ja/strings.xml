@@ -94,4 +94,16 @@
     <string name="reimbursement_settled">返済済み</string>
     <string name="reimbursement_save_error">保存できませんでした</string>
     <string name="transactions_empty_pending">返済待ちの項目はありません</string>
+    <string name="setup_title">取引を自動で記録</string>
+    <string name="setup_body">Finote は銀行アプリの通知を読み取り、取引を自動で記録します。</string>
+    <string name="setup_point_banks">対応アプリのみ読み取ります：Vietcombank、MB Bank、MoMo、Techcombank。</string>
+    <string name="setup_point_otp">OTP や認証コードは無視し、保存しません。</string>
+    <string name="setup_point_local">データは端末内に暗号化して保存され、外部には送信されません。</string>
+    <string name="setup_howto">一覧から Finote を見つけてオンにします。</string>
+    <string name="setup_restricted_hint">「制限付き設定」と表示された場合：アプリ情報 → ⋮ → 制限付き設定を許可。</string>
+    <string name="setup_enable">自動記録をオンにする</string>
+    <string name="setup_retry">もう一度試す</string>
+    <string name="setup_later">あとで、手入力します</string>
+    <string name="setup_granted">オンになりました</string>
+    <string name="transactions_listener_off">自動記録がオフです。タップしてオンにします。</string>
 </resources>

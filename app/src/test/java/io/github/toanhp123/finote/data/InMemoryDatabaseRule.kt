@@ -7,6 +7,7 @@ import androidx.sqlite.driver.AndroidSQLiteDriver
 import androidx.test.core.app.ApplicationProvider
 import io.github.toanhp123.finote.data.account.SystemAccountSeeder
 import io.github.toanhp123.finote.data.category.SystemCategorySeeder
+import io.github.toanhp123.finote.data.notification.ParserRuleSeeder
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import java.time.Clock
@@ -17,6 +18,7 @@ import java.time.ZoneOffset
 class InMemoryDatabaseRule(
     private val seedSystemCategories: Boolean = false,
     private val seedSystemAccount: Boolean = false,
+    private val seedParserRules: Boolean = false,
     private val clock: Clock = Clock.fixed(Instant.parse("2026-11-03T00:00:00Z"), ZoneOffset.UTC),
 ) : TestWatcher() {
     lateinit var db: FinoteDatabase
@@ -27,6 +29,7 @@ class InMemoryDatabaseRule(
         val builder = Room.inMemoryDatabaseBuilder<FinoteDatabase>(context).setDriver(AndroidSQLiteDriver())
         if (seedSystemCategories) builder.addCallback(SystemCategorySeeder(clock))
         if (seedSystemAccount) builder.addCallback(SystemAccountSeeder(clock))
+        if (seedParserRules) builder.addCallback(ParserRuleSeeder())
         db = builder.build()
     }
 

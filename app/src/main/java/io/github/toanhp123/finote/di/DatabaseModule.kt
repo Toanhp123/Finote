@@ -11,6 +11,8 @@ import io.github.toanhp123.finote.data.account.AccountBalanceSnapshotDao
 import io.github.toanhp123.finote.data.account.AccountDao
 import io.github.toanhp123.finote.data.category.CategoryDao
 import io.github.toanhp123.finote.data.createFinoteDatabase
+import io.github.toanhp123.finote.data.notification.NotificationLogDao
+import io.github.toanhp123.finote.data.notification.ParserRuleDao
 import io.github.toanhp123.finote.data.transaction.TagDao
 import io.github.toanhp123.finote.data.transaction.TransactionDao
 import java.time.Clock
@@ -40,4 +42,10 @@ object DatabaseModule {
 
     @Provides
     fun provideTagDao(db: FinoteDatabase): TagDao = db.tagDao()
+
+    @Provides
+    fun provideParserRuleDao(db: FinoteDatabase): ParserRuleDao = db.parserRuleDao()
+
+    @Provides
+    fun provideNotificationLogDao(db: FinoteDatabase): NotificationLogDao = db.notificationLogDao()
 }

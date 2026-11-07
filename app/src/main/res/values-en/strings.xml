@@ -94,4 +94,16 @@
     <string name="reimbursement_settled">Repaid</string>
     <string name="reimbursement_save_error">Couldn\'t save</string>
     <string name="transactions_empty_pending">Nothing pending</string>
+    <string name="setup_title">Record transactions automatically</string>
+    <string name="setup_body">Finote reads notifications from your bank apps to record transactions for you.</string>
+    <string name="setup_point_banks">Reads only supported apps: Vietcombank, MB Bank, MoMo, Techcombank.</string>
+    <string name="setup_point_otp">Skips OTP and verification codes and never stores them.</string>
+    <string name="setup_point_local">Data stays on your device, encrypted, and is never sent anywhere.</string>
+    <string name="setup_howto">Find Finote in the list and turn it on.</string>
+    <string name="setup_restricted_hint">If you see \"Restricted setting\": App info → ⋮ → Allow restricted settings.</string>
+    <string name="setup_enable">Turn on auto-record</string>
+    <string name="setup_retry">Try again</string>
+    <string name="setup_later">Later, I\'ll enter them by hand</string>
+    <string name="setup_granted">Turned on</string>
+    <string name="transactions_listener_off">Auto-record is off. Tap to turn it on.</string>
 </resources>
