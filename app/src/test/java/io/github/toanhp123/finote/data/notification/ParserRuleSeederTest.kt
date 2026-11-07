@@ -20,18 +20,19 @@ class ParserRuleSeederTest {
     @get:Rule
     val dbRule = InMemoryDatabaseRule(seedParserRules = true)
 
-    private val seedIds = setOf("vcb_filter_v1", "mb_filter_v1", "momo_filter_v1", "tcb_filter_v1")
+    private val seedIds = SystemParserRules.map { it.id }.toSet()
+    private val packages = SystemParserRules.map { it.packageName }.distinct()
 
     private fun seed(id: String) = SystemParserRules.first { it.id == id }
 
     @Test
-    fun `new database holds exactly the four filter rules`() =
+    fun `new database holds exactly the seed regex rules`() =
         runTest {
             val dao = dbRule.db.parserRuleDao()
-            val stored = SystemParserRules.flatMap { dao.getByPackage(it.packageName) }
+            val stored = packages.flatMap { dao.getByPackage(it) }
 
             assertEquals(seedIds, stored.map { it.id }.toSet())
-            assertEquals(4, stored.size)
+            assertEquals(SystemParserRules.size, stored.size)
             assertEquals(SystemParserRules.toSet(), stored.toSet())
         }
 
@@ -45,34 +46,52 @@ class ParserRuleSeederTest {
                 withDb(context, file) { db ->
                     val dao = db.parserRuleDao()
                     // Older system rule: overwritten. Older user rule: kept. Equal version: kept.
-                    dao.insert(seed("vcb_filter_v1").copy(version = 0, ignoreKeywords = "[\"old\"]"))
+                    dao.insert(seed("vcb_account_v1").copy(version = 0, ignoreKeywords = "[\"old\"]"))
                     dao.insert(
-                        seed("mb_filter_v1").copy(version = 0, ignoreKeywords = "[\"mine\"]", isUserCustom = true),
+                        seed("mb_account_v1").copy(version = 0, ignoreKeywords = "[\"mine\"]", isUserCustom = true),
                     )
-                    dao.insert(seed("momo_filter_v1").copy(ignoreKeywords = "[\"same\"]"))
+                    dao.insert(seed("momo_pay_v1").copy(ignoreKeywords = "[\"same\"]"))
                     db.useWriterConnection {
                         it.usePrepared(
-                            "DELETE FROM parser_rules WHERE id = 'tcb_filter_v1'",
+                            "DELETE FROM parser_rules WHERE id = 'tcb_account_v1'",
                         ) { s -> s.step() }
                     }
                 }
 
                 withDb(context, file) { db ->
-                    val rows = SystemParserRules.map { it.packageName }.flatMap { db.parserRuleDao().getByPackage(it) }
+                    val rows = packages.flatMap { db.parserRuleDao().getByPackage(it) }
                     val byId = rows.associateBy { it.id }
 
                     assertEquals(seedIds, byId.keys)
-                    assertEquals(4, rows.size)
-                    assertEquals(seed("vcb_filter_v1"), byId.getValue("vcb_filter_v1"))
-                    assertEquals("[\"mine\"]", byId.getValue("mb_filter_v1").ignoreKeywords)
-                    assertEquals(0, byId.getValue("mb_filter_v1").version)
-                    assertEquals("[\"same\"]", byId.getValue("momo_filter_v1").ignoreKeywords)
-                    assertEquals(seed("tcb_filter_v1"), byId.getValue("tcb_filter_v1"))
+                    assertEquals(SystemParserRules.size, rows.size)
+                    assertEquals(seed("vcb_account_v1"), byId.getValue("vcb_account_v1"))
+                    assertEquals("[\"mine\"]", byId.getValue("mb_account_v1").ignoreKeywords)
+                    assertEquals(0, byId.getValue("mb_account_v1").version)
+                    assertEquals("[\"same\"]", byId.getValue("momo_pay_v1").ignoreKeywords)
+                    assertEquals(seed("tcb_account_v1"), byId.getValue("tcb_account_v1"))
                 }
             } finally {
                 file.delete()
             }
         }
+
+    @Test
+    fun `outdatedRules keeps user rules and same versions`() {
+        val vcb = seed("vcb_account_v1")
+        val mb = seed("mb_account_v1")
+        val momo = seed("momo_pay_v1")
+        val tcb = seed("tcb_account_v1")
+        val stored =
+            mapOf(
+                vcb.id to StoredRule(version = vcb.version - 1, isUserCustom = false),
+                mb.id to StoredRule(version = mb.version - 1, isUserCustom = true),
+                momo.id to StoredRule(version = momo.version, isUserCustom = false),
+            )
+
+        val outdated = outdatedRules(stored, listOf(vcb, mb, momo, tcb))
+
+        assertEquals(listOf(vcb.id, tcb.id), outdated.map { it.id })
+    }
 
     /** Opens the file database with the seeder, runs [block], closes it. A second call is a reopen. */
     private suspend fun withDb(

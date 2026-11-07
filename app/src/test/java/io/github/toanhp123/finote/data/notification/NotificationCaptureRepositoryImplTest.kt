@@ -4,6 +4,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.InMemoryDatabaseRule
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
+import io.github.toanhp123.finote.domain.notification.model.ParsedFields
+import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -54,5 +56,35 @@ class NotificationCaptureRepositoryImplTest {
             dao.insert(parserRuleEntity(id = "other", packageName = "com.other"))
 
             assertEquals(listOf("a", "b", "c"), repo.getRules("com.test.bank").map { it.id })
+        }
+
+    @Test
+    fun `a broken rule does not hide the other rules of the package`() =
+        runTest {
+            val dao = dbRule.db.parserRuleDao()
+            dao.insert(parserRuleEntity(id = "bad", ignoreKeywords = "x"))
+            dao.insert(parserRuleEntity(id = "good"))
+
+            assertEquals(listOf("good"), repo.getRules("com.test.bank").map { it.id })
+        }
+
+    @Test
+    fun `parsed fields round trip`() =
+        runTest {
+            val parsed = ParsedFields(1_500_000L, TransactionType.EXPENSE, "1234", 0L, "Shop", "note")
+            repo.insertLog(log("a", "h").copy(matchedRuleId = "r", parsed = parsed))
+
+            val stored =
+                dbRule.db
+                    .notificationLogDao()
+                    .getAll()
+                    .single()
+            assertEquals("r", stored.matchedRuleId)
+            assertEquals(1_500_000L, stored.parsedAmount)
+            assertEquals("EXPENSE", stored.parsedType)
+            assertEquals("1234", stored.parsedAccountMask)
+            assertEquals(0L, stored.parsedPostBalance)
+            assertEquals("Shop", stored.parsedMerchant)
+            assertEquals("note", stored.parsedNote)
         }
 }

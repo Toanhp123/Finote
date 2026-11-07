@@ -2,12 +2,17 @@ package io.github.toanhp123.finote.data.notification
 
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 
+// why: test fixture with one named default per entity field the tests vary.
+@Suppress("LongParameterList")
 fun parserRuleEntity(
     id: String = "rule-1",
     packageName: String = "com.test.bank",
     priority: Int = 0,
     channelIdAllowlist: String? = null,
     ignoreKeywords: String = "[\"OTP\"]",
+    regexPattern: String = "",
+    fallbackTransactionType: String? = null,
+    isActive: Boolean = true,
 ) = ParserRuleEntity(
     id = id,
     packageName = packageName,
@@ -17,6 +22,11 @@ fun parserRuleEntity(
     priority = priority,
     isUserCustom = false,
     version = 1,
+    regexPattern = regexPattern,
+    fallbackTransactionType = fallbackTransactionType,
+    dateFormatPattern = null,
+    isActive = isActive,
+    updatedAt = 0L,
 )
 
 fun notificationLogEntity(
@@ -38,6 +48,7 @@ fun notificationLogEntity(
     parsedAccountMask = null,
     parsedPostBalance = null,
     parsedMerchant = null,
+    parsedNote = null,
     status = status,
     failureReason = null,
     linkedTransactionId = null,

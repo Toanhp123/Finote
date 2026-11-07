@@ -31,7 +31,7 @@ class SystemParserRulesCorpusTest {
         channelId: String? = null,
         postTime: Long = 1L,
     ): CaptureResult {
-        val repo = FakeNotificationCaptureRepository(SystemParserRules.map { it.toDomain() })
+        val repo = FakeNotificationCaptureRepository(SystemParserRules.mapNotNull { it.toDomain() })
         return CaptureNotificationUseCase(
             repo,
             clock,
@@ -53,13 +53,13 @@ class SystemParserRulesCorpusTest {
     fun `no transaction sample is blocked`() =
         runTest {
             val blocked =
-                NotificationCorpusFixtures.financialTransactions().filter { resultOf(it) != CaptureResult.Stored }
+                NotificationCorpusFixtures.financialTransactions().filter { resultOf(it) is CaptureResult.Ignored }
 
             assertEquals("wrongly blocked: ${blocked.map { it.id }}", emptyList<String>(), blocked.map { it.id })
         }
 
     @Test
-    fun `payments that merely contain a spam-like word stay pending`() =
+    fun `payments that merely contain a spam-like word are not blocked`() =
         runTest {
             val texts =
                 listOf(
@@ -74,7 +74,7 @@ class SystemParserRulesCorpusTest {
                 )
             val blocked =
                 SystemParserRules.map { it.packageName }.flatMap { pkg ->
-                    texts.indices.filter { capture(pkg, "Bien dong so du", texts[it]) != CaptureResult.Stored }
+                    texts.indices.filter { capture(pkg, "Bien dong so du", texts[it]) is CaptureResult.Ignored }
                 }
 
             assertEquals("wrongly blocked text indexes: $blocked", emptyList<Int>(), blocked)
@@ -82,7 +82,10 @@ class SystemParserRulesCorpusTest {
 
     @Test
     fun `seed keywords hold no secret keyword`() {
-        val keywords = SystemParserRules.flatMap { it.toDomain().ignoreKeywords }.map { normalizeForMatch(it) }
+        val keywords =
+            SystemParserRules.mapNotNull { it.toDomain() }.flatMap { it.ignoreKeywords }.map(
+                ::normalizeForMatch,
+            )
 
         assertTrue(keywords.none { it in SECRET_KEYWORDS.map(::normalizeForMatch) })
     }
@@ -90,7 +93,7 @@ class SystemParserRulesCorpusTest {
     @Test
     fun `keyword fragments inside names do not block`() =
         runTest {
-            assertEquals(CaptureResult.Stored, capture("com.VCB", "VCB Digibank", "Thanh toan QR tai Kichi Hotpot"))
-            assertEquals(CaptureResult.Stored, capture("com.VCB", "VCB Digibank", "ND: Luu Dai Trang chuyen tien"))
+            assertTrue(capture("com.VCB", "VCB Digibank", "Thanh toan QR tai Kichi Hotpot") !is CaptureResult.Ignored)
+            assertTrue(capture("com.VCB", "VCB Digibank", "ND: Luu Dai Trang chuyen tien") !is CaptureResult.Ignored)
         }
 }

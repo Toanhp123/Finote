@@ -7,7 +7,8 @@ import androidx.sqlite.execSQL
 
 private const val UPSERT_SQL =
     "INSERT OR REPLACE INTO parser_rules (id, packageName, bankName, channelIdAllowlist, ignoreKeywords, " +
-        "priority, isUserCustom, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        "priority, isUserCustom, version, regexPattern, fallbackTransactionType, dateFormatPattern, isActive, " +
+        "updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
 /**
  * Keeps [SystemParserRules] in the database, rule by rule. Unlike the category seeder it runs on every open:
@@ -18,18 +19,14 @@ class ParserRuleSeeder : RoomDatabase.Callback() {
     override suspend fun onCreate(connection: SQLiteConnection) = write(connection, SystemParserRules)
 
     override suspend fun onOpen(connection: SQLiteConnection) {
-        val stored = storedRules(connection)
-        val outdated =
-            SystemParserRules.filter { seed ->
-                val old = stored[seed.id]
-                old == null || (!old.isUserCustom && old.version < seed.version)
-            }
-        if (outdated.isEmpty()) return
+        // Cheap read outside the write lock: the common reopen has nothing to seed and takes no lock.
+        if (outdatedRules(storedRules(connection), SystemParserRules).isEmpty()) return
         // Room runs onOpen outside a transaction, so a failed seed must not leave half of the rows behind.
         connection.execSQL("BEGIN IMMEDIATE TRANSACTION")
         var isCommitted = false
         try {
-            write(connection, outdated)
+            // Read again under the write lock: another connection may have seeded or edited since the check above.
+            write(connection, outdatedRules(storedRules(connection), SystemParserRules))
             connection.execSQL("COMMIT")
             isCommitted = true
         } finally {
@@ -38,16 +35,11 @@ class ParserRuleSeeder : RoomDatabase.Callback() {
         }
     }
 
-    private class Stored(
-        val version: Int,
-        val isUserCustom: Boolean,
-    )
-
-    private fun storedRules(connection: SQLiteConnection): Map<String, Stored> =
+    private fun storedRules(connection: SQLiteConnection): Map<String, StoredRule> =
         connection.prepare("SELECT id, version, isUserCustom FROM parser_rules").use { statement ->
             buildMap {
                 while (statement.step()) {
-                    put(statement.getText(0), Stored(statement.getLong(1).toInt(), statement.getLong(2) != 0L))
+                    put(statement.getText(0), StoredRule(statement.getLong(1).toInt(), statement.getLong(2) != 0L))
                 }
             }
         }
@@ -70,11 +62,37 @@ class ParserRuleSeeder : RoomDatabase.Callback() {
         bindText(++index, rule.id)
         bindText(++index, rule.packageName)
         bindText(++index, rule.bankName)
-        val allowlist = rule.channelIdAllowlist
-        if (allowlist == null) bindNull(++index) else bindText(++index, allowlist)
+        bindOptionalText(++index, rule.channelIdAllowlist)
         bindText(++index, rule.ignoreKeywords)
         bindLong(++index, rule.priority.toLong())
         bindLong(++index, if (rule.isUserCustom) 1L else 0L)
         bindLong(++index, rule.version.toLong())
+        bindText(++index, rule.regexPattern)
+        bindOptionalText(++index, rule.fallbackTransactionType)
+        bindOptionalText(++index, rule.dateFormatPattern)
+        bindLong(++index, if (rule.isActive) 1L else 0L)
+        bindLong(++index, rule.updatedAt)
+    }
+
+    private fun SQLiteStatement.bindOptionalText(
+        index: Int,
+        value: String?,
+    ) {
+        if (value == null) bindNull(index) else bindText(index, value)
     }
 }
+
+internal class StoredRule(
+    val version: Int,
+    val isUserCustom: Boolean,
+)
+
+/** Seeds that are missing, or whose stored copy is a system rule with a lower version. */
+internal fun outdatedRules(
+    stored: Map<String, StoredRule>,
+    seeds: List<ParserRuleEntity>,
+): List<ParserRuleEntity> =
+    seeds.filter { seed ->
+        val old = stored[seed.id]
+        old == null || (!old.isUserCustom && old.version < seed.version)
+    }

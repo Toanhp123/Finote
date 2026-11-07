@@ -1,8 +1,8 @@
 package io.github.toanhp123.finote.domain.notification.model
 
 /**
- * One captured notification. An `IGNORED_SPAM` row keeps no text: title and content are empty.
- * P2b adds the parsed fields.
+ * One captured notification. Only a secret (OTP and the like) drops the text: title and content are empty.
+ * [matchedRuleId] and [parsed] are filled when a rule matches.
  */
 data class NotificationLog(
     val id: String,
@@ -15,4 +15,6 @@ data class NotificationLog(
     val receivedAt: Long,
     val status: NotificationStatus,
     val failureReason: String?,
+    val matchedRuleId: String? = null,
+    val parsed: ParsedFields? = null,
 )

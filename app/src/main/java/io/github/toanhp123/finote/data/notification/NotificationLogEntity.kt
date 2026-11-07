@@ -5,7 +5,7 @@ import androidx.room3.Index
 import androidx.room3.PrimaryKey
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 
-/** System log, not user data, so it has no `deletedAt`. The `parsed*` columns are filled from P2b on. */
+/** System log, not user data, so it has no `deletedAt`. `parsedType` is `TransactionType.name`. */
 @Entity(
     tableName = "notification_logs",
     indices = [Index(value = ["packageName"]), Index(value = ["contentHash"], unique = true)],
@@ -27,6 +27,7 @@ data class NotificationLogEntity(
     val parsedAccountMask: String?,
     val parsedPostBalance: Long?,
     val parsedMerchant: String?,
+    val parsedNote: String?,
     val status: NotificationStatus,
     val failureReason: String?,
     val linkedTransactionId: String?,

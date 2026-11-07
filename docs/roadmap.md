@@ -146,9 +146,27 @@ Mục tiêu: bắt giao dịch từ thông báo ngân hàng và ví mà không c
 - `onListenerConnected()` gọi `getActiveNotifications()`, bỏ qua hash đã có.
 - Màn setup đầu tiên, một bước: xin quyền Notification Listener (đầy đủ ở P5). Banner nhắc trên danh sách giao dịch khi thiếu quyền.
 - Tạo bảng `ParserRule` (3.8) ngay ở đây, chỉ cột lọc (`packageName`, `channelIdAllowlist`, `ignoreKeywords`). P2b thêm cột regex.
-- Chỉ lưu `PENDING`, chưa bóc tách. Thông báo bị chặn lưu `IGNORED_SPAM` không kèm nội dung.
+- Chỉ lưu `PENDING`, chưa bóc tách. Thông báo bị chặn lưu `IGNORED_SPAM`. Chỉ dòng chứa bí mật (`SECRET_KEYWORDS`: OTP, SmartOTP, mã xác thực) bị xóa nội dung; dòng quảng cáo và cảnh báo giữ nội dung để chặn nhầm còn lấy lại được.
 - Test: lọc OTP và quảng cáo, không tạo bản ghi lỗi giả. Test quét lại không tạo trùng.
 - Thiết kế: `docs/superpowers/specs/2026-11-07-notif-capture-design.md`.
+
+Trạng thái (2026-11-08): code xong, squash vào `dev` (`1f03be2`). Chưa thử trên máy thật: để sau khi đủ chức năng P2, cần thêm màn debug (chỉ bản debug) xem `notification_logs`.
+
+Nợ kỹ thuật từ review P2a (Minor, chưa sửa):
+
+| # | Vấn đề | Chỗ | Sửa ở |
+|---|---|---|---|
+| 1 | Seeder đọc rule đang lưu trước `BEGIN IMMEDIATE`. Một ghi xen giữa có thể làm ghi đè rule vừa thành `isUserCustom`. Sửa: mở transaction trước rồi mới đọc | `data/notification/ParserRuleSeeder.kt` | P2b-1 (đã sửa) |
+| 2 | JSON rule hỏng làm mapper ném lỗi, listener nuốt lỗi, mọi thông báo của package đó mất mà không báo. Sửa: `runCatching` trong mapper, rơi về `null` hoặc rỗng | `data/notification/ParserRuleMapper.kt` | P2b-1 (đã sửa) |
+| 3 | Thông báo được đăng lại (cùng `sbn.key`, `postTime` mới) đổi hash, tạo thêm một dòng `PENDING` | `automation/FinoteNotificationListener.kt` | P2c (dedup phải tính trường hợp này) |
+| 4 | Hash của dòng bí mật có thể dò ngược ra OTP 6 số (khoảng 10^6 lần thử). DB đã mã hóa và OTP hết hạn nên rủi ro thấp. Sửa: HMAC với khóa riêng mỗi máy | `domain/notification/NotificationText.kt` (`contentHash`) | P5 (bảo mật) |
+| 5 | `SetupEffect.Finished` là tên sự kiện, không phải lệnh (`docs/architecture.md`). Đổi thành kiểu `CloseSetup` | `ui/setup/SetupContract.kt` | Khi sửa màn setup ở P5 |
+| 6 | `MainActivity` inject thẳng `SetupRepository`, không qua use case, và đọc SharedPreferences trên main thread lúc khởi động. Sửa: `IsSetupDoneUseCase` | `MainActivity.kt` | P5 (`feature/perf`, đo cold start) |
+| 7 | Tên ngân hàng viết cứng trong `setup_point_banks` ở 4 file strings, dễ lệch khi thêm rule. Spec 5.1 muốn lấy từ rule seed | `res/values*/strings.xml` | P6 (thêm ngân hàng mới) |
+| 8 | `vcb_card` đọc "Số dư khả dụng" thành `postBalance`; nếu thẻ tín dụng VCB dùng cụm này cho hạn mức còn lại thì lưu nhầm hạn mức. Chưa kiểm được vì corpus chỉ có thẻ ghi nợ | `data/notification/SystemParserRule.kt` | Dogfooding P2b (cần mẫu thật) |
+| 9 | Parse regex chạy trên `Dispatchers.Main` trong listener. Rule OTA hoặc rule tự sửa có backtracking thảm họa sẽ gây ANR | `automation/FinoteNotificationListener.kt` | P2b-3 (`feature/rule-ota`) |
+
+Thêm một điểm yếu đã biết: cả 4 ngân hàng dùng chung danh sách `IGNORE_KEYWORDS` trong `data/notification/SystemParserRule.kt`. Bảng đã hỗ trợ từ khóa riêng từng ngân hàng; tách khi viết regex từng ngân hàng ở P2b. Đã sửa ở P2b-1.
 
 ### P2b — `feature/parser-engine` (Module 4, Failed Inbox)
 - Parser nằm ở `domain/notification`, không phụ thuộc `android.*`.
@@ -159,6 +177,14 @@ Mục tiêu: bắt giao dịch từ thông báo ngân hàng và ví mà không c
 - Failed Inbox: màn hình liệt kê `FAILED`, user bấm chuyển thành giao dịch thủ công.
 - OTA: WorkManager tải JSON rule từ GitHub/CDN. Không ghi đè rule có `isUserCustom = true`.
 - Corpus test: ~60+ mẫu tổng hợp (mục D4), có cả dạng thu gọn (`EXTRA_TEXT`) và mở rộng (`EXTRA_BIG_TEXT`). Đạt 98% bóc tách đúng (mục 6).
+- Sửa nợ P2a #1, #2, và tách `IGNORE_KEYWORDS` theo ngân hàng (xem bảng ở P2a).
+
+Chốt 2026-11-08: chia P2b thành 3 nhánh, làm theo thứ tự:
+1. `feature/parser-engine`: rule regex (VCB, MB, MoMo, Techcombank), parser, cổng corpus, nợ #1 #2. Bóc được thì điền `parsed*` và giữ `PENDING` (P2c tạo giao dịch); không khớp thì `FAILED`. Thiết kế: `docs/superpowers/specs/2026-11-08-parser-engine-design.md`.
+2. `feature/failed-inbox`: màn Failed Inbox.
+3. `feature/rule-ota`: OTA rule bằng WorkManager, bóc lại các dòng `FAILED` sau khi có rule mới.
+
+Trạng thái (2026-11-08): `parser-engine` code xong, chờ review cuối nhánh. 12 rule regex. Corpus: VCB, MB, MoMo đúng 100%; Techcombank bóc 8/8.
 
 ### P2c — `feature/account-dedup-balance` (Module 5, 6, 8)
 - Dedup nằm ở `domain/notification`, không phụ thuộc `android.*`.
@@ -166,6 +192,7 @@ Mục tiêu: bắt giao dịch từ thông báo ngân hàng và ví mà không c
 - Khử trùng: cùng số tiền, cùng chiều, cùng merchant rút gọn, trong 30 giây. Dùng cho ví có liên kết ngân hàng.
 - Cold-start: tài khoản `isInitialized = false` và có `postBalance` thì tính ngược `initialBalance` và gợi ý user xác nhận.
 - Test: ví và ngân hàng cùng gửi một biến động, chỉ tạo một giao dịch.
+- Xử lý nợ P2a #3: thông báo đăng lại tạo dòng `PENDING` trùng.
 
 ### P2d — `feature/transfer-pairing` (Module 7)
 - Pairing nằm ở `domain/notification`, không phụ thuộc `android.*`.
@@ -211,6 +238,7 @@ DoD (spec mục 8):
 - `feature/perf`: đo cold start dưới 1,2 giây bằng Macrobenchmark. Đo mở nhập tiền mặt dưới 0,5 giây từ Tile và Shortcut.
 - `feature/onboarding-permission`: hướng dẫn Android 13+ (Allow Restricted Settings) và tắt tối ưu pin trên ROM tùy biến. Could-Have, nhưng cần để P2 dùng được trên máy thật. Thêm bước vào màn setup có sẵn từ P2a, không làm màn mới.
 - Trang chính sách quyền riêng tư và link trong màn setup. Bắt buộc trước khi lên Google Play (prominent disclosure).
+- Sửa nợ P2a #4 (HMAC cho hash), #5 (tên effect của setup), #6 (`IsSetupDoneUseCase`, đọc prefs ngoài main thread). Xem bảng ở P2a.
 - `chore/audit`: test đối soát đầy đủ. Công thức số dư khớp mọi tài khoản, mọi thời điểm (mục 7).
 - `release/1.0.0`: theo release flow.
 

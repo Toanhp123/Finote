@@ -16,4 +16,11 @@ data class ParserRuleEntity(
     val priority: Int,
     val isUserCustom: Boolean,
     val version: Int,
+    /** Named groups: sign, amount, mask, balance, merchant, note, time. Flags are inline. */
+    val regexPattern: String,
+    /** `INCOME` or `EXPENSE`. */
+    val fallbackTransactionType: String?,
+    val dateFormatPattern: String?,
+    val isActive: Boolean,
+    val updatedAt: Long,
 )

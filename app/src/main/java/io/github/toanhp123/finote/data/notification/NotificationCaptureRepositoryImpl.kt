@@ -15,7 +15,7 @@ class NotificationCaptureRepositoryImpl
         private val logs = db.notificationLogDao()
 
         override suspend fun getRules(packageName: String): List<ParserRule> =
-            rules.getByPackage(packageName).map { it.toDomain() }
+            rules.getByPackage(packageName).mapNotNull { it.toDomain() }
 
         override suspend fun insertLog(log: NotificationLog): Boolean = logs.insert(log.toEntity()) != -1L
     }

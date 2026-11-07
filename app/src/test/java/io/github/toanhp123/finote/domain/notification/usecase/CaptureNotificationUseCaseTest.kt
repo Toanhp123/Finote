@@ -5,6 +5,7 @@ import io.github.toanhp123.finote.domain.notification.model.CaptureResult
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RawNotification
+import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -19,11 +20,16 @@ class CaptureNotificationUseCaseTest {
     private val now = Instant.parse("2026-11-07T01:00:00Z")
     private val clock = Clock.fixed(now, ZoneOffset.UTC)
 
+    // why: a test builder, every parameter is one knob of a rule
+    @Suppress("LongParameterList")
     private fun rule(
         id: String = "r1",
         priority: Int = 0,
         keywords: List<String> = emptyList(),
         allowlist: List<String>? = null,
+        pattern: String = "(?<sign>[+-])(?<amount>[\\d,]+)",
+        fallback: TransactionType? = null,
+        isActive: Boolean = true,
     ) = ParserRule(
         id = id,
         packageName = PKG,
@@ -33,6 +39,11 @@ class CaptureNotificationUseCaseTest {
         priority = priority,
         isUserCustom = false,
         version = 1,
+        regexPattern = pattern,
+        fallbackTransactionType = fallback,
+        dateFormatPattern = null,
+        isActive = isActive,
+        updatedAt = 0L,
     )
 
     private fun raw(
@@ -155,8 +166,11 @@ class CaptureNotificationUseCaseTest {
         runTest {
             val e = env(rule(keywords = listOf("ưu đãi")))
 
-            assertEquals(CaptureResult.Stored, e.useCase(raw(content = "Thanh toan tai Kichi Hotpot")))
-            assertEquals(CaptureResult.Stored, e.useCase(raw(content = "Chuyen tien cho Luu Dai Trang", postTime = 2L)))
+            assertEquals(CaptureResult.Stored, e.useCase(raw(content = "Thanh toan tai Kichi Hotpot -50,000")))
+            assertEquals(
+                CaptureResult.Stored,
+                e.useCase(raw(content = "Chuyen tien cho Luu Dai Trang -50,000", postTime = 2L)),
+            )
         }
 
     @Test
@@ -242,6 +256,61 @@ class CaptureNotificationUseCaseTest {
             e.useCase(raw(content = "OTP 222222"))
 
             assertEquals(2, e.repo.logs.size)
+        }
+
+    @Test
+    fun `passing notification that matches is pending with parsed fields`() =
+        runTest {
+            val e = env(rule())
+
+            assertEquals(CaptureResult.Stored, e.useCase(raw(content = "SD TK -50,000 tai quan")))
+
+            val log = e.repo.logs.single()
+            assertEquals(NotificationStatus.PENDING, log.status)
+            assertEquals("r1", log.matchedRuleId)
+            assertEquals(50_000L, log.parsed?.amount)
+            assertEquals(TransactionType.EXPENSE, log.parsed?.type)
+            assertNull(log.failureReason)
+        }
+
+    @Test
+    fun `passing notification without a match is failed`() =
+        runTest {
+            val e = env(rule(pattern = "nothing(?<amount>\\d+)"))
+
+            assertEquals(CaptureResult.Failed, e.useCase(raw()))
+
+            val log = e.repo.logs.single()
+            assertEquals(NotificationStatus.FAILED, log.status)
+            assertEquals("no_rule_matched", log.failureReason)
+            assertNull(log.parsed)
+            assertNull(log.matchedRuleId)
+            assertEquals("Biến động số dư", log.title)
+            assertEquals("SD TK -50,000 tai quan", log.content)
+        }
+
+    @Test
+    fun `blocked notification is not parsed`() =
+        runTest {
+            val e = env(rule(keywords = listOf("ưu đãi")))
+
+            assertEquals(CaptureResult.Ignored("keyword:ưu đãi"), e.useCase(raw(content = "Ưu đãi -50,000")))
+
+            val log = e.repo.logs.single()
+            assertNull(log.parsed)
+            assertNull(log.matchedRuleId)
+        }
+
+    @Test
+    fun `inactive rules still filter`() =
+        runTest {
+            val e = env(rule(keywords = listOf("ưu đãi đặc quyền"), isActive = false))
+
+            assertEquals(
+                CaptureResult.Ignored("keyword:ưu đãi đặc quyền"),
+                e.useCase(raw(content = "Ưu đãi đặc quyền -50,000", postTime = 1L)),
+            )
+            assertEquals(CaptureResult.Failed, e.useCase(raw(postTime = 2L)))
         }
 
     private companion object {

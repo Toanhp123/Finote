@@ -2,7 +2,6 @@ package io.github.toanhp123.finote.data.notification
 
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 
-/** The parsed columns stay null until P2b. */
 fun NotificationLog.toEntity(): NotificationLogEntity =
     NotificationLogEntity(
         id = id,
@@ -13,12 +12,13 @@ fun NotificationLog.toEntity(): NotificationLogEntity =
         contentHash = contentHash,
         postTime = postTime,
         receivedAt = receivedAt,
-        matchedRuleId = null,
-        parsedAmount = null,
-        parsedType = null,
-        parsedAccountMask = null,
-        parsedPostBalance = null,
-        parsedMerchant = null,
+        matchedRuleId = matchedRuleId,
+        parsedAmount = parsed?.amount,
+        parsedType = parsed?.type?.name,
+        parsedAccountMask = parsed?.accountMask,
+        parsedPostBalance = parsed?.postBalance,
+        parsedMerchant = parsed?.merchant,
+        parsedNote = parsed?.note,
         status = status,
         failureReason = failureReason,
         linkedTransactionId = null,
