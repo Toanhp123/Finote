@@ -3,7 +3,6 @@ package io.github.toanhp123.finote.architecture
 import com.lemonappdev.konsist.api.declaration.KoInterfaceDeclaration
 import com.lemonappdev.konsist.api.ext.list.functions
 import com.lemonappdev.konsist.api.ext.list.properties
-import com.lemonappdev.konsist.api.provider.KoNameProvider
 import com.lemonappdev.konsist.api.verify.assertTrue
 import org.junit.Test
 
@@ -27,7 +26,7 @@ class NamingKonsistTest {
             .filter { repositoryPackage.matches(it.packageName()) }
             .topLevelDeclarations()
             .assertTrue(strict = false, testName = "repository package holds only interfaces") {
-                it is KoInterfaceDeclaration && (it as KoNameProvider).name.endsWith("Repository")
+                it is KoInterfaceDeclaration
             }
     }
 

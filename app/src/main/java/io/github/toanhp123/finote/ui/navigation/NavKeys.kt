@@ -23,3 +23,7 @@ data object Settings : NavKey
 data class Setup(
     val isFromOnboarding: Boolean,
 ) : NavKey
+
+/** The notification capture page, pushed on top of [Settings]. */
+@Serializable
+data object NotificationCaptureSettings : NavKey

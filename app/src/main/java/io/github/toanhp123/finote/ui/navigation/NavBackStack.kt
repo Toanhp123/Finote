@@ -38,3 +38,8 @@ fun finishSetup(
         backStack.removeLastOrNull()
     }
 }
+
+/** Opens [NotificationCaptureSettings]. A second call while it is on top does nothing. */
+fun openNotificationCaptureSettings(backStack: MutableList<NavKey>) {
+    if (backStack.lastOrNull() != NotificationCaptureSettings) backStack.add(NotificationCaptureSettings)
+}

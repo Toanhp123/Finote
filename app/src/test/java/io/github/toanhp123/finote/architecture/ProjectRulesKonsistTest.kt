@@ -97,6 +97,15 @@ class ProjectRulesKonsistTest {
         Assert.assertTrue(bad.none { ALLOWED_SUPPRESS.containsMatchIn(it) })
     }
 
+    @Test
+    fun `only HttpParserRuleFeed uses network packages`() {
+        productionFiles
+            .filter { it.name != "HttpParserRuleFeed" }
+            .assertNoImports("only HttpParserRuleFeed uses network packages") { import ->
+                NETWORK_PACKAGES.any { import.isFrom(it) }
+            }
+    }
+
     private fun String.isMoneyName() = MONEY_WORDS.any { contains(it, ignoreCase = true) }
 
     /** A declared type is checked with its type arguments; without one, the initializer must not be floating. */
@@ -125,6 +134,9 @@ class ProjectRulesKonsistTest {
 
         // Only detekt size rules, never Konsist or Lint, and always with a reason of 10+ chars.
         val ALLOWED_SUPPRESS = Regex("""^\s*@Suppress\("$RULE"(, "$RULE")*\)\s*// why: \S.{9,}""")
+
+        val NETWORK_PACKAGES =
+            listOf("java.net", "javax.net", "android.net.http", "android.webkit", "okhttp3", "io.ktor")
 
         val MONEY_WORDS = listOf("amount", "balance", "limit", "fee")
     }

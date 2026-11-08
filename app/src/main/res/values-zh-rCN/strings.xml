@@ -106,4 +106,30 @@
     <string name="setup_later">以后再说，我手动输入</string>
     <string name="setup_granted">已开启</string>
     <string name="transactions_listener_off">自动记录已关闭。点按开启。</string>
+    <string name="settings_group_capture">自动记录</string>
+    <string name="settings_capture_title">从通知记录</string>
+    <string name="settings_access_on">开启</string>
+    <string name="settings_access_off">关闭</string>
+    <plurals name="settings_capture_subtitle">
+        <item quantity="other">%1$s · %2$d 家银行</item>
+    </plurals>
+    <string name="capture_group_access">访问权限</string>
+    <string name="capture_access_row">读取通知</string>
+    <string name="capture_group_patterns">识别规则</string>
+    <string name="capture_auto_update">每天更新</string>
+    <string name="capture_privacy">仅下载识别规则。不会向设备外发送任何数据。</string>
+    <string name="capture_check_now">立即检查</string>
+    <string name="capture_last_check">上次检查：%1$s · %2$s</string>
+    <plurals name="capture_result_updated">
+        <item quantity="other">已更新 %d 条规则</item>
+    </plurals>
+    <string name="capture_result_up_to_date">已是最新</string>
+    <string name="capture_result_network">无网络连接</string>
+    <string name="capture_result_invalid">下载的数据无效</string>
+    <string name="capture_result_error">出错了，请稍后再试</string>
+    <string name="capture_group_banks">支持的银行</string>
+    <plurals name="capture_bank_summary">
+        <item quantity="other">%1$d 条规则 · v%2$d</item>
+    </plurals>
+    <string name="capture_bank_edited">含你的修改</string>
 </resources>

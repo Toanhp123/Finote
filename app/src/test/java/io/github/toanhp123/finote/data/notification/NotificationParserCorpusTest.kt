@@ -12,6 +12,8 @@ import io.github.toanhp123.finote.domain.notification.parseNotification
 import io.github.toanhp123.finote.domain.notification.usecase.CaptureNotificationUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.FakeNotificationCaptureRepository
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -25,6 +27,7 @@ import java.time.ZoneOffset
  * `bigText` runs twice: on the truncated `content` (relaxed check) and on the expanded text (strict check).
  * Only labelled fields are compared. Failure messages list item ids, variants and field names, never text.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class NotificationParserCorpusTest {
     private val clock = Clock.fixed(Instant.parse("2026-11-07T00:00:00Z"), ZoneOffset.UTC)
     private val techcombank = "vn.com.techcombank.bb.app"
@@ -48,7 +51,7 @@ class NotificationParserCorpusTest {
     ): Pair<CaptureResult, NotificationLog> {
         val repo = FakeNotificationCaptureRepository(SystemParserRules.mapNotNull { it.toDomain() })
         val raw = RawNotification(item.packageName, item.channelId, item.title, text, item.postTime)
-        val result = CaptureNotificationUseCase(repo, clock)(raw)
+        val result = CaptureNotificationUseCase(repo, clock, UnconfinedTestDispatcher())(raw)
         return result to repo.logs.single()
     }
 

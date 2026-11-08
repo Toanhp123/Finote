@@ -17,6 +17,8 @@ import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavBar
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavItem
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteScaffold
+import io.github.toanhp123.finote.ui.settings.SettingsRoute
+import io.github.toanhp123.finote.ui.settings.capture.NotificationCaptureSettingsRoute
 import io.github.toanhp123.finote.ui.setup.SetupRoute
 import io.github.toanhp123.finote.ui.transactions.TransactionListRoute
 
@@ -63,7 +65,20 @@ fun FinoteNavHost(
                         )
                     }
                     entry<Budget> { ComingSoonScreen(R.string.tab_budget) }
-                    entry<Settings> { ComingSoonScreen(R.string.tab_settings) }
+                    entry<Settings> {
+                        SettingsRoute(
+                            viewModel = hiltViewModel(),
+                            onOpenCapture = { openNotificationCaptureSettings(backStack) },
+                            modifier = Modifier.padding(padding),
+                        )
+                    }
+                    entry<NotificationCaptureSettings> {
+                        NotificationCaptureSettingsRoute(
+                            viewModel = hiltViewModel(),
+                            onClose = { backStack.removeLastOrNull() },
+                            modifier = Modifier.padding(padding),
+                        )
+                    }
                     entry<Setup> { key ->
                         SetupRoute(
                             viewModel = hiltViewModel(),

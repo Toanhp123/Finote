@@ -164,7 +164,7 @@ Nợ kỹ thuật từ review P2a (Minor, chưa sửa):
 | 6 | `MainActivity` inject thẳng `SetupRepository`, không qua use case, và đọc SharedPreferences trên main thread lúc khởi động. Sửa: `IsSetupDoneUseCase` | `MainActivity.kt` | P5 (`feature/perf`, đo cold start) |
 | 7 | Tên ngân hàng viết cứng trong `setup_point_banks` ở 4 file strings, dễ lệch khi thêm rule. Spec 5.1 muốn lấy từ rule seed | `res/values*/strings.xml` | P6 (thêm ngân hàng mới) |
 | 8 | `vcb_card` đọc "Số dư khả dụng" thành `postBalance`; nếu thẻ tín dụng VCB dùng cụm này cho hạn mức còn lại thì lưu nhầm hạn mức. Chưa kiểm được vì corpus chỉ có thẻ ghi nợ | `data/notification/SystemParserRule.kt` | Dogfooding P2b (cần mẫu thật) |
-| 9 | Parse regex chạy trên `Dispatchers.Main` trong listener. Rule OTA hoặc rule tự sửa có backtracking thảm họa sẽ gây ANR | `automation/FinoteNotificationListener.kt` | P2b-3 (`feature/rule-ota`) |
+| 9 | Parse regex chạy trên `Dispatchers.Main` trong listener. Rule OTA hoặc rule tự sửa có backtracking thảm họa sẽ gây ANR | `automation/FinoteNotificationListener.kt` | P2b-3 (đã sửa: parse chạy trên dispatcher nền; regex ICU trên máy vẫn không ngắt được, ghi `shortcut:`, chặn bằng test an toàn trước khi ký feed) |
 
 Thêm một điểm yếu đã biết: cả 4 ngân hàng dùng chung danh sách `IGNORE_KEYWORDS` trong `data/notification/SystemParserRule.kt`. Bảng đã hỗ trợ từ khóa riêng từng ngân hàng; tách khi viết regex từng ngân hàng ở P2b. Đã sửa ở P2b-1.
 
@@ -181,10 +181,18 @@ Thêm một điểm yếu đã biết: cả 4 ngân hàng dùng chung danh sách
 
 Chốt 2026-11-08: chia P2b thành 3 nhánh, làm theo thứ tự:
 1. `feature/parser-engine`: rule regex (VCB, MB, MoMo, Techcombank), parser, cổng corpus, nợ #1 #2. Bóc được thì điền `parsed*` và giữ `PENDING` (P2c tạo giao dịch); không khớp thì `FAILED`. Thiết kế: `docs/superpowers/specs/2026-11-08-parser-engine-design.md`.
-2. `feature/failed-inbox`: màn Failed Inbox.
-3. `feature/rule-ota`: OTA rule bằng WorkManager, bóc lại các dòng `FAILED` sau khi có rule mới.
+2. `feature/rule-ota` (đổi thứ tự 2026-11-08, Must-Have và sửa nợ #9): OTA rule bằng WorkManager, bóc lại các dòng `FAILED` sau khi có rule mới. Mặc định tắt, user tự bật; file JSON có chữ ký ECDSA. Thiết kế: `docs/superpowers/specs/2026-11-08-rule-ota-design.md`.
+3. `feature/failed-inbox`: màn Failed Inbox, kèm bộ dạy mẫu cục bộ (Regex Sandbox cho người phổ thông): user mở một dòng `FAILED`, bôi đen số tiền, số dư, 4 số cuối, nội dung; app sinh regex `isUserCustom = true` rồi gọi `ReparseFailedLogsUseCase`. Cho user không muốn bật mạng. Cần bàn thêm: ngân hàng chưa có rule bị `NotTracked` nên không có dòng `FAILED` để dạy.
 
-Trạng thái (2026-11-08): `parser-engine` code xong, chờ review cuối nhánh. 12 rule regex. Corpus: VCB, MB, MoMo đúng 100%; Techcombank bóc 8/8.
+Trạng thái (2026-11-08): `parser-engine` xong, đã ở `dev` (`29a94e2`). 12 rule regex. Corpus: VCB, MB, MoMo đúng 100%; Techcombank bóc 8/8.
+
+Trạng thái (2026-11-08): `rule-ota` code xong, review cuối nhánh đạt, chờ squash vào `dev`.
+- Feed `rules/v1/feed.json` sinh từ `SystemParserRules`, ký ECDSA P-256. Khóa riêng ở `~/.finote/finote-rules.pem` (ngoài repo, user tự sao lưu). Ký lại: `testDebugUnitTest --tests '*RuleFeedSigningTool*' -PsignRuleFeed=true`.
+- Feed phải lên `main` cùng hoặc trước bản phát hành đầu có OTA; trước đó "Kiểm tra ngay" báo "không có mạng" (404).
+- Nợ mới (follow-up):
+  - Rule `isActive = false` vẫn lọc và vẫn tính để quyết định `NotTracked` (hành vi có từ P2b-1; OTA giờ chạm tới được).
+  - `HttpParserRuleFeed` đọc chặn trên dispatcher của worker; nên dùng IO dispatcher.
+  - Kiểm `UnstyledSwitch` với `onCheckedChange = null` không đọc trạng thái hai lần trên TalkBack (thử trên máy).
 
 ### P2c — `feature/account-dedup-balance` (Module 5, 6, 8)
 - Dedup nằm ở `domain/notification`, không phụ thuộc `android.*`.

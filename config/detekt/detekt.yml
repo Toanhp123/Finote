@@ -1,3 +1,7 @@
+coroutines:
+  InjectDispatcher:
+    # The Hilt module is where a dispatcher is created and injected; everything else must receive it.
+    excludes: ['**/di/**']
 complexity:
   LongMethod:
     allowedLines: 60

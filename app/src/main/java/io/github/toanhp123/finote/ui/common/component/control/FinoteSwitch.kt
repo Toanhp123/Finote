@@ -21,11 +21,14 @@ import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviewSurfa
 import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviews
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
-/** An on/off switch with a touch target of the theme size. Name it with text next to it; the switch has no label. */
+/**
+ * An on/off switch with a touch target of the theme size. Name it with text next to it; the switch has no label.
+ * A null [onCheckedChange] makes it a picture only: a parent with `toggleable` owns the tap and the semantics.
+ */
 @Composable
 fun FinoteSwitch(
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
+    onCheckedChange: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {

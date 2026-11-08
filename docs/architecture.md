@@ -8,6 +8,7 @@ One Gradle module, `:app`. Layers are packages. Inside a layer, packages split b
 
 ```text
 domain/<feature>/    model, repository interface, use case, pure logic
+domain/common/       shared kinds with no logic (qualifiers such as DefaultDispatcher)
 data/<feature>/      Room entity, DAO, mapper, repository impl
 ui/<feature>/        Screen, Contract, ViewModel
 ui/common/           theme, shared components, BaseViewModel (tokens and components: docs/design-system.md)
@@ -93,7 +94,7 @@ Private helpers of a class stay inside the class; detekt `TooManyFunctions` igno
 
 When a file co-locates types, the declaration the file is named after comes first and the serving types (style enum, item class, state holder) go below it. detekt `MatchingDeclarationName` (`mustBeFirst`) relies on this order: a file that starts with its only class must be named after that class.
 
-Any class or interface named `*Repository` is an interface in `domain/<feature>/repository`. `*Mapper.kt` lives in `data`, `*Contract.kt` and `*Screen.kt` in `ui`.
+Any class or interface named `*Repository` is an interface in `domain/<feature>/repository`. That package holds interfaces only: repositories and the other ports to the outside world (a feed, a scheduler). `*Mapper.kt` lives in `data`, `*Contract.kt` and `*Screen.kt` in `ui`.
 
 Project rules, checked over all production code:
 - No `android.util.Log`, no `println`, no `printStackTrace`, no `::println`.

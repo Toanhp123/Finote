@@ -6,6 +6,8 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RawNotification
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -16,6 +18,7 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CaptureNotificationUseCaseTest {
     private val now = Instant.parse("2026-11-07T01:00:00Z")
     private val clock = Clock.fixed(now, ZoneOffset.UTC)
@@ -60,7 +63,7 @@ class CaptureNotificationUseCaseTest {
 
     private fun env(vararg rules: ParserRule): Env {
         val repo = FakeNotificationCaptureRepository(rules.toList())
-        return Env(repo, CaptureNotificationUseCase(repo, clock))
+        return Env(repo, CaptureNotificationUseCase(repo, clock, UnconfinedTestDispatcher()))
     }
 
     @Test

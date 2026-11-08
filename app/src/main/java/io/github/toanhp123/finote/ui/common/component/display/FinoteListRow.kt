@@ -16,7 +16,8 @@ import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviews
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 /**
- * A row at least as tall as a touch target. [trailing] keeps its full width next to the title.
+ * A row at least as tall as a touch target. The title wraps, so a large font scale never hides it.
+ * [trailing] keeps its full width next to the title.
  * When that would leave the title narrower than the theme minimum, [trailing] moves to its own line below the title.
  */
 @Composable
@@ -58,8 +59,6 @@ private fun RowText(
             text = title,
             color = FinoteTheme.scheme.onSurface,
             style = FinoteTheme.typography.material.bodyLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
         if (subtitle != null) {
             Text(

@@ -8,6 +8,8 @@ import io.github.toanhp123.finote.domain.notification.model.RawNotification
 import io.github.toanhp123.finote.domain.notification.normalizeForMatch
 import io.github.toanhp123.finote.domain.notification.usecase.CaptureNotificationUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.FakeNotificationCaptureRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -20,6 +22,7 @@ import java.time.ZoneOffset
  * The gate for the seed keywords: every ignored corpus sample is blocked, no transaction sample is.
  * Failure messages list item ids only, never notification text.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class SystemParserRulesCorpusTest {
     private val clock = Clock.fixed(Instant.parse("2026-11-07T00:00:00Z"), ZoneOffset.UTC)
 
@@ -35,6 +38,7 @@ class SystemParserRulesCorpusTest {
         return CaptureNotificationUseCase(
             repo,
             clock,
+            UnconfinedTestDispatcher(),
         )(RawNotification(packageName, channelId, title, content, postTime))
     }
 

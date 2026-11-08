@@ -1,16 +1,17 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
+import io.github.toanhp123.finote.domain.common.DefaultDispatcher
 import io.github.toanhp123.finote.domain.notification.SECRET_KEYWORDS
+import io.github.toanhp123.finote.domain.notification.classifyNotification
 import io.github.toanhp123.finote.domain.notification.contentHash
-import io.github.toanhp123.finote.domain.notification.firstMatchingKeyword
 import io.github.toanhp123.finote.domain.notification.model.CaptureResult
+import io.github.toanhp123.finote.domain.notification.model.Classification
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
-import io.github.toanhp123.finote.domain.notification.model.ParseResult
-import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RawNotification
-import io.github.toanhp123.finote.domain.notification.parseNotification
 import io.github.toanhp123.finote.domain.notification.repository.NotificationCaptureRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import java.time.Clock
 import java.util.UUID
 import javax.inject.Inject
@@ -20,6 +21,7 @@ class CaptureNotificationUseCase
     constructor(
         private val repository: NotificationCaptureRepository,
         private val clock: Clock,
+        @param:DefaultDispatcher private val parseDispatcher: CoroutineDispatcher,
     ) {
         /**
          * Filters the notification by the rules of its package and stores it: when it passes, `PENDING` with the
@@ -32,54 +34,36 @@ class CaptureNotificationUseCase
             val rules = repository.getRules(raw.packageName)
             if (rules.isEmpty()) return CaptureResult.NotTracked
             val hash = contentHash(raw.packageName, raw.postTime, raw.title, raw.content)
-            val text = "${raw.title}\n${raw.content}"
-            val secret = firstMatchingKeyword(text, SECRET_KEYWORDS)
-            val reason = if (secret != null) "secret:$secret" else ignoreReason(raw, rules, text)
-            val isSecret = secret != null
-            val parsed = if (reason == null) parseNotification(raw.title, raw.content, rules) else null
+            // shortcut: ICU regex cannot be interrupted, so a pathological rule blocks one background thread;
+            // add an on-device limit if users can type raw regex.
+            val result = withContext(parseDispatcher) { classifyNotification(raw, rules) }
             val log =
                 newLog(
                     raw = raw,
                     hash = hash,
-                    title = if (isSecret) "" else raw.title,
-                    content = if (isSecret) "" else raw.content,
-                    outcome = outcomeOf(reason, parsed),
+                    title = if (result.isSecret) "" else raw.title,
+                    content = if (result.isSecret) "" else raw.content,
+                    result = result,
                 )
             return when {
-                !repository.insertLog(log) -> CaptureResult.Duplicate
-                reason != null -> CaptureResult.Ignored(reason)
-                parsed is ParseResult.Parsed -> CaptureResult.Stored
-                else -> CaptureResult.Failed
+                !repository.insertLog(log) -> {
+                    CaptureResult.Duplicate
+                }
+
+                result.status == NotificationStatus.IGNORED_SPAM -> {
+                    CaptureResult.Ignored(
+                        result.failureReason.orEmpty(),
+                    )
+                }
+
+                result.parsed != null -> {
+                    CaptureResult.Stored
+                }
+
+                else -> {
+                    CaptureResult.Failed
+                }
             }
-        }
-
-        private fun outcomeOf(
-            reason: String?,
-            parsed: ParseResult?,
-        ) = when {
-            reason != null -> Outcome(NotificationStatus.IGNORED_SPAM, reason)
-            parsed is ParseResult.Parsed -> Outcome(NotificationStatus.PENDING, null, parsed)
-            else -> Outcome(NotificationStatus.FAILED, "no_rule_matched")
-        }
-
-        private class Outcome(
-            val status: NotificationStatus,
-            val failureReason: String?,
-            val parsed: ParseResult.Parsed? = null,
-        )
-
-        private fun ignoreReason(
-            raw: RawNotification,
-            rules: List<ParserRule>,
-            text: String,
-        ): String? {
-            // One rule without an allowlist accepts every channel, so the filter needs all rules to have one.
-            if (rules.all { it.channelIdAllowlist != null }) {
-                val allowed = rules.flatMap { it.channelIdAllowlist.orEmpty() }
-                if (raw.channelId !in allowed) return "channel:${raw.channelId}"
-            }
-            val keywords = rules.flatMapTo(LinkedHashSet()) { it.ignoreKeywords }.toList()
-            return firstMatchingKeyword(text, keywords)?.let { "keyword:$it" }
         }
 
         private fun newLog(
@@ -87,7 +71,7 @@ class CaptureNotificationUseCase
             hash: String,
             title: String,
             content: String,
-            outcome: Outcome,
+            result: Classification,
         ) = NotificationLog(
             id = UUID.randomUUID().toString(),
             packageName = raw.packageName,
@@ -97,9 +81,9 @@ class CaptureNotificationUseCase
             contentHash = hash,
             postTime = raw.postTime,
             receivedAt = clock.millis(),
-            status = outcome.status,
-            failureReason = outcome.failureReason,
-            matchedRuleId = outcome.parsed?.ruleId,
-            parsed = outcome.parsed?.fields,
+            status = result.status,
+            failureReason = result.failureReason,
+            matchedRuleId = result.parsed?.ruleId,
+            parsed = result.parsed?.fields,
         )
     }

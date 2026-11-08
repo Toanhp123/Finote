@@ -106,4 +106,30 @@
     <string name="setup_later">Để sau, tôi nhập tay</string>
     <string name="setup_granted">Đã bật</string>
     <string name="transactions_listener_off">Tự động ghi đang tắt. Bấm để bật.</string>
+    <string name="settings_group_capture">TỰ ĐỘNG GHI</string>
+    <string name="settings_capture_title">Ghi từ thông báo</string>
+    <string name="settings_access_on">Bật</string>
+    <string name="settings_access_off">Tắt</string>
+    <plurals name="settings_capture_subtitle">
+        <item quantity="other">%1$s · %2$d ngân hàng</item>
+    </plurals>
+    <string name="capture_group_access">QUYỀN TRUY CẬP</string>
+    <string name="capture_access_row">Đọc thông báo</string>
+    <string name="capture_group_patterns">MẪU NHẬN DIỆN</string>
+    <string name="capture_auto_update">Cập nhật hằng ngày</string>
+    <string name="capture_privacy">Chỉ tải mẫu nhận diện. Không gửi dữ liệu nào ra khỏi máy.</string>
+    <string name="capture_check_now">Kiểm tra ngay</string>
+    <string name="capture_last_check">Lần kiểm tra cuối: %1$s · %2$s</string>
+    <plurals name="capture_result_updated">
+        <item quantity="other">đã cập nhật %d mẫu</item>
+    </plurals>
+    <string name="capture_result_up_to_date">đã là bản mới nhất</string>
+    <string name="capture_result_network">không có mạng</string>
+    <string name="capture_result_invalid">dữ liệu tải về không hợp lệ</string>
+    <string name="capture_result_error">có lỗi, thử lại sau</string>
+    <string name="capture_group_banks">NGÂN HÀNG ĐƯỢC HỖ TRỢ</string>
+    <plurals name="capture_bank_summary">
+        <item quantity="other">%1$d mẫu · v%2$d</item>
+    </plurals>
+    <string name="capture_bank_edited">có chỉnh sửa của bạn</string>
 </resources>

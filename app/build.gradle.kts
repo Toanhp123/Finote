@@ -130,6 +130,9 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     ksp(libs.hilt.compiler)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
     implementation(libs.room3.runtime)
     implementation(libs.sqlite.framework)
     implementation(libs.sqlcipher.android)
@@ -144,6 +147,7 @@ dependencies {
     testImplementation(libs.konsist)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
+    testImplementation(libs.androidx.work.testing)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
 }
@@ -153,6 +157,7 @@ tasks.withType<Test>().configureEach {
     inputs.files(fileTree("src/main")).withPathSensitivity(PathSensitivity.RELATIVE)
     // Robolectric on SDK 37 reaches FileDescriptor internals through SharedSecrets, which Java 21 does not export.
     jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+    providers.gradleProperty("signRuleFeed").orNull?.let { systemProperty("finote.signRuleFeed", it) }
 }
 
 tasks.register("qualityGate") {

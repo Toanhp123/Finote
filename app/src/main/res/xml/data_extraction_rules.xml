@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The database is encrypted and the Keystore key never leaves the device, so a restored copy cannot be opened. -->
+<!-- rule_update.xml holds the download switch: a restored ON would download without a fresh choice. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="database" path="." />
         <exclude domain="sharedpref" path="db_key.xml" />
+        <exclude domain="sharedpref" path="rule_update.xml" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="database" path="." />
         <exclude domain="sharedpref" path="db_key.xml" />
+        <exclude domain="sharedpref" path="rule_update.xml" />
     </device-transfer>
 </data-extraction-rules>

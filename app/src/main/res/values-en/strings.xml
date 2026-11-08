@@ -106,4 +106,33 @@
     <string name="setup_later">Later, I\'ll enter them by hand</string>
     <string name="setup_granted">Turned on</string>
     <string name="transactions_listener_off">Auto-record is off. Tap to turn it on.</string>
+    <string name="settings_group_capture">AUTOMATIC CAPTURE</string>
+    <string name="settings_capture_title">Capture from notifications</string>
+    <string name="settings_access_on">On</string>
+    <string name="settings_access_off">Off</string>
+    <plurals name="settings_capture_subtitle">
+        <item quantity="one">%1$s · %2$d bank</item>
+        <item quantity="other">%1$s · %2$d banks</item>
+    </plurals>
+    <string name="capture_group_access">ACCESS</string>
+    <string name="capture_access_row">Read notifications</string>
+    <string name="capture_group_patterns">RECOGNITION PATTERNS</string>
+    <string name="capture_auto_update">Update daily</string>
+    <string name="capture_privacy">Downloads recognition patterns only. Nothing leaves this phone.</string>
+    <string name="capture_check_now">Check now</string>
+    <string name="capture_last_check">Last check: %1$s · %2$s</string>
+    <plurals name="capture_result_updated">
+        <item quantity="one">%d pattern updated</item>
+        <item quantity="other">%d patterns updated</item>
+    </plurals>
+    <string name="capture_result_up_to_date">already up to date</string>
+    <string name="capture_result_network">no connection</string>
+    <string name="capture_result_invalid">the download was not valid</string>
+    <string name="capture_result_error">something went wrong, try again later</string>
+    <string name="capture_group_banks">SUPPORTED BANKS</string>
+    <plurals name="capture_bank_summary">
+        <item quantity="one">%1$d pattern · v%2$d</item>
+        <item quantity="other">%1$d patterns · v%2$d</item>
+    </plurals>
+    <string name="capture_bank_edited">has your edits</string>
 </resources>

@@ -61,7 +61,7 @@ A component file sits directly in one group. No group has a sub-group. `DesignSy
 | `FinoteButton` | `(text, onClick, modifier, style, enabled, isLoading, leadingIcon?)` | Every button. `style`: `Primary`, `Secondary`, `Ghost`, `Danger` |
 | `FinoteIconButton` | `(iconRes, contentDescription, onClick, modifier, enabled)` | Icon-only action. 48dp touch target |
 | `FinoteTextField` | `(value, onValueChange, label, modifier, placeholder?, errorText?, maxLength?, singleLine, keyboardOptions, keyboardActions)` | Text input with label, hint, error, counter |
-| `FinoteSwitch` | `(checked, onCheckedChange, modifier, enabled)` | On/off setting |
+| `FinoteSwitch` | `(checked, onCheckedChange, modifier, enabled)` | On/off setting. `onCheckedChange = null` draws it only; a `toggleable` parent owns the tap and the label |
 | `FinoteChip` | `(text, selected, onClick, modifier, iconRes?)` | Filter or single choice in a row |
 | `FinoteSegmented` | `<T>(options, selected, onSelect, label, modifier)` | Pick one of 2-3 modes (expense, income, transfer) |
 | `BalanceHeroCard` | `(label, balance, income, expense, modifier)` | The balance summary on a screen. See the gradient rule below |

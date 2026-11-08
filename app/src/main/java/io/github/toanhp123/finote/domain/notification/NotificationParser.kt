@@ -25,13 +25,16 @@ fun parseNotification(
         ?: ParseResult.NoMatch
 }
 
+/** Names of the `(?<name>...)` groups a pattern declares, by text scan (it can also see names inside escapes). */
+fun regexGroupNames(pattern: String): Set<String> = GROUP_NAME.findAll(pattern).map { it.groupValues[1] }.toSet()
+
 private fun applyRule(
     rule: ParserRule,
     text: String,
 ): ParseResult.Parsed? {
     val match = runCatching { Regex(rule.regexPattern) }.getOrNull()?.find(text) ?: return null
 
-    val names = GROUP_NAME.findAll(rule.regexPattern).map { it.groupValues[1] }.toSet()
+    val names = regexGroupNames(rule.regexPattern)
 
     // The scan can also see a name that is only text (escaped, or in a character class); asking for it throws.
     fun group(name: String): String? =
