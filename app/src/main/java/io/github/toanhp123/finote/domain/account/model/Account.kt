@@ -27,4 +27,8 @@ data class Account(
     val bankPackageName: String? = null,
     /** Last four digits of the account number, as the notifications show them. */
     val accountNumberMask: String? = null,
+    /** Set when this account was merged into another; the target account id. */
+    val mergedIntoId: String? = null,
+    /** True when notifications for this account are dropped instead of recorded. */
+    val isIgnored: Boolean = false,
 )

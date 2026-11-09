@@ -188,10 +188,21 @@ class TransactionDaoTest {
             seedAccount()
             dao.insert(transaction())
             dbRule.db.tagDao().insert(tag())
-            dao.insertTagRef(tagRef())
-            assertEquals(1, dao.getTagRefs("tx-1").size)
+            dbRule.db.tagDao().insertTagRef(tagRef())
+            assertEquals(
+                1,
+                dbRule.db
+                    .tagDao()
+                    .getTagRefs("tx-1")
+                    .size,
+            )
             dbRule.execSql("DELETE FROM transactions WHERE id = 'tx-1'")
-            assertTrue(dao.getTagRefs("tx-1").isEmpty())
+            assertTrue(
+                dbRule.db
+                    .tagDao()
+                    .getTagRefs("tx-1")
+                    .isEmpty(),
+            )
         }
 
     @Test
@@ -201,10 +212,10 @@ class TransactionDaoTest {
             dao.insert(transaction())
             dbRule.db.tagDao().insert(tag(id = "tag-1"))
             dbRule.db.tagDao().insert(tag(id = "tag-2"))
-            dao.insertTagRef(tagRef(tagId = "tag-1"))
-            dao.insertTagRef(tagRef(tagId = "tag-2"))
-            dao.deleteTagRef(tagRef(tagId = "tag-1"))
-            assertEquals(listOf(tagRef(tagId = "tag-2")), dao.getTagRefs("tx-1"))
+            dbRule.db.tagDao().insertTagRef(tagRef(tagId = "tag-1"))
+            dbRule.db.tagDao().insertTagRef(tagRef(tagId = "tag-2"))
+            dbRule.db.tagDao().deleteTagRef(tagRef(tagId = "tag-1"))
+            assertEquals(listOf(tagRef(tagId = "tag-2")), dbRule.db.tagDao().getTagRefs("tx-1"))
         }
 
     @Test

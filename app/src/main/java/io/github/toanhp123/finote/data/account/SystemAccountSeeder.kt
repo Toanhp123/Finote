@@ -11,8 +11,8 @@ private const val CASH_COLOR_ARGB = 0xFF2E7D32.toInt()
 
 private const val INSERT_SQL =
     "INSERT INTO accounts (id, name, nameKey, type, initialBalance, currentBalance, currency, icon, color, " +
-        "sortOrder, excludeFromNetWorth, isArchived, isInitialized, createdAt, updatedAt, deletedAt) " +
-        "VALUES (?, 'Cash', ?, ?, 0, 0, 'VND', 'payments', ?, 0, 0, 0, 0, ?, ?, NULL)"
+        "sortOrder, excludeFromNetWorth, isArchived, isIgnored, isInitialized, createdAt, updatedAt, deletedAt) " +
+        "VALUES (?, 'Cash', ?, ?, 0, 0, 'VND', 'payments', ?, 0, 0, 0, 0, 0, ?, ?, NULL)"
 
 /**
  * Writes the [SYSTEM_CASH_ACCOUNT_ID] account into a database that has just been created or recreated.

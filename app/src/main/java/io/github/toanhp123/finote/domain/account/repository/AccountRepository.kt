@@ -38,4 +38,31 @@ interface AccountRepository {
         id: String,
         deletedAt: Long,
     )
+
+    /**
+     * Folds [sourceId] into [targetId], two rows of one bank account. One write transaction; throws
+     * `AccountMergeRejectedException` (an [IllegalArgumentException]) and writes nothing when a check fails.
+     */
+    suspend fun merge(
+        sourceId: String,
+        targetId: String,
+        now: Long,
+    )
+
+    /** Live transactions where the account is source or transfer destination. */
+    suspend fun getLiveTransactionCount(id: String): Int
+
+    /**
+     * Sets `isIgnored`. When [ignored] and [shouldTrashOldTransactions], one write transaction also soft-deletes the
+     * live non-transfer rows with `accountId = id` and rebuilds its balance. A missing or deleted account is rejected.
+     */
+    suspend fun setIgnored(
+        id: String,
+        ignored: Boolean,
+        shouldTrashOldTransactions: Boolean,
+        now: Long,
+    )
+
+    /** Live non-transfer rows with `accountId = id`: what [setIgnored] would trash. */
+    suspend fun getTrashableTransactionCount(id: String): Int
 }

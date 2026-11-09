@@ -1,7 +1,6 @@
 package io.github.toanhp123.finote.data.transaction
 
 import androidx.room3.Dao
-import androidx.room3.Delete
 import androidx.room3.Insert
 import androidx.room3.Query
 import androidx.room3.Update
@@ -32,6 +31,23 @@ interface TransactionDao {
     )
     suspend fun countActiveByAccount(accountId: String): Int
 
+    /** Soft-deletes the live non-transfer rows whose source is [accountId]; returns how many. */
+    @Query(
+        "UPDATE transactions SET deletedAt = :now, updatedAt = :now " +
+            "WHERE accountId = :accountId AND type != 'TRANSFER' AND deletedAt IS NULL",
+    )
+    suspend fun trashNonTransfers(
+        accountId: String,
+        now: Long,
+    ): Int
+
+    /** Live non-transfer rows whose source is [accountId]: what [trashNonTransfers] would delete. */
+    @Query(
+        "SELECT COUNT(*) FROM transactions " +
+            "WHERE accountId = :accountId AND type != 'TRANSFER' AND deletedAt IS NULL",
+    )
+    suspend fun countNonTransfers(accountId: String): Int
+
     /** Live rows, newest first. A null [accountId] means every account; else rows as source or transfer destination. */
     @Query(
         "SELECT * FROM transactions WHERE deletedAt IS NULL " +
@@ -53,13 +69,4 @@ interface TransactionDao {
             "AND type = :type AND categoryId IS NOT NULL ORDER BY createdAt DESC, id DESC LIMIT 1",
     )
     suspend fun getLastManualCategoryId(type: TransactionType): String?
-
-    @Insert
-    suspend fun insertTagRef(ref: TransactionTagCrossRef)
-
-    @Delete
-    suspend fun deleteTagRef(ref: TransactionTagCrossRef)
-
-    @Query("SELECT * FROM transaction_tag_cross_ref WHERE transactionId = :transactionId")
-    suspend fun getTagRefs(transactionId: String): List<TransactionTagCrossRef>
 }

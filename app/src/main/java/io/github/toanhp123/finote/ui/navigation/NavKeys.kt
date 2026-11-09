@@ -24,6 +24,10 @@ data class Setup(
     val isFromOnboarding: Boolean,
 ) : NavKey
 
+/** The accounts page (merge, ignore), pushed on top of [Settings]. */
+@Serializable
+data object AccountsSettings : NavKey
+
 /** The notification capture page, pushed on top of [Settings]. */
 @Serializable
 data object NotificationCaptureSettings : NavKey

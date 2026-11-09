@@ -138,4 +138,30 @@
     <string name="balance_drift_message">%1$s differs from the bank by %2$s</string>
     <string name="balance_drift_adjust">Adjust</string>
     <string name="balance_drift_adjust_cd">Adjust balance of %1$s</string>
+    <string name="settings_group_accounts">ACCOUNTS</string>
+    <string name="settings_accounts_title">Accounts</string>
+    <string name="settings_accounts_subtitle">Merge or ignore</string>
+    <string name="accounts_ignored_label">Ignored</string>
+    <string name="accounts_merge_into">Merge into…</string>
+    <string name="accounts_merge_none">No other account of the same bank to merge into.</string>
+    <string name="accounts_ignore_action">Ignore account</string>
+    <string name="accounts_follow_again">Follow again</string>
+    <string name="accounts_merge_dialog_title">Merge %1$s into %2$s?</string>
+    <plurals name="accounts_merge_dialog_text">
+        <item quantity="one">%d transaction moves over. This cannot be undone.</item>
+        <item quantity="other">%d transactions move over. This cannot be undone.</item>
+    </plurals>
+    <string name="accounts_merge_confirm">Merge</string>
+    <string name="accounts_ignore_dialog_title">Ignore this account?</string>
+    <string name="accounts_ignore_dialog_text">No new transactions will be recorded for this account.</string>
+    <plurals name="accounts_ignore_trash">
+        <item quantity="one">Move %d old transaction to trash</item>
+        <item quantity="other">Move %d old transactions to trash</item>
+    </plurals>
+    <string name="accounts_ignore_confirm">Ignore</string>
+    <string name="accounts_snack_merged">Accounts merged</string>
+    <string name="accounts_snack_ignored">Account ignored</string>
+    <string name="accounts_snack_following">Following the account again</string>
+    <string name="accounts_snack_transfer">Cannot merge: a transfer links the two accounts</string>
+    <string name="accounts_snack_failed">That did not work. Try again later.</string>
 </resources>

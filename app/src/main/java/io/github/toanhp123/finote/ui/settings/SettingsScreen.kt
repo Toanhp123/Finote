@@ -33,6 +33,7 @@ import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 fun SettingsRoute(
     viewModel: SettingsViewModel,
     onOpenCapture: () -> Unit,
+    onOpenAccounts: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -45,6 +46,7 @@ fun SettingsRoute(
     ObserveEffects(viewModel.effects) { effect ->
         when (effect) {
             SettingsEffect.OpenCaptureSettings -> onOpenCapture()
+            SettingsEffect.OpenAccountsSettings -> onOpenAccounts()
         }
     }
     SettingsScreen(state, viewModel::onIntent, modifier)
@@ -62,6 +64,21 @@ fun SettingsScreen(
             modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg),
             verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
         ) {
+            Text(
+                text = stringResource(R.string.settings_group_accounts),
+                modifier = Modifier.semantics { heading() },
+                color = FinoteTheme.scheme.onSurfaceVariant,
+                style = FinoteTheme.typography.material.labelMedium,
+            )
+            FinoteCard(modifier = Modifier.fillMaxWidth()) {
+                FinoteListRow(
+                    title = stringResource(R.string.settings_accounts_title),
+                    subtitle = stringResource(R.string.settings_accounts_subtitle),
+                    leading = { RowIcon(R.drawable.ic_payments, FinoteTheme.scheme.primary) },
+                    trailing = { RowIcon(R.drawable.ic_chevron_right, FinoteTheme.scheme.onSurfaceVariant) },
+                    onClick = { onIntent(SettingsIntent.AccountsClicked) },
+                )
+            }
             Text(
                 text = stringResource(R.string.settings_group_capture),
                 modifier = Modifier.semantics { heading() },

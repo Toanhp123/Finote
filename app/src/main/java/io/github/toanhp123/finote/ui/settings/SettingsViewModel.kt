@@ -33,6 +33,10 @@ class SettingsViewModel
                 SettingsIntent.CaptureClicked -> {
                     sendEffect(SettingsEffect.OpenCaptureSettings)
                 }
+
+                SettingsIntent.AccountsClicked -> {
+                    sendEffect(SettingsEffect.OpenAccountsSettings)
+                }
             }
         }
     }

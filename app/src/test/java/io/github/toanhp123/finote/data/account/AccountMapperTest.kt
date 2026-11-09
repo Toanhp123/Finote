@@ -35,6 +35,15 @@ class AccountMapperTest {
     }
 
     @Test
+    fun `merge and ignore fields round trip`() {
+        val entity = account().copy(mergedIntoId = "b", isIgnored = true)
+        val account = entity.toDomain()
+        assertEquals("b", account.mergedIntoId)
+        assertEquals(true, account.isIgnored)
+        assertEquals(entity, account.toEntity())
+    }
+
+    @Test
     fun `nameKey survives round trip`() {
         val entity = account().copy(nameKey = "sys_cash")
         assertEquals("sys_cash", entity.toDomain().toEntity().nameKey)

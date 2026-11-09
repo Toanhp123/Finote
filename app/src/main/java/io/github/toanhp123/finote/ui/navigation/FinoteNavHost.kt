@@ -17,7 +17,9 @@ import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavBar
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavItem
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteScaffold
+import io.github.toanhp123.finote.ui.common.component.overlay.rememberFinoteSnackbarState
 import io.github.toanhp123.finote.ui.settings.SettingsRoute
+import io.github.toanhp123.finote.ui.settings.accounts.AccountsSettingsRoute
 import io.github.toanhp123.finote.ui.settings.capture.NotificationCaptureSettingsRoute
 import io.github.toanhp123.finote.ui.setup.SetupRoute
 import io.github.toanhp123.finote.ui.transactions.TransactionListRoute
@@ -29,8 +31,10 @@ fun FinoteNavHost(
 ) {
     val start: NavKey = if (shouldStartAtSetup) Setup(isFromOnboarding = true) else Overview
     val backStack = rememberNavBackStack(start)
+    val snackbarState = rememberFinoteSnackbarState()
     FinoteScaffold(
         modifier = modifier,
+        snackbarState = snackbarState,
         bottomBar =
             if (backStack.lastOrNull() in TopLevelTabs) {
                 {
@@ -69,6 +73,15 @@ fun FinoteNavHost(
                         SettingsRoute(
                             viewModel = hiltViewModel(),
                             onOpenCapture = { openNotificationCaptureSettings(backStack) },
+                            onOpenAccounts = { openAccountsSettings(backStack) },
+                            modifier = Modifier.padding(padding),
+                        )
+                    }
+                    entry<AccountsSettings> {
+                        AccountsSettingsRoute(
+                            viewModel = hiltViewModel(),
+                            snackbarState = snackbarState,
+                            onClose = { backStack.removeLastOrNull() },
                             modifier = Modifier.padding(padding),
                         )
                     }
@@ -110,3 +123,8 @@ private fun NavKey.labelRes(): Int =
         Settings -> R.string.tab_settings
         else -> error("not a top-level tab: $this")
     }
+
+/** Opens [AccountsSettings]. A second call while it is on top does nothing, so a double tap cannot stack it. */
+private fun openAccountsSettings(backStack: MutableList<NavKey>) {
+    if (backStack.lastOrNull() != AccountsSettings) backStack.add(AccountsSettings)
+}

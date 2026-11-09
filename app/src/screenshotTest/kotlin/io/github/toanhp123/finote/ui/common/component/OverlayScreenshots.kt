@@ -68,6 +68,24 @@ private fun FinoteDialogOpenPreview() {
 @PreviewTest
 @Preview(name = "Light", device = PHONE)
 @Preview(name = "Dark", device = PHONE, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Large font", device = PHONE, fontScale = 2f)
+@Composable
+private fun FinoteDialogWithContentOpenPreview() {
+    ScreenBehind(Alignment.Center) {
+        DialogCard(
+            title = "Ignore account?",
+            text = "No new transactions will be recorded for this account.",
+            dismiss = { FinoteButton(text = "Cancel", onClick = {}, style = FinoteButtonStyle.Ghost) },
+            confirm = { FinoteButton(text = "Ignore", onClick = {}, style = FinoteButtonStyle.Danger) },
+            modifier = Modifier.padding(FinoteTheme.spacing.xl),
+            content = { Text(text = "Extra control goes here", color = FinoteTheme.scheme.onSurface) },
+        )
+    }
+}
+
+@PreviewTest
+@Preview(name = "Light", device = PHONE)
+@Preview(name = "Dark", device = PHONE, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun FinoteDatePickerOpenPreview() {
     ScreenBehind(Alignment.BottomCenter) {

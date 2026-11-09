@@ -57,9 +57,9 @@ class TagDaoTest {
             dbRule.db.accountDao().insert(account())
             txDao.insert(transaction())
             dao.insert(tag())
-            txDao.insertTagRef(tagRef())
-            assertEquals(1, txDao.getTagRefs("tx-1").size)
+            dao.insertTagRef(tagRef())
+            assertEquals(1, dao.getTagRefs("tx-1").size)
             dbRule.execSql("DELETE FROM tags WHERE id = 'tag-1'")
-            assertTrue(txDao.getTagRefs("tx-1").isEmpty())
+            assertTrue(dao.getTagRefs("tx-1").isEmpty())
         }
 }

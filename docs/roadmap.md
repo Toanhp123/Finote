@@ -204,7 +204,10 @@ Trạng thái (2026-11-08): `rule-ota` xong, đã ở `dev` (`2956fae`).
 - Test: ví và ngân hàng cùng gửi một biến động, chỉ tạo một giao dịch.
 - Xử lý nợ P2a #3: thông báo đăng lại tạo dòng `PENDING` trùng.
 - Thiết kế: `docs/superpowers/specs/2026-11-08-account-dedup-balance-design.md`. Chốt 2026-11-08: tự tạo tài khoản khi không khớp, chờ cửa sổ 30 giây rồi mới ghi, tự đặt số dư đầu, banner lệch số dư kèm nút Điều chỉnh.
-- Ngay sau P2c: `feature/account-merge-ignore` (gộp tài khoản, bỏ qua tài khoản), để user sửa khi app tự gán sai.
+- Ngay sau P2c: `feature/account-merge-ignore` (gộp tài khoản, bỏ qua tài khoản), để user sửa khi app tự gán sai. Thiết kế: `docs/superpowers/specs/2026-11-09-account-merge-ignore-design.md`. Chốt 2026-11-09: chỉ gộp cùng app ngân hàng, gộp không hoàn tác, bỏ qua thì bật lại được.
+- Tương lai (sau `account-merge-ignore`):
+  - Gợi ý gộp: banner trên màn giao dịch khi tài khoản tự tạo trông giống tài khoản cũ cùng ngân hàng. Chờ dữ liệu thật trên máy.
+  - Màn thêm tài khoản tay (kiểu Cashew): có ô tuỳ chọn "liên kết app ngân hàng + 4 số cuối", và cho gộp vào tài khoản tay chưa gắn ngân hàng. Không có thì thông báo sẽ tạo tài khoản trùng.
 
 Trạng thái (2026-11-08): code xong trên `feature/account-dedup-balance`, review từng task và review cả nhánh đã chạy. Nợ P2a #3 đã sửa (ngưỡng đăng lại 10 phút khi có số dư, 3 giây khi không). Chưa thử trên máy thật.
 
@@ -214,7 +217,12 @@ Nợ còn lại (Minor, chưa sửa):
 - Nhiều banner lệch số dư đẩy danh sách xuống trên màn nhỏ.
 - Chuỗi ja và zh-rCN do máy viết, cần người bản ngữ xem trước khi phát hành.
 - Rule hệ thống vẫn `version = 1`: khi có migration thật (sau v1.0), tăng version để rule cũ nhận `accountType`.
-- Một `New` có mask và một `New` mask null cùng gói trong một lần chạy tạo hai tài khoản. Hiếm; gộp tài khoản sẽ xử lý.
+- Một `New` có mask và một `New` mask null cùng gói trong một lần chạy tạo hai tài khoản. Hiếm; từ `account-merge-ignore` user gộp được bằng tay (Cài đặt → Tài khoản).
+
+Trạng thái (2026-11-09): `account-merge-ignore` code xong, review từng task và review cả nhánh đã chạy, `qualityGate` xanh. Chưa thử trên máy thật (sheet và dialog mới chỉ thấy trong screenshot).
+- DAO chia theo nghiệp vụ: gắn nhãn chuyển sang `TagDao`, query gộp ở `AccountMergeDao`.
+- Nợ cho P2d: khi tính số dư đầu (gộp và cold start), chuyển khoản mà tài khoản chỉ là bên nhận có thể bị lấy làm mốc `postBalance` (số dư của bên kia). Chưa có dòng nào như vậy trước P2d. Sửa cả hai chỗ: chỉ lấy dòng có `accountId` = tài khoản.
+- Nợ nhỏ: màn Tài khoản bắt mọi lỗi thành snackbar "không thành công" mà không ghi nguyên nhân; sheet không tự cập nhật nếu danh sách đổi khi đang mở.
 
 ### P2d — `feature/transfer-pairing` (Module 7)
 - Pairing nằm ở `domain/notification`, không phụ thuộc `android.*`.

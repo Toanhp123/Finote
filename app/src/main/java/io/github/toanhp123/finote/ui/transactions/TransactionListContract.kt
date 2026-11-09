@@ -8,9 +8,10 @@ import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
 import java.time.LocalDate
 
 /**
- * [accounts] are the filter chips: not archived, by sortOrder. [accountsById] also holds archived accounts, so a row
- * can still show their name. A null [selectedAccountId] means every account. [isPendingOnly] shows the rows awaiting
- * repayment of every account, so it excludes an account choice. [editingId] is the expense whose sheet is open.
+ * [accounts] are the filter chips: not archived or ignored, by sortOrder. [accountsById] also holds those accounts,
+ * so a row can still show their name. A null [selectedAccountId] means every account. [isPendingOnly] shows the rows
+ * awaiting repayment of every account, so it excludes an account choice. [editingId] is the expense whose sheet is
+ * open.
  */
 data class TransactionListState(
     val isLoading: Boolean = true,

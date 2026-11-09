@@ -11,9 +11,10 @@ import java.util.UUID
 
 /**
  * Recomputes `currentBalance` and the monthly snapshots of accounts from their live transactions.
- * Call it inside a write transaction. Snapshot rows are never deleted: a stored month outside the
- * computed range goes flat (opening = closing, totals 0). Before the first transaction month the
- * balance is the initial balance; after the last it is the final closing balance.
+ * Call it inside a write transaction. The rebuilder never deletes snapshot rows (a merge deletes the
+ * source's): a stored month outside the computed range goes flat (opening = closing, totals 0).
+ * Before the first transaction month the balance is the initial balance; after the last it is the
+ * final closing balance.
  *
  * shortcut: rebuilds from the first month, O(transactions of the account) per write;
  * rebuild from the edited month instead once it measures slow in P5.

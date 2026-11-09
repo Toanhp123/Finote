@@ -74,6 +74,11 @@ class SettlePendingLogsUseCase
                     written += listOfNotNull(decision.log.id, decision.partner?.id)
                 }
 
+                is SettlementDecision.Ignore -> {
+                    repository.ignore(decision)
+                    written += listOfNotNull(decision.log.id, decision.partner?.id)
+                }
+
                 is SettlementDecision.Repost -> {
                     val original = decision.original
                     if (original.status == NotificationStatus.PENDING && original.id !in written) return

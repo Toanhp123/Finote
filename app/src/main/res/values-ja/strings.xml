@@ -135,4 +135,28 @@
     <string name="balance_drift_message">%1$sの残高が銀行と%2$sずれています</string>
     <string name="balance_drift_adjust">調整</string>
     <string name="balance_drift_adjust_cd">%1$sの残高を調整</string>
+    <string name="settings_group_accounts">口座</string>
+    <string name="settings_accounts_title">口座</string>
+    <string name="settings_accounts_subtitle">統合と無視</string>
+    <string name="accounts_ignored_label">無視中</string>
+    <string name="accounts_merge_into">統合先…</string>
+    <string name="accounts_merge_none">統合できる同じ銀行の口座がありません。</string>
+    <string name="accounts_ignore_action">口座を無視</string>
+    <string name="accounts_follow_again">再び記録する</string>
+    <string name="accounts_merge_dialog_title">%1$sを%2$sに統合しますか？</string>
+    <plurals name="accounts_merge_dialog_text">
+        <item quantity="other">取引 %d 件が移動します。元に戻せません。</item>
+    </plurals>
+    <string name="accounts_merge_confirm">統合</string>
+    <string name="accounts_ignore_dialog_title">この口座を無視しますか？</string>
+    <string name="accounts_ignore_dialog_text">この口座の新しい取引は記録されません。</string>
+    <plurals name="accounts_ignore_trash">
+        <item quantity="other">古い取引 %d 件をゴミ箱に移動</item>
+    </plurals>
+    <string name="accounts_ignore_confirm">無視する</string>
+    <string name="accounts_snack_merged">口座を統合しました</string>
+    <string name="accounts_snack_ignored">口座を無視しました</string>
+    <string name="accounts_snack_following">口座を再び記録します</string>
+    <string name="accounts_snack_transfer">統合できません：2つの口座の間に振替があります</string>
+    <string name="accounts_snack_failed">失敗しました。しばらくしてからもう一度お試しください。</string>
 </resources>

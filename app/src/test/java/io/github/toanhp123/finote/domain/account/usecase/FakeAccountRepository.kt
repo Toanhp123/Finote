@@ -53,4 +53,48 @@ class FakeAccountRepository : AccountRepository {
         stored[id] = checkNotNull(stored[id]).copy(deletedAt = deletedAt, updatedAt = deletedAt)
         notifyChanged()
     }
+
+    /** Each merge call as (sourceId, targetId, now). The fake moves nothing. */
+    val merges = mutableListOf<Triple<String, String, Long>>()
+
+    /** What [getLiveTransactionCount] answers per account id; 0 when absent. */
+    val liveCounts = mutableMapOf<String, Int>()
+
+    override suspend fun merge(
+        sourceId: String,
+        targetId: String,
+        now: Long,
+    ) {
+        writes++
+        merges += Triple(sourceId, targetId, now)
+    }
+
+    override suspend fun getLiveTransactionCount(id: String): Int = liveCounts[id] ?: 0
+
+    data class IgnoreCall(
+        val id: String,
+        val ignored: Boolean,
+        val trash: Boolean,
+        val now: Long,
+    )
+
+    /** Each setIgnored call. The fake trashes nothing. */
+    val ignores = mutableListOf<IgnoreCall>()
+
+    /** What [getTrashableTransactionCount] answers per account id; 0 when absent. */
+    val trashableCounts = mutableMapOf<String, Int>()
+
+    override suspend fun setIgnored(
+        id: String,
+        ignored: Boolean,
+        shouldTrashOldTransactions: Boolean,
+        now: Long,
+    ) {
+        writes++
+        ignores += IgnoreCall(id, ignored, shouldTrashOldTransactions, now)
+        stored[id]?.let { stored[id] = it.copy(isIgnored = ignored, updatedAt = now) }
+        notifyChanged()
+    }
+
+    override suspend fun getTrashableTransactionCount(id: String): Int = trashableCounts[id] ?: 0
 }

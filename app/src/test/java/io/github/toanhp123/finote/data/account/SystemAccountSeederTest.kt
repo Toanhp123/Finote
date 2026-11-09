@@ -45,12 +45,14 @@ class SystemAccountSeederTest {
                     sortOrder = 0,
                     isExcludedFromNetWorth = false,
                     isArchived = false,
+                    isIgnored = false,
                     isInitialized = false,
                     createdAt = SEED_TIME,
                     updatedAt = SEED_TIME,
                     deletedAt = null,
                     bankPackageName = null,
                     accountNumberMask = null,
+                    mergedIntoId = null,
                 )
             assertEquals(expected, row)
         }

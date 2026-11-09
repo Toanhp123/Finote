@@ -112,6 +112,19 @@ class CashEntryViewModelTest {
         }
 
     @Test
+    fun `ignored account is not offered`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            accounts.stored[BANK] = checkNotNull(accounts.stored[BANK]).copy(isIgnored = true)
+            transactions.lastAccountId = BANK
+
+            val s = open().current
+
+            assertEquals(listOf(CASH), s.accounts.map { it.id })
+            assertEquals(CASH, s.selectedAccountId)
+        }
+
+    @Test
     fun `category choice survives type switch`() =
         runTest(mainRule.dispatcher) {
             seed()

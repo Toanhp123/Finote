@@ -15,14 +15,14 @@ class ObserveBalanceDriftUseCase
         private val accountRepository: AccountRepository,
         private val transactionRepository: TransactionRepository,
     ) {
-        /** One entry per live, unarchived account whose balance disagrees with the bank. */
+        /** One entry per live, unarchived, followed account whose balance disagrees with the bank. */
         operator fun invoke(): Flow<List<BalanceDrift>> =
             combine(
                 accountRepository.observeAccounts(),
                 transactionRepository.observeTransactions(null),
             ) { accounts, transactions ->
                 accounts
-                    .filter { !it.isArchived }
+                    .filter { !it.isArchived && !it.isIgnored }
                     .sortedBy { it.sortOrder }
                     .mapNotNull { detectBalanceDrift(it, transactions) }
             }

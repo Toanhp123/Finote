@@ -22,6 +22,7 @@ data class AccountEntity(
     // Column name follows the spec; the property carries the `is` prefix the naming rule demands.
     @ColumnInfo(name = "excludeFromNetWorth") val isExcludedFromNetWorth: Boolean,
     val isArchived: Boolean,
+    val isIgnored: Boolean,
     val isInitialized: Boolean,
     val createdAt: Long,
     val updatedAt: Long,
@@ -30,4 +31,6 @@ data class AccountEntity(
     val bankPackageName: String?,
     /** Last four digits of the account number, as the notifications show them. */
     val accountNumberMask: String?,
+    /** Set when this account was merged into another; the target account id. */
+    val mergedIntoId: String?,
 )

@@ -17,6 +17,9 @@ interface AccountBalanceSnapshotDao {
     @Query("SELECT * FROM account_balance_snapshots WHERE id = :id")
     suspend fun getById(id: String): AccountBalanceSnapshotEntity?
 
+    @Query("DELETE FROM account_balance_snapshots WHERE accountId = :accountId")
+    suspend fun deleteByAccount(accountId: String)
+
     @Query("SELECT * FROM account_balance_snapshots WHERE accountId = :accountId ORDER BY monthYear ASC")
     suspend fun getByAccount(accountId: String): List<AccountBalanceSnapshotEntity>
 

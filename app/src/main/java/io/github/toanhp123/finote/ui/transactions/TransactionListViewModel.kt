@@ -73,7 +73,7 @@ class TransactionListViewModel
                     setState { copy(isLoading = false, hasError = true, editingId = null, hasSaveError = false) }
                 }.collect { (list, accountList, categoryList) ->
                     val id = list.accountId
-                    val chips = accountList.filter { !it.isArchived }.sortedBy { it.sortOrder }
+                    val chips = accountList.filter { !it.isArchived && !it.isIgnored }.sortedBy { it.sortOrder }
                     if (id != null && chips.none { it.id == id }) {
                         // The chosen account is gone; days of the stale choice are dropped, `days` re-runs for all.
                         savedStateHandle[SELECTED_ACCOUNT_KEY] = null

@@ -16,12 +16,14 @@ fun AccountEntity.toDomain(): Account =
         sortOrder = sortOrder,
         isExcludedFromNetWorth = isExcludedFromNetWorth,
         isArchived = isArchived,
+        isIgnored = isIgnored,
         isInitialized = isInitialized,
         createdAt = createdAt,
         updatedAt = updatedAt,
         deletedAt = deletedAt,
         bankPackageName = bankPackageName,
         accountNumberMask = accountNumberMask,
+        mergedIntoId = mergedIntoId,
     )
 
 fun Account.toEntity(): AccountEntity =
@@ -38,10 +40,12 @@ fun Account.toEntity(): AccountEntity =
         sortOrder = sortOrder,
         isExcludedFromNetWorth = isExcludedFromNetWorth,
         isArchived = isArchived,
+        isIgnored = isIgnored,
         isInitialized = isInitialized,
         createdAt = createdAt,
         updatedAt = updatedAt,
         deletedAt = deletedAt,
         bankPackageName = bankPackageName,
         accountNumberMask = accountNumberMask,
+        mergedIntoId = mergedIntoId,
     )

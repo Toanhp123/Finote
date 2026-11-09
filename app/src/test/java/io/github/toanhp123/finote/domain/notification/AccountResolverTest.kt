@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.domain.notification
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.testAccount
+import io.github.toanhp123.finote.domain.notification.model.AccountResolution.Ignored
 import io.github.toanhp123.finote.domain.notification.model.AccountResolution.Rejected
 import io.github.toanhp123.finote.domain.notification.model.AccountResolution.Resolved
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
@@ -13,18 +14,23 @@ import org.junit.Test
 class AccountResolverTest {
     private val pkg = "com.VCB"
 
+    @Suppress("LongParameterList") // why: test helper, every field varies across tests
     private fun account(
         id: String = "acc-1",
         mask: String? = "1234",
         archived: Boolean = false,
         deletedAt: Long? = null,
         packageName: String = pkg,
+        mergedIntoId: String? = null,
+        ignored: Boolean = false,
     ): Account =
         testAccount(id = id).copy(
             bankPackageName = packageName,
             accountNumberMask = mask,
             isArchived = archived,
             deletedAt = deletedAt,
+            mergedIntoId = mergedIntoId,
+            isIgnored = ignored,
         )
 
     private fun rule(accountType: AccountType? = null) =
@@ -114,4 +120,105 @@ class AccountResolverTest {
 
     @Test
     fun `missing rule`() = assertEquals(new("1234", bankName = pkg), resolve("1234", emptyList(), null))
+
+    @Test
+    fun `mask hits a merged row and lands on its target`() =
+        assertEquals(
+            existing("b"),
+            resolve("5678", listOf(account("a", "5678", deletedAt = 5L, mergedIntoId = "b"), account("b"))),
+        )
+
+    @Test
+    fun `live row beats merged row with the same key`() =
+        assertEquals(
+            existing("live"),
+            resolve(
+                "5678",
+                listOf(
+                    account("a", "5678", deletedAt = 5L, mergedIntoId = "b"),
+                    account("b"),
+                    account("live", "5678"),
+                ),
+            ),
+        )
+
+    @Test
+    fun `latest merged row wins`() =
+        assertEquals(
+            existing("c"),
+            resolve(
+                "5678",
+                listOf(
+                    account("a1", "5678", deletedAt = 10L, mergedIntoId = "b"),
+                    account("a2", "5678", deletedAt = 20L, mergedIntoId = "c"),
+                    account("b", "1111"),
+                    account("c", "2222"),
+                ),
+            ),
+        )
+
+    @Test
+    fun `merged row with deleted target is no match`() =
+        assertEquals(
+            new("5678"),
+            resolve(
+                "5678",
+                listOf(
+                    account("a", "5678", deletedAt = 5L, mergedIntoId = "b"),
+                    account("b", deletedAt = 6L),
+                ),
+            ),
+        )
+
+    @Test
+    fun `merged row with missing target is no match`() =
+        assertEquals(
+            new("5678"),
+            resolve("5678", listOf(account("a", "5678", deletedAt = 5L, mergedIntoId = "gone"))),
+        )
+
+    @Test
+    fun `ignored target gives Ignored`() = assertEquals(Ignored, resolve("1234", listOf(account(ignored = true))))
+
+    @Test
+    fun `ignored and archived gives Ignored`() =
+        assertEquals(Ignored, resolve("1234", listOf(account(archived = true, ignored = true))))
+
+    @Test
+    fun `merge into an ignored target gives Ignored`() =
+        assertEquals(
+            Ignored,
+            resolve(
+                "5678",
+                listOf(account("a", "5678", deletedAt = 5L, mergedIntoId = "b"), account("b", ignored = true)),
+            ),
+        )
+
+    @Test
+    fun `no mask skips merged null-mask row`() =
+        assertEquals(
+            Rejected(FAIL_AMBIGUOUS_ACCOUNT),
+            resolve(
+                null,
+                listOf(
+                    account("n", null, deletedAt = 5L, mergedIntoId = "b"),
+                    account("b"),
+                    account("c", "9999"),
+                ),
+            ),
+        )
+
+    @Test
+    fun `no mask after merge has one live account`() =
+        assertEquals(
+            existing("b"),
+            resolve(null, listOf(account("n", null, deletedAt = 5L, mergedIntoId = "b"), account("b"))),
+        )
+
+    @Test
+    fun `no mask counts an ignored account`() =
+        assertEquals(
+            Rejected(FAIL_AMBIGUOUS_ACCOUNT),
+            resolve(null, listOf(account("b"), account("c", "9999", ignored = true))),
+        )
 }

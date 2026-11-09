@@ -448,6 +448,37 @@ class TransactionListViewModelTest {
         }
 
     @Test
+    fun `ignored account has no drift`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            accounts.stored[A] = checkNotNull(accounts.stored[A]).copy(isIgnored = true)
+            store(row("e").copy(type = TransactionType.INCOME, postBalance = 1_700_000))
+
+            val vm = open()
+
+            assertTrue(
+                vm.state.value.drifts
+                    .isEmpty(),
+            )
+        }
+
+    @Test
+    fun `an ignored account is not a chip but is still named`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            accounts.stored[C] = testAccount(C).copy(isIgnored = true)
+
+            val vm = open()
+
+            assertEquals(
+                listOf(A),
+                vm.state.value.accounts
+                    .map { it.id },
+            )
+            assertTrue(C in vm.state.value.accountsById)
+        }
+
+    @Test
     fun `adjust reconciles to current plus difference`() =
         runTest(mainRule.dispatcher) {
             seed()

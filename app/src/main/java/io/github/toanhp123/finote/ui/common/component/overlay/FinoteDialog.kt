@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,7 +29,8 @@ import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 /**
  * A centered card over a scrim. A tap outside or Back calls [onDismiss]. [confirm] and [dismiss] are the buttons
- * at the bottom end, usually [FinoteButton]s.
+ * at the bottom end, usually [FinoteButton]s. [content] sits between [text] and the buttons, for one more control
+ * such as a checkbox row.
  */
 @Composable
 fun FinoteDialog(
@@ -39,6 +41,7 @@ fun FinoteDialog(
     modifier: Modifier = Modifier,
     text: String? = null,
     dismiss: (@Composable () -> Unit)? = null,
+    content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     UnstyledDialog(
         visible = isVisible,
@@ -50,7 +53,7 @@ fun FinoteDialog(
             contentAlignment = Alignment.Center,
         ) {
             DialogPanel {
-                DialogCard(title = title, text = text, confirm = confirm, dismiss = dismiss)
+                DialogCard(title = title, text = text, confirm = confirm, dismiss = dismiss, content = content)
             }
         }
     }
@@ -63,6 +66,7 @@ internal fun DialogCard(
     modifier: Modifier = Modifier,
     text: String? = null,
     dismiss: (@Composable () -> Unit)? = null,
+    content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     Column(
         modifier =
@@ -82,6 +86,7 @@ internal fun DialogCard(
                 color = FinoteTheme.scheme.onSurfaceVariant,
             )
         }
+        content?.invoke(this)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm, Alignment.End),
@@ -104,6 +109,20 @@ private fun FinoteDialogPreview() {
             onDismiss = {},
             dismiss = { FinoteButton(text = "Cancel", onClick = {}, style = FinoteButtonStyle.Ghost) },
             confirm = { FinoteButton(text = "Delete", onClick = {}, style = FinoteButtonStyle.Danger) },
+        )
+    }
+}
+
+@FinotePreviews
+@Composable
+private fun FinoteDialogWithContentPreview() {
+    FinotePreviewSurface {
+        DialogCard(
+            title = "Ignore account?",
+            text = "No new transactions will be recorded for this account.",
+            dismiss = { FinoteButton(text = "Cancel", onClick = {}, style = FinoteButtonStyle.Ghost) },
+            confirm = { FinoteButton(text = "Ignore", onClick = {}, style = FinoteButtonStyle.Danger) },
+            content = { Text(text = "Extra control goes here", color = FinoteTheme.scheme.onSurface) },
         )
     }
 }

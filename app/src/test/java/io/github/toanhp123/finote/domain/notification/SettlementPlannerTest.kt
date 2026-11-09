@@ -11,6 +11,7 @@ import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Book
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Fail
+import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Ignore
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Repost
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import org.junit.Assert.assertEquals
@@ -270,6 +271,32 @@ class SettlementPlannerTest {
         val bank = log(vcb, old(0))
         val wallet = log(momo, old(1_000))
         assertEquals(listOf(Fail(bank, wallet, FAIL_AMBIGUOUS_ACCOUNT)), plan(bank, wallet, accounts = accounts))
+    }
+
+    private fun ignoredAccount() =
+        testAccount(id = "ign").copy(bankPackageName = vcb, accountNumberMask = "1234", isIgnored = true)
+
+    @Test
+    fun `ignored account gives Ignore`() {
+        val bank = log(vcb, old(0), mask = "1234")
+        assertEquals(listOf(Ignore(bank, null)), plan(bank, accounts = listOf(ignoredAccount())))
+    }
+
+    @Test
+    fun `wallet and bank pair on an ignored account ignores both`() {
+        val bank = log(vcb, old(0), mask = "1234")
+        val wallet = log(momo, old(1_000))
+        assertEquals(listOf(Ignore(bank, wallet)), plan(bank, wallet, accounts = listOf(ignoredAccount())))
+    }
+
+    @Test
+    fun `repost of an ignored log is a Repost`() {
+        val first = log(vcb, old(0), mask = "1234", text = "same")
+        val again = log(vcb, old(1_000), mask = "1234", text = "same")
+        assertEquals(
+            listOf(Ignore(first, null), Repost(again, first)),
+            plan(first, again, accounts = listOf(ignoredAccount())),
+        )
     }
 
     @Test

@@ -13,8 +13,12 @@ sealed interface SettingsIntent {
     ) : SettingsIntent
 
     data object CaptureClicked : SettingsIntent
+
+    data object AccountsClicked : SettingsIntent
 }
 
 sealed interface SettingsEffect {
     data object OpenCaptureSettings : SettingsEffect
+
+    data object OpenAccountsSettings : SettingsEffect
 }

@@ -25,6 +25,9 @@ class FakeNotificationSettlementRepository(
     /** Log id -> reason passed to [fail]. */
     val failed = mutableMapOf<String, String>()
 
+    /** Ids of the logs passed to [ignore]. */
+    val ignored = mutableListOf<String>()
+
     /** The `now` of each successful [book]. */
     val bookTimes = mutableListOf<Long>()
 
@@ -59,6 +62,12 @@ class FakeNotificationSettlementRepository(
         val changed = update(decision.log.id, NotificationStatus.FAILED, null, decision.reason)
         val partnerChanged = decision.partner?.let { update(it.id, NotificationStatus.FAILED, null, decision.reason) }
         return changed || partnerChanged == true
+    }
+
+    override suspend fun ignore(decision: SettlementDecision.Ignore): Boolean {
+        val ids = listOfNotNull(decision.log.id, decision.partner?.id)
+        ignored += ids
+        return ids.map { update(it, NotificationStatus.IGNORED_ACCOUNT, null, null) }.any { it }
     }
 
     override suspend fun markRepost(

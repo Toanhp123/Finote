@@ -31,6 +31,9 @@ interface NotificationSettlementRepository {
      */
     suspend fun fail(decision: SettlementDecision.Fail): Boolean
 
+    /** Marks the log (and its partner) `IGNORED_ACCOUNT`. True when at least one of the two rows changed. */
+    suspend fun ignore(decision: SettlementDecision.Ignore): Boolean
+
     /** Marks the log `DEDUPLICATED` with this link. False when it was not `PENDING`. */
     suspend fun markRepost(
         logId: String,

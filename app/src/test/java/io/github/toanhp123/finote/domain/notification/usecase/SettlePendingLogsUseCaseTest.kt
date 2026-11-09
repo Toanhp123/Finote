@@ -1,6 +1,8 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
+import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParsedFields
@@ -63,11 +65,14 @@ class SettlePendingLogsUseCaseTest {
         parsed = ParsedFields(amount, TransactionType.EXPENSE, null, null, null, null),
     )
 
-    private fun repo(vararg logs: NotificationLog) =
-        FakeNotificationSettlementRepository(
-            logs = logs.toMutableList(),
-            rules = listOf(BANK, OTHER).associate { "r-$it" to rule(it) },
-        )
+    private fun repo(
+        vararg logs: NotificationLog,
+        accounts: List<Account> = emptyList(),
+    ) = FakeNotificationSettlementRepository(
+        logs = logs.toMutableList(),
+        accounts = accounts,
+        rules = listOf(BANK, OTHER).associate { "r-$it" to rule(it) },
+    )
 
     private fun useCase(repository: FakeNotificationSettlementRepository) = SettlePendingLogsUseCase(repository, clock)
 
@@ -117,6 +122,27 @@ class SettlePendingLogsUseCaseTest {
             assertTrue("a" in repository.failed)
             assertTrue("b" in repository.reposted)
             assertNull(repository.reposted["b"])
+        }
+
+    @Test
+    fun `Ignore calls ignore and marks both written`() =
+        runTest {
+            val ignoredBank = testAccount(id = "ign").copy(bankPackageName = BANK, isIgnored = true)
+            val repository =
+                repo(
+                    log("bank", BANK, old, text = "x"),
+                    log("wallet", OTHER, old + 1_000, text = "w"),
+                    log("again", OTHER, old + 2_000, text = "w"),
+                    accounts = listOf(ignoredBank),
+                )
+            assertFalse(useCase(repository)())
+            assertEquals(listOf("bank", "wallet"), repository.ignored)
+            assertTrue(repository.booked.isEmpty())
+            assertEquals(NotificationStatus.IGNORED_ACCOUNT, repository.logs.first { it.id == "bank" }.status)
+            assertEquals(NotificationStatus.IGNORED_ACCOUNT, repository.logs.first { it.id == "wallet" }.status)
+            // The repost of the paired wallet log is written because both ids count as written.
+            assertTrue("again" in repository.reposted)
+            assertNull(repository.reposted["again"])
         }
 
     @Test

@@ -17,6 +17,12 @@ sealed interface SettlementDecision {
         val reason: String,
     ) : SettlementDecision
 
+    /** The account is ignored: drop [log] and its paired wallet [partner] without a transaction. */
+    data class Ignore(
+        val log: NotificationLog,
+        val partner: NotificationLog?,
+    ) : SettlementDecision
+
     /** [log] is the same notification posted again; [original] is a log that is settled, booked or failed. */
     data class Repost(
         val log: NotificationLog,

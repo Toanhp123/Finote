@@ -8,4 +8,7 @@ internal sealed interface AccountResolution {
     data class Rejected(
         val reason: String,
     ) : AccountResolution
+
+    /** The account is ignored by the user: the notification stays silent. */
+    data object Ignored : AccountResolution
 }

@@ -135,4 +135,28 @@
     <string name="balance_drift_message">%1$s lệch %2$s so với ngân hàng</string>
     <string name="balance_drift_adjust">Điều chỉnh</string>
     <string name="balance_drift_adjust_cd">Điều chỉnh số dư %1$s</string>
+    <string name="settings_group_accounts">TÀI KHOẢN</string>
+    <string name="settings_accounts_title">Tài khoản</string>
+    <string name="settings_accounts_subtitle">Gộp hoặc bỏ qua</string>
+    <string name="accounts_ignored_label">Đã bỏ qua</string>
+    <string name="accounts_merge_into">Gộp vào…</string>
+    <string name="accounts_merge_none">Không có tài khoản nào khác của cùng ngân hàng để gộp.</string>
+    <string name="accounts_ignore_action">Bỏ qua tài khoản</string>
+    <string name="accounts_follow_again">Theo dõi lại</string>
+    <string name="accounts_merge_dialog_title">Gộp %1$s vào %2$s?</string>
+    <plurals name="accounts_merge_dialog_text">
+        <item quantity="other">%d giao dịch sẽ chuyển sang. Không thể hoàn tác.</item>
+    </plurals>
+    <string name="accounts_merge_confirm">Gộp</string>
+    <string name="accounts_ignore_dialog_title">Bỏ qua tài khoản này?</string>
+    <string name="accounts_ignore_dialog_text">Sẽ không ghi giao dịch mới nào cho tài khoản này.</string>
+    <plurals name="accounts_ignore_trash">
+        <item quantity="other">Chuyển %d giao dịch cũ vào thùng rác</item>
+    </plurals>
+    <string name="accounts_ignore_confirm">Bỏ qua</string>
+    <string name="accounts_snack_merged">Đã gộp tài khoản</string>
+    <string name="accounts_snack_ignored">Đã bỏ qua tài khoản</string>
+    <string name="accounts_snack_following">Đang theo dõi lại tài khoản</string>
+    <string name="accounts_snack_transfer">Không thể gộp: có giao dịch chuyển giữa hai tài khoản</string>
+    <string name="accounts_snack_failed">Không thực hiện được. Thử lại sau.</string>
 </resources>

@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.domain.notification
 
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.notification.model.AccountResolution.Ignored
 import io.github.toanhp123.finote.domain.notification.model.AccountResolution.Rejected
 import io.github.toanhp123.finote.domain.notification.model.AccountResolution.Resolved
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
@@ -9,6 +10,7 @@ import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Book
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Fail
+import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Ignore
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Repost
 import kotlin.math.abs
 
@@ -53,6 +55,7 @@ private fun SettlementDecision.logIds(): List<String> =
     when (this) {
         is Book -> listOfNotNull(bankSide.id, walletSide?.id)
         is Fail -> listOfNotNull(log.id, partner?.id)
+        is Ignore -> listOfNotNull(log.id, partner?.id)
         is Repost -> emptyList()
     }
 
@@ -157,6 +160,10 @@ private class Planner(
         return when (val resolution = resolveAccount(bank.packageName, bank.parsed?.accountMask, rule, accounts)) {
             is Rejected -> {
                 Fail(bank, wallet, resolution.reason)
+            }
+
+            Ignored -> {
+                Ignore(bank, wallet)
             }
 
             is Resolved -> {

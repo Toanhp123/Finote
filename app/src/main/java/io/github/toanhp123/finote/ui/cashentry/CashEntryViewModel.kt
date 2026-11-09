@@ -113,7 +113,11 @@ class CashEntryViewModel
             categoryList: List<Category>,
         ) {
             allCategories = categoryList
-            val live = accountList.filter { it.deletedAt == null && !it.isArchived }.sortedBy { it.sortOrder }
+            val live =
+                accountList
+                    .filter {
+                        it.deletedAt == null && !it.isArchived && !it.isIgnored
+                    }.sortedBy { it.sortOrder }
             setState {
                 val account =
                     selectedAccountId?.takeIf { id -> live.any { it.id == id } }

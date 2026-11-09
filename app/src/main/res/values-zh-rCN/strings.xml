@@ -135,4 +135,28 @@
     <string name="balance_drift_message">%1$s与银行相差%2$s</string>
     <string name="balance_drift_adjust">调整</string>
     <string name="balance_drift_adjust_cd">调整%1$s的余额</string>
+    <string name="settings_group_accounts">账户</string>
+    <string name="settings_accounts_title">账户</string>
+    <string name="settings_accounts_subtitle">合并或忽略</string>
+    <string name="accounts_ignored_label">已忽略</string>
+    <string name="accounts_merge_into">合并到…</string>
+    <string name="accounts_merge_none">没有可合并的同一银行的其他账户。</string>
+    <string name="accounts_ignore_action">忽略账户</string>
+    <string name="accounts_follow_again">重新记录</string>
+    <string name="accounts_merge_dialog_title">将%1$s合并到%2$s？</string>
+    <plurals name="accounts_merge_dialog_text">
+        <item quantity="other">%d 笔交易将转移过去。此操作无法撤销。</item>
+    </plurals>
+    <string name="accounts_merge_confirm">合并</string>
+    <string name="accounts_ignore_dialog_title">忽略此账户？</string>
+    <string name="accounts_ignore_dialog_text">不会再为此账户记录新交易。</string>
+    <plurals name="accounts_ignore_trash">
+        <item quantity="other">将 %d 笔旧交易移到回收站</item>
+    </plurals>
+    <string name="accounts_ignore_confirm">忽略</string>
+    <string name="accounts_snack_merged">账户已合并</string>
+    <string name="accounts_snack_ignored">账户已忽略</string>
+    <string name="accounts_snack_following">已重新记录该账户</string>
+    <string name="accounts_snack_transfer">无法合并：两个账户之间有转账</string>
+    <string name="accounts_snack_failed">操作失败，请稍后再试。</string>
 </resources>

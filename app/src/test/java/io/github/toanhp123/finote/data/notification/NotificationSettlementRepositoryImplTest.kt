@@ -9,6 +9,7 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParsedFields
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
+import io.github.toanhp123.finote.domain.notification.planSettlement
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.test.runTest
@@ -262,6 +263,83 @@ class NotificationSettlementRepositoryImplTest {
             assertBookRollsBack(bank, newAccount())
 
             assertEquals(1, repo.getAccounts().size)
+        }
+
+    @Test
+    fun `book into an account ignored after planning rolls back`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(bankPackageName = PKG, accountNumberMask = "1234"))
+            val bank = log("b1")
+            seed(bank)
+            val planned = book(bank, target = AccountTarget.Existing("acc-1"))
+            dbRule.db.accountDao().update(
+                dbRule.db
+                    .accountDao()
+                    .getById("acc-1")!!
+                    .copy(isIgnored = true),
+            )
+
+            try {
+                repo.book(planned, "tx-1", NOW)
+                fail("expected IllegalStateException")
+            } catch (_: IllegalStateException) {
+                // expected
+            }
+
+            assertNull(dbRule.db.transactionDao().getById("tx-1"))
+            assertEquals(NotificationStatus.PENDING, storedLog("b1").status)
+        }
+
+    @Test
+    fun `book into an account merged away after planning rolls back`() =
+        runTest {
+            val accountDao = dbRule.db.accountDao()
+            accountDao.insert(account(id = "b", bankPackageName = PKG, accountNumberMask = "1234"))
+            accountDao.insert(account(id = "c", bankPackageName = PKG, accountNumberMask = "9999"))
+            val bank = log("b1")
+            seed(bank)
+            val planned = book(bank, target = AccountTarget.Existing("b"))
+            accountDao.update(accountDao.getById("b")!!.copy(deletedAt = NOW, mergedIntoId = "c"))
+
+            try {
+                repo.book(planned, "tx-1", NOW)
+                fail("expected IllegalStateException")
+            } catch (_: IllegalStateException) {
+                // expected
+            }
+            assertNull(dbRule.db.transactionDao().getById("tx-1"))
+            assertEquals(NotificationStatus.PENDING, storedLog("b1").status)
+
+            val replanned =
+                planSettlement(repo.getPendingLogs(), emptyList(), repo.getAccounts(), repo.getRulesById(), 1_000_000L)
+            val decision = replanned.single() as SettlementDecision.Book
+            assertEquals(AccountTarget.Existing("c"), decision.account)
+            repo.book(decision, "tx-2", NOW)
+            assertEquals(
+                "c",
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-2")!!
+                    .accountId,
+            )
+        }
+
+    @Test
+    fun `ignore marks both logs IGNORED_ACCOUNT`() =
+        runTest {
+            val a = log("a")
+            val b = log("b")
+            seed(a, b)
+
+            assertTrue(repo.ignore(SettlementDecision.Ignore(a, b)))
+
+            listOf("a", "b").forEach {
+                val stored = storedLog(it)
+                assertEquals(NotificationStatus.IGNORED_ACCOUNT, stored.status)
+                assertNull(stored.linkedTransactionId)
+                assertNull(stored.failureReason)
+            }
+            assertFalse(repo.ignore(SettlementDecision.Ignore(a, b)))
         }
 
     @Test

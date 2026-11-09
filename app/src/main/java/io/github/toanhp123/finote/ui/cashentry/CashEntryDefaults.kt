@@ -7,12 +7,12 @@ import io.github.toanhp123.finote.domain.category.model.CategoryType
 
 /** Picks the account and category the cash-entry sheet preselects. */
 object CashEntryDefaults {
-    /** Live (not deleted, not archived) accounts only: last used, else cash, else lowest sortOrder, else null. */
+    /** Live (not deleted, archived or ignored) accounts only. Picks last used, else cash, else lowest sortOrder. */
     fun pickAccount(
         accounts: List<Account>,
         lastUsedId: String?,
     ): String? {
-        val live = accounts.filter { it.deletedAt == null && !it.isArchived }
+        val live = accounts.filter { it.deletedAt == null && !it.isArchived && !it.isIgnored }
         val picked =
             live.firstOrNull { it.id == lastUsedId }
                 ?: live.firstOrNull { it.id == SYSTEM_CASH_ACCOUNT_ID }

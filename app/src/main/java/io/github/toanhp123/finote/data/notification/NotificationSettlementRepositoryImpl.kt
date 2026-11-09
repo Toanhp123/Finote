@@ -95,6 +95,14 @@ class NotificationSettlementRepositoryImpl
                 failureReason = decision.reason,
             ) > 0
 
+        override suspend fun ignore(decision: SettlementDecision.Ignore): Boolean =
+            logs.markSettled(
+                ids = listOfNotNull(decision.log.id, decision.partner?.id),
+                status = NotificationStatus.IGNORED_ACCOUNT,
+                linkedTransactionId = null,
+                failureReason = null,
+            ) > 0
+
         override suspend fun markRepost(
             logId: String,
             linkedTransactionId: String?,
@@ -115,7 +123,9 @@ class NotificationSettlementRepositoryImpl
                     }
                 }
             // The planner's check can be stale by now; throwing rolls back and leaves the log PENDING.
-            check(account.deletedAt == null && !account.isArchived) { "account is deleted or archived" }
+            check(account.deletedAt == null && !account.isArchived && !account.isIgnored) {
+                "account is deleted, archived or ignored"
+            }
             return account
         }
 
@@ -137,12 +147,14 @@ class NotificationSettlementRepositoryImpl
                     sortOrder = 0,
                     isExcludedFromNetWorth = false,
                     isArchived = false,
+                    isIgnored = false,
                     isInitialized = false,
                     createdAt = now,
                     updatedAt = now,
                     deletedAt = null,
                     bankPackageName = target.packageName,
                     accountNumberMask = target.mask,
+                    mergedIntoId = null,
                 )
             accounts.insert(account)
             return account

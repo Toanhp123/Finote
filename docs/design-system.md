@@ -55,7 +55,7 @@ A component file sits directly in one group. No group has a sub-group. `DesignSy
 | `FinoteTopBar` | `(title, modifier, onBack?, actions)` | Screen title, back button, right-side actions |
 | `FinoteNavBar` | `(items: List<FinoteNavItem>, selectedIndex, onSelect, modifier)` | Floating bottom navigation. Pass it as `bottomBar` |
 | `FinoteBottomSheet` | `(isVisible, onDismiss, modifier, content)` | Pick or edit something without leaving the screen |
-| `FinoteDialog` | `(isVisible, title, onDismiss, confirm, modifier, text?, dismiss?)` | Confirm a destructive or irreversible action |
+| `FinoteDialog` | `(isVisible, title, onDismiss, confirm, modifier, text?, dismiss?, content?)` | Confirm a destructive or irreversible action. `content` is one extra control between the text and the buttons, such as a checkbox row |
 | `FinoteDatePicker` | `(isVisible, selected: LocalDate, onConfirm: (LocalDate), onDismiss, modifier)` | Date input. Never expose `DatePickerState` |
 | `FinoteCalendar` | `(selected: LocalDate, onPick: (LocalDate), modifier)` | Bare calendar page without chrome |
 | `FinoteButton` | `(text, onClick, modifier, style, enabled, isLoading, leadingIcon?)` | Every button. `style`: `Primary`, `Secondary`, `Ghost`, `Danger` |

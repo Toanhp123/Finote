@@ -9,6 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import io.github.toanhp123.finote.data.FinoteDatabase
 import io.github.toanhp123.finote.data.account.AccountBalanceSnapshotDao
 import io.github.toanhp123.finote.data.account.AccountDao
+import io.github.toanhp123.finote.data.account.AccountMergeDao
 import io.github.toanhp123.finote.data.category.CategoryDao
 import io.github.toanhp123.finote.data.createFinoteDatabase
 import io.github.toanhp123.finote.data.notification.NotificationLogDao
@@ -30,6 +31,9 @@ object DatabaseModule {
 
     @Provides
     fun provideAccountDao(db: FinoteDatabase): AccountDao = db.accountDao()
+
+    @Provides
+    fun provideAccountMergeDao(db: FinoteDatabase): AccountMergeDao = db.accountMergeDao()
 
     @Provides
     fun provideAccountBalanceSnapshotDao(db: FinoteDatabase): AccountBalanceSnapshotDao = db.accountBalanceSnapshotDao()

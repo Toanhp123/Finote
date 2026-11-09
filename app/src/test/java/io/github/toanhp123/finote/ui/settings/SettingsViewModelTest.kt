@@ -88,4 +88,18 @@ class SettingsViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
         }
+
+    @Test
+    fun `accounts click emits OpenAccountsSettings`() =
+        runTest(mainRule.dispatcher) {
+            val vm = SettingsViewModel(repo)
+
+            vm.effects.test {
+                vm.onIntent(SettingsIntent.AccountsClicked)
+                runCurrent()
+
+                assertEquals(SettingsEffect.OpenAccountsSettings, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 }

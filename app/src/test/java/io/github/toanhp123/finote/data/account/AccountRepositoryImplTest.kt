@@ -295,4 +295,137 @@ class AccountRepositoryImplTest {
             assertEquals(rowBefore, rowOf("acc-1"))
             assertEquals(snapshotsBefore, snapshotsOf("acc-1"))
         }
+
+    @Test
+    fun `ignore without trash keeps transactions and balance`() =
+        runTest {
+            repo.add(domainAccount())
+            transactions.add(domainTx())
+
+            repo.setIgnored("acc-1", ignored = true, shouldTrashOldTransactions = false, now = 50L)
+
+            assertEquals(true, rowOf("acc-1")?.isIgnored)
+            assertEquals(50L, rowOf("acc-1")?.updatedAt)
+            assertEquals(800_000L, rowOf("acc-1")?.currentBalance)
+            assertNull(
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-1")
+                    ?.deletedAt,
+            )
+            assertEquals(1, repo.getTrashableTransactionCount("acc-1"))
+        }
+
+    @Test
+    fun `ignore with trash soft-deletes non-transfers and rebuilds`() =
+        runTest {
+            repo.add(domainAccount())
+            transactions.add(domainTx())
+            transactions.add(income50kInOctober())
+
+            repo.setIgnored("acc-1", ignored = true, shouldTrashOldTransactions = true, now = 50L)
+
+            assertEquals(
+                50L,
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-1")
+                    ?.deletedAt,
+            )
+            assertEquals(
+                50L,
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-2")
+                    ?.deletedAt,
+            )
+            assertEquals(1_000_000L, rowOf("acc-1")?.currentBalance)
+            assertEquals(0, repo.getTrashableTransactionCount("acc-1"))
+        }
+
+    @Test
+    fun `transfers are not trashed and the other account balance is unchanged`() =
+        runTest {
+            repo.add(domainAccount("acc-1"))
+            repo.add(domainAccount("acc-2"))
+            transactions.add(domainTx(id = "tx-out", type = TransactionType.TRANSFER, toAccountId = "acc-2"))
+            transactions.add(
+                domainTx(id = "tx-in", type = TransactionType.TRANSFER, accountId = "acc-2", toAccountId = "acc-1"),
+            )
+            transactions.add(domainTx(id = "tx-exp"))
+            val other = rowOf("acc-2")?.currentBalance
+
+            repo.setIgnored("acc-1", ignored = true, shouldTrashOldTransactions = true, now = 50L)
+
+            assertNull(
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-out")
+                    ?.deletedAt,
+            )
+            assertNull(
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-in")
+                    ?.deletedAt,
+            )
+            assertEquals(
+                50L,
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-exp")
+                    ?.deletedAt,
+            )
+            assertEquals(other, rowOf("acc-2")?.currentBalance)
+            assertEquals(1_000_000L, rowOf("acc-1")?.currentBalance)
+        }
+
+    @Test
+    fun `follow again clears the flag, trashed rows stay deleted`() =
+        runTest {
+            repo.add(domainAccount())
+            transactions.add(domainTx())
+            repo.setIgnored("acc-1", ignored = true, shouldTrashOldTransactions = true, now = 50L)
+
+            repo.setIgnored("acc-1", ignored = false, shouldTrashOldTransactions = false, now = 60L)
+
+            assertEquals(false, rowOf("acc-1")?.isIgnored)
+            assertEquals(60L, rowOf("acc-1")?.updatedAt)
+            assertEquals(
+                50L,
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-1")
+                    ?.deletedAt,
+            )
+        }
+
+    @Test
+    fun `ignore a missing or deleted account is rejected`() =
+        runTest {
+            repo.add(domainAccount())
+            repo.softDelete("acc-1", deletedAt = 5L)
+            val before = rowOf("acc-1")
+
+            val onDeleted = failureOf { repo.setIgnored("acc-1", true, shouldTrashOldTransactions = true, now = 50L) }
+            val onMissing = failureOf { repo.setIgnored("ghost", true, shouldTrashOldTransactions = false, now = 50L) }
+
+            assertTrue(onDeleted.toString(), onDeleted is IllegalArgumentException)
+            assertTrue(onMissing.toString(), onMissing is IllegalArgumentException)
+            assertEquals(before, rowOf("acc-1"))
+        }
+
+    @Test
+    fun `update keeps isIgnored and mergedIntoId`() =
+        runTest {
+            repo.add(domainAccount())
+            dbRule.db.accountDao().update(checkNotNull(rowOf("acc-1")).copy(mergedIntoId = "acc-9"))
+            repo.setIgnored("acc-1", ignored = true, shouldTrashOldTransactions = false, now = 50L)
+
+            repo.update(domainAccount().copy(name = "x", isIgnored = false, mergedIntoId = null))
+
+            assertEquals("x", rowOf("acc-1")?.name)
+            assertEquals(true, rowOf("acc-1")?.isIgnored)
+            assertEquals("acc-9", rowOf("acc-1")?.mergedIntoId)
+        }
 }
