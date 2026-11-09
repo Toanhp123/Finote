@@ -8,7 +8,7 @@ import androidx.sqlite.execSQL
 private const val UPSERT_SQL =
     "INSERT OR REPLACE INTO parser_rules (id, packageName, bankName, channelIdAllowlist, ignoreKeywords, " +
         "priority, isUserCustom, version, regexPattern, fallbackTransactionType, dateFormatPattern, isActive, " +
-        "updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "updatedAt, accountType) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
 /**
  * Keeps [SystemParserRules] in the database, rule by rule. Unlike the category seeder it runs on every open:
@@ -72,6 +72,7 @@ class ParserRuleSeeder : RoomDatabase.Callback() {
         bindOptionalText(++index, rule.dateFormatPattern)
         bindLong(++index, if (rule.isActive) 1L else 0L)
         bindLong(++index, rule.updatedAt)
+        bindOptionalText(++index, rule.accountType)
     }
 
     private fun SQLiteStatement.bindOptionalText(

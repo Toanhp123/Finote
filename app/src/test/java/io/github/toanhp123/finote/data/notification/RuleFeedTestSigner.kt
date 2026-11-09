@@ -59,5 +59,6 @@ private fun ruleJson(rule: ParserRule) =
             "fallbackTransactionType" to (rule.fallbackTransactionType?.let { JsonPrimitive(it.name) } ?: JsonNull),
             "dateFormatPattern" to (rule.dateFormatPattern?.let(::JsonPrimitive) ?: JsonNull),
             "isActive" to JsonPrimitive(rule.isActive),
+            "accountType" to (rule.accountType?.let { JsonPrimitive(it.name) } ?: JsonNull),
         ),
     )

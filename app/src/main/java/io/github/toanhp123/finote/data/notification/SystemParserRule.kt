@@ -89,6 +89,7 @@ private class Bank(
     private val packageName: String,
     private val bankName: String,
     keywords: List<String>,
+    private val accountType: String? = null,
 ) {
     private val keywordsJson = Json.encodeToString(keywords)
 
@@ -97,6 +98,7 @@ private class Bank(
         shape: String,
         pattern: String,
         fallbackType: String? = null,
+        accountType: String? = this.accountType,
     ) = ParserRuleEntity(
         id = "${idPrefix}_${shape}_v1",
         packageName = packageName,
@@ -112,12 +114,13 @@ private class Bank(
         dateFormatPattern = null,
         isActive = true,
         updatedAt = 0L,
+        accountType = accountType,
     )
 }
 
 private val vcb = Bank("vcb", "com.VCB", "Vietcombank", VCB_KEYWORDS)
 private val mb = Bank("mb", "com.mbmobile", "MB Bank", MB_KEYWORDS)
-private val momo = Bank("momo", "com.mservice.momotransfer", "MoMo", MOMO_KEYWORDS)
+private val momo = Bank("momo", "com.mservice.momotransfer", "MoMo", MOMO_KEYWORDS, accountType = "WALLET")
 private val tcb = Bank("tcb", "vn.com.techcombank.bb.app", "Techcombank", TCB_KEYWORDS)
 
 private val vcbRules =
@@ -156,6 +159,7 @@ private val mbRules =
             """Th[ẻe] t[íi]n d[ụu]ng MB [^.]*\.\.\.(?<mask>\d{4}) (?:GD|hoan tien) thanh cong: """ +
                 """(?<sign>[+-])(?<amount>$MONEY) VND (?:tai|tu) (?<merchant>[^.]+?)\. """ +
                 """Han muc con lai: $MONEY VND""",
+            accountType = "CREDIT_CARD",
         ),
     )
 
@@ -207,6 +211,7 @@ private val tcbRules =
             """Th[ẻe] t[íi]n d[ụu]ng [^(]*\(\.{3}(?<mask>\d{4})\) (?:GD th[àa]nh c[ôo]ng|ho[àa]n ti[ềe]n): """ +
                 """(?<sign>[+-])(?<amount>$MONEY) VND (?:t[ạa]i|t[ừu]) (?<merchant>.+?) l[úu]c [^.]+\. """ +
                 """H[ạa]n m[ứu]c kh[ảa] d[ụu]ng: $MONEY VND""",
+            accountType = "CREDIT_CARD",
         ),
     )
 

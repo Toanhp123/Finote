@@ -132,4 +132,7 @@
         <item quantity="other">%1$d 条规则 · v%2$d</item>
     </plurals>
     <string name="capture_bank_edited">含你的修改</string>
+    <string name="balance_drift_message">%1$s与银行相差%2$s</string>
+    <string name="balance_drift_adjust">调整</string>
+    <string name="balance_drift_adjust_cd">调整%1$s的余额</string>
 </resources>

@@ -19,6 +19,9 @@ data class Transaction(
     val source: TransactionSource = TransactionSource.MANUAL,
     val isExcludedFromAnalytics: Boolean = false,
     val reimbursementStatus: ReimbursementStatus = ReimbursementStatus.NONE,
+    /** VND balance the bank printed after this transaction; null for a manual one. */
+    val postBalance: Long? = null,
+    val notificationLogId: String? = null,
 ) {
     init {
         require(amount > 0) { "amount must be positive" }

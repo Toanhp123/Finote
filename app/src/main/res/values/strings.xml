@@ -132,4 +132,7 @@
         <item quantity="other">%1$d mẫu · v%2$d</item>
     </plurals>
     <string name="capture_bank_edited">có chỉnh sửa của bạn</string>
+    <string name="balance_drift_message">%1$s lệch %2$s so với ngân hàng</string>
+    <string name="balance_drift_adjust">Điều chỉnh</string>
+    <string name="balance_drift_adjust_cd">Điều chỉnh số dư %1$s</string>
 </resources>

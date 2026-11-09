@@ -15,6 +15,7 @@ import io.github.toanhp123.finote.domain.notification.usecase.FakeNotificationCa
 import io.github.toanhp123.finote.domain.notification.usecase.FakeParserRuleFeed
 import io.github.toanhp123.finote.domain.notification.usecase.FakeParserRuleRepository
 import io.github.toanhp123.finote.domain.notification.usecase.FakeRuleUpdateSettingsRepository
+import io.github.toanhp123.finote.domain.notification.usecase.FakeSettleScheduler
 import io.github.toanhp123.finote.domain.notification.usecase.ReparseFailedLogsUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.UpdateParserRulesUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,7 +38,11 @@ class RuleUpdateWorkerTest {
             UpdateParserRulesUseCase(
                 feed,
                 rules,
-                ReparseFailedLogsUseCase(FakeNotificationCaptureRepository(emptyList()), UnconfinedTestDispatcher()),
+                ReparseFailedLogsUseCase(
+                    FakeNotificationCaptureRepository(emptyList()),
+                    UnconfinedTestDispatcher(),
+                    FakeSettleScheduler(),
+                ),
                 settings,
                 Clock.systemUTC(),
             )

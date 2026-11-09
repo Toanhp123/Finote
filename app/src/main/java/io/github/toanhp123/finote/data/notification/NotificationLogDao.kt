@@ -16,8 +16,8 @@ interface NotificationLogDao {
     suspend fun getAll(): List<NotificationLogEntity>
 
     @Query(
-        "SELECT * FROM notification_logs WHERE status = 'FAILED' AND packageName IN (:packages) " +
-            "ORDER BY receivedAt ASC, id ASC",
+        "SELECT * FROM notification_logs WHERE status = 'FAILED' AND failureReason = 'no_rule_matched' " +
+            "AND packageName IN (:packages) ORDER BY receivedAt ASC, id ASC",
     )
     suspend fun getFailed(packages: Set<String>): List<NotificationLogEntity>
 
@@ -47,5 +47,26 @@ interface NotificationLogDao {
         parsedPostBalance: Long?,
         parsedMerchant: String?,
         parsedNote: String?,
+    ): Int
+
+    @Query("SELECT * FROM notification_logs WHERE status = 'PENDING' ORDER BY postTime ASC, id ASC")
+    suspend fun getPending(): List<NotificationLogEntity>
+
+    @Query(
+        "SELECT * FROM notification_logs WHERE status NOT IN ('PENDING', 'IGNORED_SPAM') AND postTime >= :since " +
+            "ORDER BY postTime ASC, id ASC",
+    )
+    suspend fun getSettledSince(since: Long): List<NotificationLogEntity>
+
+    /** Moves the rows that are still `PENDING` to [status]; returns how many changed. */
+    @Query(
+        "UPDATE notification_logs SET status = :status, linkedTransactionId = :linkedTransactionId, " +
+            "failureReason = :failureReason WHERE id IN (:ids) AND status = 'PENDING'",
+    )
+    suspend fun markSettled(
+        ids: List<String>,
+        status: NotificationStatus,
+        linkedTransactionId: String?,
+        failureReason: String?,
     ): Int
 }

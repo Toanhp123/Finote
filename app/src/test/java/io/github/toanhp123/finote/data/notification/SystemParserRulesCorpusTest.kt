@@ -8,6 +8,7 @@ import io.github.toanhp123.finote.domain.notification.model.RawNotification
 import io.github.toanhp123.finote.domain.notification.normalizeForMatch
 import io.github.toanhp123.finote.domain.notification.usecase.CaptureNotificationUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.FakeNotificationCaptureRepository
+import io.github.toanhp123.finote.domain.notification.usecase.FakeSettleScheduler
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -39,6 +40,7 @@ class SystemParserRulesCorpusTest {
             repo,
             clock,
             UnconfinedTestDispatcher(),
+            FakeSettleScheduler(),
         )(RawNotification(packageName, channelId, title, content, postTime))
     }
 

@@ -13,6 +13,7 @@ fun parserRuleEntity(
     regexPattern: String = "",
     fallbackTransactionType: String? = null,
     isActive: Boolean = true,
+    accountType: String? = null,
 ) = ParserRuleEntity(
     id = id,
     packageName = packageName,
@@ -27,6 +28,7 @@ fun parserRuleEntity(
     dateFormatPattern = null,
     isActive = isActive,
     updatedAt = 0L,
+    accountType = accountType,
 )
 
 fun notificationLogEntity(

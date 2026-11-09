@@ -137,3 +137,10 @@ object BalanceCalculator {
         )
     }
 }
+
+/** Initial balance that makes the transactions end at the post balance. */
+fun BalanceCalculator.initialBalanceFor(
+    accountId: String,
+    postBalance: Long,
+    transactions: List<Transaction>,
+): Long = Math.subtractExact(postBalance, balance(accountId, 0L, transactions))

@@ -19,4 +19,16 @@ interface AccountDao {
 
     @Query("SELECT * FROM accounts WHERE deletedAt IS NULL ORDER BY sortOrder ASC, createdAt ASC")
     fun observeAccounts(): Flow<List<AccountEntity>>
+
+    @Query("SELECT * FROM accounts WHERE bankPackageName IS NOT NULL")
+    suspend fun getWithBankKey(): List<AccountEntity>
+
+    @Query(
+        "SELECT * FROM accounts WHERE deletedAt IS NULL AND bankPackageName = :packageName " +
+            "AND accountNumberMask IS :mask LIMIT 1",
+    )
+    suspend fun getByBankKey(
+        packageName: String,
+        mask: String?,
+    ): AccountEntity?
 }

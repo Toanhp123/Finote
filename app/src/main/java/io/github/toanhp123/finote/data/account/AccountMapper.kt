@@ -20,6 +20,8 @@ fun AccountEntity.toDomain(): Account =
         createdAt = createdAt,
         updatedAt = updatedAt,
         deletedAt = deletedAt,
+        bankPackageName = bankPackageName,
+        accountNumberMask = accountNumberMask,
     )
 
 fun Account.toEntity(): AccountEntity =
@@ -40,4 +42,6 @@ fun Account.toEntity(): AccountEntity =
         createdAt = createdAt,
         updatedAt = updatedAt,
         deletedAt = deletedAt,
+        bankPackageName = bankPackageName,
+        accountNumberMask = accountNumberMask,
     )

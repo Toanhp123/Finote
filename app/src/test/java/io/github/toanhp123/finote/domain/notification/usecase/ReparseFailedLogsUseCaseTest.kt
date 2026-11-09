@@ -47,8 +47,10 @@ class ReparseFailedLogsUseCaseTest {
         failureReason = "no_rule_matched",
     )
 
+    private val scheduler = FakeSettleScheduler()
+
     private fun useCase(repo: FakeNotificationCaptureRepository) =
-        ReparseFailedLogsUseCase(repo, UnconfinedTestDispatcher())
+        ReparseFailedLogsUseCase(repo, UnconfinedTestDispatcher(), scheduler)
 
     @Test
     fun `FAILED becomes PENDING with parsed fields`() =
@@ -133,6 +135,40 @@ class ReparseFailedLogsUseCaseTest {
 
             assertEquals(NotificationStatus.FAILED, repo.logs.first { it.id == "bad" }.status)
             assertEquals(NotificationStatus.PENDING, repo.logs.first { it.id == "good" }.status)
+        }
+
+    @Test
+    fun `reparse that makes a PENDING log schedules settle once`() =
+        runTest {
+            val repo = FakeNotificationCaptureRepository(listOf(rule()))
+            repo.logs += failedLog("a", "SD TK -10,000")
+            repo.logs += failedLog("b", "SD TK -20,000")
+
+            assertEquals(2, useCase(repo)(setOf(PKG)))
+
+            assertEquals(1, scheduler.afterCaptureCount)
+        }
+
+    @Test
+    fun `reparse that only blocks logs does not schedule settle`() =
+        runTest {
+            val repo = FakeNotificationCaptureRepository(listOf(rule(keywords = listOf("khuyen mai"))))
+            repo.logs += failedLog("a", "khuyen mai giam 50%")
+
+            assertEquals(1, useCase(repo)(setOf(PKG)))
+
+            assertEquals(0, scheduler.afterCaptureCount)
+        }
+
+    @Test
+    fun `no change does not schedule settle`() =
+        runTest {
+            val repo = FakeNotificationCaptureRepository(listOf(rule()))
+            repo.logs += failedLog("a", "khong co so tien")
+
+            assertEquals(0, useCase(repo)(setOf(PKG)))
+
+            assertEquals(0, scheduler.afterCaptureCount)
         }
 
     private companion object {

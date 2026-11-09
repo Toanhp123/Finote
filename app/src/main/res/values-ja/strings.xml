@@ -132,4 +132,7 @@
         <item quantity="other">パターン %1$d 件 · v%2$d</item>
     </plurals>
     <string name="capture_bank_edited">あなたの編集あり</string>
+    <string name="balance_drift_message">%1$sの残高が銀行と%2$sずれています</string>
+    <string name="balance_drift_adjust">調整</string>
+    <string name="balance_drift_adjust_cd">%1$sの残高を調整</string>
 </resources>

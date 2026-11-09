@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.data.notification
 
+import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -52,6 +53,14 @@ class ParserRuleMapperTest {
     fun `unknown fallback type gives null`() {
         assertNull(parserRuleEntity(fallbackTransactionType = "expense").toDomain())
         assertNull(parserRuleEntity(fallbackTransactionType = "TRANSFER").toDomain())
+    }
+
+    @Test
+    fun `account type maps and bad value drops the row`() {
+        assertEquals(AccountType.WALLET, parserRuleEntity(accountType = "WALLET").toDomain()?.accountType)
+        assertNull(parserRuleEntity(accountType = null).toDomain()!!.accountType)
+        assertNull(parserRuleEntity(accountType = "SPACESHIP").toDomain())
+        assertEquals("WALLET", parserRuleEntity(accountType = "WALLET").toDomain()!!.toEntity().accountType)
     }
 
     @Test

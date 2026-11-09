@@ -135,4 +135,7 @@
         <item quantity="other">%1$d patterns · v%2$d</item>
     </plurals>
     <string name="capture_bank_edited">has your edits</string>
+    <string name="balance_drift_message">%1$s differs from the bank by %2$s</string>
+    <string name="balance_drift_adjust">Adjust</string>
+    <string name="balance_drift_adjust_cd">Adjust balance of %1$s</string>
 </resources>

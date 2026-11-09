@@ -59,11 +59,13 @@ class CaptureNotificationUseCaseTest {
     private class Env(
         val repo: FakeNotificationCaptureRepository,
         val useCase: CaptureNotificationUseCase,
+        val scheduler: FakeSettleScheduler,
     )
 
     private fun env(vararg rules: ParserRule): Env {
         val repo = FakeNotificationCaptureRepository(rules.toList())
-        return Env(repo, CaptureNotificationUseCase(repo, clock, UnconfinedTestDispatcher()))
+        val scheduler = FakeSettleScheduler()
+        return Env(repo, CaptureNotificationUseCase(repo, clock, UnconfinedTestDispatcher(), scheduler), scheduler)
     }
 
     @Test
@@ -238,6 +240,35 @@ class CaptureNotificationUseCaseTest {
             assertEquals(now.toEpochMilli(), log.receivedAt)
             assertNull(log.failureReason)
             UUID.fromString(log.id)
+        }
+
+    @Test
+    fun `stored log schedules settle`() =
+        runTest {
+            val e = env(rule())
+
+            assertEquals(CaptureResult.Stored, e.useCase(raw()))
+
+            assertEquals(1, e.scheduler.afterCaptureCount)
+        }
+
+    @Test
+    fun `failed, ignored, duplicate and not tracked do not schedule settle`() =
+        runTest {
+            val e = env(rule(pattern = "nothing(?<amount>\\d+)", keywords = listOf("ưu đãi")))
+            val none = env()
+
+            assertEquals(CaptureResult.Failed, e.useCase(raw()))
+            assertEquals(CaptureResult.Ignored("keyword:ưu đãi"), e.useCase(raw(content = "Ưu đãi -50,000")))
+            assertEquals(CaptureResult.Ignored("secret:OTP"), e.useCase(raw(content = "Mã OTP: 123456")))
+            assertEquals(CaptureResult.NotTracked, none.useCase(raw()))
+            assertEquals(0, e.scheduler.afterCaptureCount)
+            assertEquals(0, none.scheduler.afterCaptureCount)
+
+            val dup = env(rule())
+            dup.useCase(raw())
+            assertEquals(CaptureResult.Duplicate, dup.useCase(raw()))
+            assertEquals(1, dup.scheduler.afterCaptureCount)
         }
 
     @Test

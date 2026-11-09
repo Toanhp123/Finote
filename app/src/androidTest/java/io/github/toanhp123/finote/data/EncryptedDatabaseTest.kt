@@ -56,6 +56,8 @@ class EncryptedDatabaseTest {
             createdAt = 1_700_000_000_000L,
             updatedAt = 1_700_000_000_000L,
             deletedAt = null,
+            bankPackageName = null,
+            accountNumberMask = null,
         )
 
     @Test

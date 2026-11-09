@@ -179,14 +179,16 @@ Thêm một điểm yếu đã biết: cả 4 ngân hàng dùng chung danh sách
 - Corpus test: ~60+ mẫu tổng hợp (mục D4), có cả dạng thu gọn (`EXTRA_TEXT`) và mở rộng (`EXTRA_BIG_TEXT`). Đạt 98% bóc tách đúng (mục 6).
 - Sửa nợ P2a #1, #2, và tách `IGNORE_KEYWORDS` theo ngân hàng (xem bảng ở P2a).
 
-Chốt 2026-11-08: chia P2b thành 3 nhánh, làm theo thứ tự:
+Chốt 2026-11-08: chia P2b thành 3 nhánh, làm theo thứ tự (nhánh 3 làm sau P2c, xem ghi chú dưới):
 1. `feature/parser-engine`: rule regex (VCB, MB, MoMo, Techcombank), parser, cổng corpus, nợ #1 #2. Bóc được thì điền `parsed*` và giữ `PENDING` (P2c tạo giao dịch); không khớp thì `FAILED`. Thiết kế: `docs/superpowers/specs/2026-11-08-parser-engine-design.md`.
 2. `feature/rule-ota` (đổi thứ tự 2026-11-08, Must-Have và sửa nợ #9): OTA rule bằng WorkManager, bóc lại các dòng `FAILED` sau khi có rule mới. Mặc định tắt, user tự bật; file JSON có chữ ký ECDSA. Thiết kế: `docs/superpowers/specs/2026-11-08-rule-ota-design.md`.
 3. `feature/failed-inbox`: màn Failed Inbox, kèm bộ dạy mẫu cục bộ (Regex Sandbox cho người phổ thông): user mở một dòng `FAILED`, bôi đen số tiền, số dư, 4 số cuối, nội dung; app sinh regex `isUserCustom = true` rồi gọi `ReparseFailedLogsUseCase`. Cho user không muốn bật mạng. Cần bàn thêm: ngân hàng chưa có rule bị `NotTracked` nên không có dòng `FAILED` để dạy.
 
 Trạng thái (2026-11-08): `parser-engine` xong, đã ở `dev` (`29a94e2`). 12 rule regex. Corpus: VCB, MB, MoMo đúng 100%; Techcombank bóc 8/8.
 
-Trạng thái (2026-11-08): `rule-ota` code xong, review cuối nhánh đạt, chờ squash vào `dev`.
+Trạng thái (2026-11-08): `rule-ota` xong, đã ở `dev` (`2956fae`).
+
+Đổi thứ tự 2026-11-08: làm P2c trước `failed-inbox`. Lý do: bóc lại sau khi dạy mẫu chỉ ra dòng `PENDING`; không có P2c (tạo giao dịch, đối ánh tài khoản) thì user không thấy kết quả, và `failed-inbox` phải tự viết lại phần đó.
 - Feed `rules/v1/feed.json` sinh từ `SystemParserRules`, ký ECDSA P-256. Khóa riêng ở `~/.finote/finote-rules.pem` (ngoài repo, user tự sao lưu). Ký lại: `testDebugUnitTest --tests '*RuleFeedSigningTool*' -PsignRuleFeed=true`.
 - Feed phải lên `main` cùng hoặc trước bản phát hành đầu có OTA; trước đó "Kiểm tra ngay" báo "không có mạng" (404).
 - Nợ mới (follow-up):
@@ -201,6 +203,18 @@ Trạng thái (2026-11-08): `rule-ota` code xong, review cuối nhánh đạt, c
 - Cold-start: tài khoản `isInitialized = false` và có `postBalance` thì tính ngược `initialBalance` và gợi ý user xác nhận.
 - Test: ví và ngân hàng cùng gửi một biến động, chỉ tạo một giao dịch.
 - Xử lý nợ P2a #3: thông báo đăng lại tạo dòng `PENDING` trùng.
+- Thiết kế: `docs/superpowers/specs/2026-11-08-account-dedup-balance-design.md`. Chốt 2026-11-08: tự tạo tài khoản khi không khớp, chờ cửa sổ 30 giây rồi mới ghi, tự đặt số dư đầu, banner lệch số dư kèm nút Điều chỉnh.
+- Ngay sau P2c: `feature/account-merge-ignore` (gộp tài khoản, bỏ qua tài khoản), để user sửa khi app tự gán sai.
+
+Trạng thái (2026-11-08): code xong trên `feature/account-dedup-balance`, review từng task và review cả nhánh đã chạy. Nợ P2a #3 đã sửa (ngưỡng đăng lại 10 phút khi có số dư, 3 giây khi không). Chưa thử trên máy thật.
+
+Nợ còn lại (Minor, chưa sửa):
+- `MainActivity` gọi `settleNow()` mỗi lần `onCreate`, kể cả xoay màn hình. Vô hại vì REPLACE và settle chạy lại an toàn.
+- Luồng drift trong `TransactionListViewModel` dừng hẳn nếu một tài khoản ném lỗi (`.catch` một lần); `adjust()` chưa bắt `ArithmeticException`.
+- Nhiều banner lệch số dư đẩy danh sách xuống trên màn nhỏ.
+- Chuỗi ja và zh-rCN do máy viết, cần người bản ngữ xem trước khi phát hành.
+- Rule hệ thống vẫn `version = 1`: khi có migration thật (sau v1.0), tăng version để rule cũ nhận `accountType`.
+- Một `New` có mask và một `New` mask null cùng gói trong một lần chạy tạo hai tài khoản. Hiếm; gộp tài khoản sẽ xử lý.
 
 ### P2d — `feature/transfer-pairing` (Module 7)
 - Pairing nằm ở `domain/notification`, không phụ thuộc `android.*`.
@@ -282,4 +296,4 @@ Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ n�
 2. P0: `chore/gradle-catalog`, `chore/quality-gate`, `feature/app-shell`, `feature/mvi-base` đã xong.
 3. D2 đã chốt. Spec P1 đã bổ sung ngày 2026-11-02.
 4. P1 đã xong (2026-11-04): `db-schema` → `db-encryption` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `design-system` → `cash-entry` → `reconciliation` → `transaction-list` → `reimbursement-flag`.
-5. D4 đã chốt (2026-11-06). P1 đã xong. Bắt đầu P2: `notif-capture` (P2a) → `parser-engine` (P2b) → `account-dedup-balance` (P2c) → `transfer-pairing` (P2d).
+5. D4 đã chốt (2026-11-06). P1 đã xong. Bắt đầu P2: `notif-capture` (P2a) → `parser-engine`, `rule-ota` (P2b-1, P2b-2) → `account-dedup-balance` (P2c) → `failed-inbox` (P2b-3) → `transfer-pairing` (P2d).

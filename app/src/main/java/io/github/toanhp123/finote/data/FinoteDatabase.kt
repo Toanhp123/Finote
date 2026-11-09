@@ -30,7 +30,7 @@ import io.github.toanhp123.finote.data.transaction.TransactionTagCrossRef
             ParserRuleEntity::class,
             NotificationLogEntity::class,
         ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class FinoteDatabase : RoomDatabase() {

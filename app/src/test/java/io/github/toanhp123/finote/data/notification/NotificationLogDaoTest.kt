@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.data.notification
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.InMemoryDatabaseRule
+import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -23,6 +24,16 @@ class NotificationLogDaoTest {
 
             assertTrue(dao.insert(log) > 0)
             assertEquals(listOf(log), dao.getAll())
+        }
+
+    @Test
+    fun `getFailed returns only logs no rule matched`() =
+        runTest {
+            val noRule = notificationLogEntity(id = "a", contentHash = "a", status = NotificationStatus.FAILED)
+            dao.insert(noRule.copy(failureReason = "no_rule_matched"))
+            dao.insert(noRule.copy(id = "b", contentHash = "b", failureReason = "account_archived"))
+
+            assertEquals(listOf("a"), dao.getFailed(setOf("com.test.bank")).map { it.id })
         }
 
     @Test

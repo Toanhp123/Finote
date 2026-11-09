@@ -10,6 +10,7 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.RawNotification
 import io.github.toanhp123.finote.domain.notification.repository.NotificationCaptureRepository
+import io.github.toanhp123.finote.domain.notification.repository.SettleScheduler
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.time.Clock
@@ -22,13 +23,15 @@ class CaptureNotificationUseCase
         private val repository: NotificationCaptureRepository,
         private val clock: Clock,
         @param:DefaultDispatcher private val parseDispatcher: CoroutineDispatcher,
+        private val settleScheduler: SettleScheduler,
     ) {
         /**
          * Filters the notification by the rules of its package and stores it: when it passes, `PENDING` with the
          * parsed fields or `FAILED` when no rule matches; an `IGNORED_SPAM` row when it is blocked (never parsed).
          * Only a secret ([SECRET_KEYWORDS]) drops the text; a channel or rule keyword
          * block keeps it, so a false positive can be recovered. The hash is taken from the original text
-         * first, so two different blocked notifications at the same `postTime` stay two rows.
+         * first, so two different blocked notifications at the same `postTime` stay two rows. A stored `PENDING` log
+         * schedules a settle.
          */
         suspend operator fun invoke(raw: RawNotification): CaptureResult {
             val rules = repository.getRules(raw.packageName)
@@ -57,6 +60,7 @@ class CaptureNotificationUseCase
                 }
 
                 result.parsed != null -> {
+                    settleScheduler.scheduleAfterCapture()
                     CaptureResult.Stored
                 }
 

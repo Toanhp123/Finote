@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.ui.transactions
 
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.model.BalanceDrift
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
@@ -24,6 +25,8 @@ data class TransactionListState(
     val isPendingOnly: Boolean = false,
     val editingId: String? = null,
     val hasSaveError: Boolean = false,
+    /** Accounts whose balance disagrees with the bank's; each shows a banner with an adjust button. */
+    val drifts: List<BalanceDrift> = emptyList(),
 )
 
 sealed interface TransactionListIntent {
@@ -42,6 +45,10 @@ sealed interface TransactionListIntent {
     ) : TransactionListIntent
 
     data object SheetDismissed : TransactionListIntent
+
+    data class AdjustDrift(
+        val accountId: String,
+    ) : TransactionListIntent
 }
 
 /** This screen sends no one-time command; the type exists for the contract rule and [BaseViewModel]. */

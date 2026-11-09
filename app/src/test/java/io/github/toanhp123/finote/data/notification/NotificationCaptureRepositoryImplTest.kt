@@ -75,7 +75,10 @@ class NotificationCaptureRepositoryImplTest {
         status: NotificationStatus,
         packageName: String = "com.test.bank",
     ) = dbRule.db.notificationLogDao().insert(
-        notificationLogEntity(id = id, contentHash = "h-$id", status = status).copy(packageName = packageName),
+        notificationLogEntity(id = id, contentHash = "h-$id", status = status).copy(
+            packageName = packageName,
+            failureReason = if (status == NotificationStatus.FAILED) "no_rule_matched" else null,
+        ),
     )
 
     private suspend fun storedLog(id: String) =

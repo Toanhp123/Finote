@@ -1,10 +1,12 @@
 package io.github.toanhp123.finote.data.notification
 
+import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RuleFeedError
 import io.github.toanhp123.finote.domain.notification.model.RuleFeedException
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
@@ -73,6 +75,35 @@ class RuleFeedCodecTest {
             )
         assertEquals(listOf(good, good.copy(id = "b", fallbackTransactionType = TransactionType.EXPENSE)), rules)
         assertEquals(false, rules.first().isUserCustom)
+    }
+
+    @Test
+    fun `feed without accountType decodes to null`() {
+        val envelope =
+            resigned(listOf(good)) { payload ->
+                val rules = payload.getValue("rules") as JsonArray
+                val stripped = rules.map { JsonObject((it as JsonObject).filterKeys { key -> key != "accountType" }) }
+                JsonObject(payload + ("rules" to JsonArray(stripped)))
+            }
+        assertEquals(listOf(null), decodeRuleFeed(envelope, keys.public).map { it.accountType })
+    }
+
+    @Test
+    fun `feed with accountType decodes it`() {
+        val rules = decodeRuleFeed(feed(good.copy(accountType = AccountType.WALLET)), keys.public)
+        assertEquals(AccountType.WALLET, rules.single().accountType)
+    }
+
+    @Test
+    fun `feed with unknown accountType decodes to null`() {
+        val envelope =
+            resigned(listOf(good.copy(accountType = AccountType.WALLET))) { payload ->
+                val rules = payload.getValue("rules") as JsonArray
+                val unknown = JsonPrimitive("SPACESHIP")
+                val edited = rules.map { JsonObject((it as JsonObject) + ("accountType" to unknown)) }
+                JsonObject(payload + ("rules" to JsonArray(edited)))
+            }
+        assertEquals(listOf(null), decodeRuleFeed(envelope, keys.public).map { it.accountType })
     }
 
     @Test

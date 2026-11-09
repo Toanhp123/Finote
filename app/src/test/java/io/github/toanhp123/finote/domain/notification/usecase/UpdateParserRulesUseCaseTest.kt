@@ -68,7 +68,7 @@ class UpdateParserRulesUseCaseTest {
         val rules = FakeParserRuleRepository(written)
         val capture = FakeNotificationCaptureRepository(feedRules)
         val settings = FakeRuleUpdateSettingsRepository()
-        val reparse = ReparseFailedLogsUseCase(capture, UnconfinedTestDispatcher())
+        val reparse = ReparseFailedLogsUseCase(capture, UnconfinedTestDispatcher(), FakeSettleScheduler())
         val clock = Clock.fixed(now, ZoneOffset.UTC)
         return Env(feed, rules, capture, settings, UpdateParserRulesUseCase(feed, rules, reparse, settings, clock))
     }

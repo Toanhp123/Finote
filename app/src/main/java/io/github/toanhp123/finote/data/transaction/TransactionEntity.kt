@@ -7,6 +7,7 @@ import androidx.room3.Index
 import androidx.room3.PrimaryKey
 import io.github.toanhp123.finote.data.account.AccountEntity
 import io.github.toanhp123.finote.data.category.CategoryEntity
+import io.github.toanhp123.finote.data.notification.NotificationLogEntity
 import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
@@ -30,6 +31,12 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionType
                 onDelete = ForeignKey.RESTRICT,
             ),
             ForeignKey(
+                entity = NotificationLogEntity::class,
+                parentColumns = ["id"],
+                childColumns = ["notificationLogId"],
+                onDelete = ForeignKey.SET_NULL,
+            ),
+            ForeignKey(
                 entity = CategoryEntity::class,
                 parentColumns = ["id"],
                 childColumns = ["categoryId"],
@@ -42,6 +49,7 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionType
             Index(value = ["toAccountId", "timestamp"]),
             Index(value = ["categoryId"]),
             Index(value = ["timestamp"]),
+            Index(value = ["notificationLogId"]),
         ],
 )
 data class TransactionEntity(
@@ -67,4 +75,8 @@ data class TransactionEntity(
     val createdAt: Long,
     val updatedAt: Long,
     val deletedAt: Long?,
+    /** VND balance the bank printed after this transaction; null for a manual one. */
+    val postBalance: Long?,
+    /** The notification this transaction came from. Cleared when the log row is purged. */
+    val notificationLogId: String?,
 )

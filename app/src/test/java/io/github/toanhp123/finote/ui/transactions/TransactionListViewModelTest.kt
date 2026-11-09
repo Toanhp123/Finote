@@ -6,9 +6,11 @@ import app.cash.turbine.test
 import io.github.toanhp123.finote.domain.account.A
 import io.github.toanhp123.finote.domain.account.B
 import io.github.toanhp123.finote.domain.account.C
+import io.github.toanhp123.finote.domain.account.model.BalanceDrift
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.account.tx
 import io.github.toanhp123.finote.domain.account.usecase.FakeAccountRepository
+import io.github.toanhp123.finote.domain.account.usecase.ObserveBalanceDriftUseCase
 import io.github.toanhp123.finote.domain.category.testCategory
 import io.github.toanhp123.finote.domain.category.usecase.FakeCategoryRepository
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
@@ -16,6 +18,7 @@ import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.ReconcileBalanceUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ValidateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
@@ -58,6 +61,8 @@ class TransactionListViewModelTest {
             accountRepository = accounts,
             categoryRepository = categories,
             updateTransaction = UpdateTransactionUseCase(fakeTx, ValidateTransactionUseCase(fakeTx, clock), clock),
+            observeDrifts = ObserveBalanceDriftUseCase(accounts, fakeTx),
+            reconcileBalance = ReconcileBalanceUseCase(fakeTx, clock),
             clock = clock,
         )
 
@@ -429,6 +434,45 @@ class TransactionListViewModelTest {
                     .flatMap { it.transactions }
                     .map { it.id },
             )
+        }
+
+    @Test
+    fun `drifts reach the state`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            store(row("e").copy(type = TransactionType.INCOME, postBalance = 1_700_000))
+
+            val vm = open()
+
+            assertEquals(listOf(BalanceDrift(A, 700_000 - 10_000)), vm.state.value.drifts)
+        }
+
+    @Test
+    fun `adjust reconciles to current plus difference`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            accounts.stored[A] = testAccount(A).copy(currentBalance = 1_010_000)
+            store(row("e").copy(type = TransactionType.INCOME, postBalance = 1_700_000))
+            val vm = open()
+
+            vm.onIntent(TransactionListIntent.AdjustDrift(A))
+            runCurrent()
+
+            val call = fakeTx.reconcileCalls.single()
+            assertEquals(A, call.accountId)
+            assertEquals(1_010_000L + 690_000L, call.actualBalance)
+        }
+
+    @Test
+    fun `adjust without a drift writes nothing`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val vm = open()
+
+            vm.onIntent(TransactionListIntent.AdjustDrift(A))
+            runCurrent()
+
+            assertTrue(fakeTx.reconcileCalls.isEmpty())
         }
 }
 

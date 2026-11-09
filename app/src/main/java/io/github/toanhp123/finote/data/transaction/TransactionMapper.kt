@@ -21,6 +21,8 @@ fun TransactionEntity.toDomain(): Transaction =
         source = source,
         isExcludedFromAnalytics = isExcludedFromAnalytics,
         reimbursementStatus = reimbursementStatus,
+        postBalance = postBalance,
+        notificationLogId = notificationLogId,
     )
 
 fun Transaction.toEntity(): TransactionEntity =
@@ -42,4 +44,6 @@ fun Transaction.toEntity(): TransactionEntity =
         createdAt = createdAt,
         updatedAt = updatedAt,
         deletedAt = deletedAt,
+        postBalance = postBalance,
+        notificationLogId = notificationLogId,
     )

@@ -17,4 +17,5 @@ data class NotificationLog(
     val failureReason: String?,
     val matchedRuleId: String? = null,
     val parsed: ParsedFields? = null,
+    val linkedTransactionId: String? = null,
 )

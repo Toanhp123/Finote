@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.account
 import io.github.toanhp123.finote.data.category
+import io.github.toanhp123.finote.data.notification.notificationLogEntity
 import io.github.toanhp123.finote.data.tag
 import io.github.toanhp123.finote.data.tagRef
 import io.github.toanhp123.finote.data.transaction
@@ -50,6 +51,37 @@ class TransactionDaoTest {
                     .copy(adjustmentDirection = AdjustmentDirection.OUT, merchantName = null)
             dao.insert(adjustment)
             assertEquals(adjustment, dao.getById("tx-2"))
+        }
+
+    @Test
+    fun `post balance and log link round trip`() =
+        runTest {
+            seedAccount()
+            val log = notificationLogEntity()
+            dbRule.db.notificationLogDao().insert(log)
+            val tx = transaction(postBalance = 1_500_000L, notificationLogId = log.id)
+            dao.insert(tx)
+            assertEquals(tx, dao.getById("tx-1"))
+        }
+
+    @Test
+    fun `deleting the log clears the link`() =
+        runTest {
+            seedAccount()
+            dbRule.db.notificationLogDao().insert(notificationLogEntity(id = "log-1"))
+            dao.insert(transaction(postBalance = 1_500_000L, notificationLogId = "log-1"))
+            dbRule.execSql("DELETE FROM notification_logs WHERE id = 'log-1'")
+            val read = dao.getById("tx-1")
+            assertNull(read?.notificationLogId)
+            assertEquals(1_500_000L, read?.postBalance)
+        }
+
+    @Test
+    fun `insert with unknown notificationLogId fails`() =
+        runTest {
+            seedAccount()
+            val message = failureMessage { dao.insert(transaction(notificationLogId = "missing")) }
+            assertTrue(message, message.contains("FOREIGN KEY constraint failed"))
         }
 
     @Test

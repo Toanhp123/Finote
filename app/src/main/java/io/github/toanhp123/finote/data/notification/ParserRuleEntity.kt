@@ -23,4 +23,6 @@ data class ParserRuleEntity(
     val dateFormatPattern: String?,
     val isActive: Boolean,
     val updatedAt: Long,
+    /** `AccountType.name` of the account this rule's notifications belong to. Null means `BANK`. */
+    val accountType: String?,
 )

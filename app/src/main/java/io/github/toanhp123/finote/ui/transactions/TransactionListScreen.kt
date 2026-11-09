@@ -40,6 +40,7 @@ import io.github.toanhp123.finote.ui.common.format.displayName
 import io.github.toanhp123.finote.ui.common.format.iconRes
 import io.github.toanhp123.finote.ui.common.rememberNotificationListenerEnabled
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
+import io.github.toanhp123.finote.ui.transactions.component.BalanceDriftBanner
 import io.github.toanhp123.finote.ui.transactions.component.DayLabel
 import io.github.toanhp123.finote.ui.transactions.component.ListenerOffBanner
 import io.github.toanhp123.finote.ui.transactions.component.ReimbursementSheet
@@ -88,6 +89,7 @@ fun TransactionListScreen(
                 modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg, vertical = FinoteTheme.spacing.sm),
             )
         }
+        DriftBanners(state, onIntent)
         if (state.isLoading) {
             LoadingRows()
         } else {
@@ -116,6 +118,23 @@ fun TransactionListScreen(
         onPick = { onIntent(TransactionListIntent.ReimbursementPicked(it)) },
         onDismiss = { onIntent(TransactionListIntent.SheetDismissed) },
     )
+}
+
+@Composable
+private fun DriftBanners(
+    state: TransactionListState,
+    onIntent: (TransactionListIntent) -> Unit,
+) {
+    val resources = LocalResources.current
+    state.drifts.forEach { drift ->
+        val account = state.accountsById[drift.accountId] ?: return@forEach
+        BalanceDriftBanner(
+            accountName = resources.displayName(account.name, account.nameKey),
+            difference = drift.difference,
+            onAdjust = { onIntent(TransactionListIntent.AdjustDrift(drift.accountId)) },
+            modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg, vertical = FinoteTheme.spacing.sm),
+        )
+    }
 }
 
 @StringRes

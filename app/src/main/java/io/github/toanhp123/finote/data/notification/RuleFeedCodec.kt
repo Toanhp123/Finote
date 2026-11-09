@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.data.notification
 
+import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RuleFeedError
 import io.github.toanhp123.finote.domain.notification.model.RuleFeedException
@@ -42,6 +43,7 @@ private class RuleDto(
     val fallbackTransactionType: String?,
     val dateFormatPattern: String?,
     val isActive: Boolean,
+    val accountType: String? = null,
 )
 
 // The payload is signed, so extra fields are trusted; an additive field must not make old installs reject the feed.
@@ -138,6 +140,8 @@ private fun RuleDto.toRule(): ParserRule {
     if (fallbackTransactionType != null && fallback != TransactionType.INCOME && fallback != TransactionType.EXPENSE) {
         invalid("bad_rule")
     }
+    // An unknown value (a newer feed) falls back to BANK (null) instead of rejecting the whole feed.
+    val type = accountType?.let { name -> AccountType.entries.firstOrNull { it.name == name } }
     checkRegex(fallback)
     return ParserRule(
         id = id,
@@ -153,5 +157,6 @@ private fun RuleDto.toRule(): ParserRule {
         dateFormatPattern = dateFormatPattern,
         isActive = isActive,
         updatedAt = 0L,
+        accountType = type,
     )
 }

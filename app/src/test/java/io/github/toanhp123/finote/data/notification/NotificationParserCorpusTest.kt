@@ -11,6 +11,7 @@ import io.github.toanhp123.finote.domain.notification.model.RawNotification
 import io.github.toanhp123.finote.domain.notification.parseNotification
 import io.github.toanhp123.finote.domain.notification.usecase.CaptureNotificationUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.FakeNotificationCaptureRepository
+import io.github.toanhp123.finote.domain.notification.usecase.FakeSettleScheduler
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -51,7 +52,7 @@ class NotificationParserCorpusTest {
     ): Pair<CaptureResult, NotificationLog> {
         val repo = FakeNotificationCaptureRepository(SystemParserRules.mapNotNull { it.toDomain() })
         val raw = RawNotification(item.packageName, item.channelId, item.title, text, item.postTime)
-        val result = CaptureNotificationUseCase(repo, clock, UnconfinedTestDispatcher())(raw)
+        val result = CaptureNotificationUseCase(repo, clock, UnconfinedTestDispatcher(), FakeSettleScheduler())(raw)
         return result to repo.logs.single()
     }
 

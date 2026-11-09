@@ -5,11 +5,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
+import io.github.toanhp123.finote.domain.account.usecase.ObserveBalanceDriftUseCase
 import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.ReconcileBalanceUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
@@ -27,6 +29,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TransactionListViewModel
+    @Suppress("LongParameterList") // why: Hilt injects one collaborator per use case; grouping them would hide the deps
     @Inject
     constructor(
         private val savedStateHandle: SavedStateHandle,
@@ -34,6 +37,8 @@ class TransactionListViewModel
         accountRepository: AccountRepository,
         categoryRepository: CategoryRepository,
         private val updateTransaction: UpdateTransactionUseCase,
+        observeDrifts: ObserveBalanceDriftUseCase,
+        private val reconcileBalance: ReconcileBalanceUseCase,
         private val clock: Clock,
     ) : BaseViewModel<TransactionListState, TransactionListIntent, TransactionListEffect>(
             TransactionListState(today = LocalDate.now(clock)),
@@ -96,6 +101,15 @@ class TransactionListViewModel
             }
         }
 
+        init {
+            // A failed drift flow only hides the banner; the list has its own error state.
+            viewModelScope.launch {
+                observeDrifts()
+                    .catch { emit(emptyList()) }
+                    .collect { setState { copy(drifts = it) } }
+            }
+        }
+
         override fun onIntent(intent: TransactionListIntent) {
             when (intent) {
                 is TransactionListIntent.SelectAccount -> {
@@ -118,6 +132,10 @@ class TransactionListViewModel
 
                 TransactionListIntent.SheetDismissed -> {
                     setState { copy(editingId = null, hasSaveError = false) }
+                }
+
+                is TransactionListIntent.AdjustDrift -> {
+                    adjust(intent.accountId)
                 }
             }
         }
@@ -146,6 +164,21 @@ class TransactionListViewModel
                 setState { copy(editingId = null, hasSaveError = false) }
             } else {
                 write(updated)
+            }
+        }
+
+        // The drift flow re-emits once the adjustment lands, which removes the banner.
+        private fun adjust(accountId: String) {
+            val drift = state.value.drifts.firstOrNull { it.accountId == accountId } ?: return
+            val account = state.value.accountsById[accountId] ?: return
+            viewModelScope.launch {
+                try {
+                    reconcileBalance(accountId, Math.addExact(account.currentBalance, drift.difference))
+                } catch (_: IllegalArgumentException) {
+                    // The banner stays, so the user can tap again.
+                } catch (_: SQLException) {
+                    // Same: no message is logged because the content is financial data.
+                }
             }
         }
 

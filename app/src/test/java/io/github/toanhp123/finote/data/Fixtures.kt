@@ -12,6 +12,8 @@ import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 
+// why: test fixture with one named default per entity field the tests vary.
+@Suppress("LongParameterList")
 fun account(
     id: String = "acc-1",
     name: String = "Test account",
@@ -19,6 +21,8 @@ fun account(
     currentBalance: Long = 1_000_000L,
     sortOrder: Int = 0,
     deletedAt: Long? = null,
+    bankPackageName: String? = null,
+    accountNumberMask: String? = null,
 ): AccountEntity =
     AccountEntity(
         id = id,
@@ -37,6 +41,8 @@ fun account(
         createdAt = 1_700_000_000_000L,
         updatedAt = 1_700_000_000_000L,
         deletedAt = deletedAt,
+        bankPackageName = bankPackageName,
+        accountNumberMask = accountNumberMask,
     )
 
 fun category(
@@ -81,6 +87,8 @@ fun snapshot(
         updatedAt = 1_700_000_000_000L,
     )
 
+// why: test fixture with one named default per entity field the tests vary.
+@Suppress("LongParameterList")
 fun transaction(
     id: String = "tx-1",
     accountId: String = "acc-1",
@@ -88,6 +96,8 @@ fun transaction(
     categoryId: String? = null,
     type: TransactionType = TransactionType.EXPENSE,
     timestamp: Long = 1_700_000_000_000L,
+    postBalance: Long? = null,
+    notificationLogId: String? = null,
 ): TransactionEntity =
     TransactionEntity(
         id = id,
@@ -107,6 +117,8 @@ fun transaction(
         createdAt = 1_700_000_000_000L,
         updatedAt = 1_700_000_000_000L,
         deletedAt = null,
+        postBalance = postBalance,
+        notificationLogId = notificationLogId,
     )
 
 fun tag(

@@ -23,4 +23,8 @@ data class Account(
     val createdAt: Long,
     val updatedAt: Long,
     val deletedAt: Long?,
+    /** Package of the bank or wallet app that feeds this account; with [accountNumberMask] it is the match key. */
+    val bankPackageName: String? = null,
+    /** Last four digits of the account number, as the notifications show them. */
+    val accountNumberMask: String? = null,
 )

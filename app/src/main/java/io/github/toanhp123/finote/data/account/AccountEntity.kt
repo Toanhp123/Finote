@@ -2,10 +2,11 @@ package io.github.toanhp123.finote.data.account
 
 import androidx.room3.ColumnInfo
 import androidx.room3.Entity
+import androidx.room3.Index
 import androidx.room3.PrimaryKey
 import io.github.toanhp123.finote.domain.account.model.AccountType
 
-@Entity(tableName = "accounts")
+@Entity(tableName = "accounts", indices = [Index(value = ["bankPackageName", "accountNumberMask"])])
 data class AccountEntity(
     @PrimaryKey val id: String,
     val name: String,
@@ -25,4 +26,8 @@ data class AccountEntity(
     val createdAt: Long,
     val updatedAt: Long,
     val deletedAt: Long?,
+    /** Package of the bank or wallet app that feeds this account; with [accountNumberMask] it is the match key. */
+    val bankPackageName: String?,
+    /** Last four digits of the account number, as the notifications show them. */
+    val accountNumberMask: String?,
 )
