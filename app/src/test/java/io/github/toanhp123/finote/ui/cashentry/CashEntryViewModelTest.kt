@@ -1,19 +1,23 @@
 package io.github.toanhp123.finote.ui.cashentry
 
-import android.database.SQLException
-import androidx.sqlite.SQLiteException
 import app.cash.turbine.test
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.account.usecase.FakeAccountRepository
+import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
+import io.github.toanhp123.finote.domain.account.usecase.ObserveUsableAccountsUseCase
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.category.testCategory
 import io.github.toanhp123.finote.domain.category.usecase.FakeCategoryRepository
+import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
+import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
+import io.github.toanhp123.finote.domain.transaction.usecase.AddManualTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.AddTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
+import io.github.toanhp123.finote.domain.transaction.usecase.GetLastManualChoicesUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ValidateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,7 +61,13 @@ class CashEntryViewModelTest {
 
     private fun TestScope.open(repo: TransactionRepository = transactions): CashEntryViewModel {
         val add = AddTransactionUseCase(repo, ValidateTransactionUseCase(repo, clock), clock)
-        return CashEntryViewModel(accounts, categories, repo, add, clock).also { runCurrent() }
+        return CashEntryViewModel(
+            ObserveUsableAccountsUseCase(ObserveAccountsUseCase(accounts)),
+            ObserveCategoriesUseCase(categories),
+            GetLastManualChoicesUseCase(repo),
+            AddManualTransactionUseCase(add, clock),
+            clock,
+        ).also { runCurrent() }
     }
 
     private fun CashEntryViewModel.press(vararg keys: CalcKey) =
@@ -307,25 +317,36 @@ class CashEntryViewModelTest {
         }
 
     @Test
-    fun `database failure keeps input and shows error`() =
+    fun `storage failure on save shows save error`() =
         runTest(mainRule.dispatcher) {
             seed()
-            listOf(SQLiteException("disk"), SQLException("disk")).forEach { error ->
-                val failing = FailingAddRepository(error, FakeTransactionRepository(activeAccounts = setOf(CASH)))
-                val viewModel = open(failing)
-                viewModel.press(CalcKey.D7, CalcKey.D0)
+            val failing =
+                FailingAddRepository(StorageException(RuntimeException("disk")), FakeTransactionRepository(setOf(CASH)))
+            val viewModel = open(failing)
+            viewModel.press(CalcKey.D7, CalcKey.D0)
 
-                viewModel.onIntent(CashEntryIntent.SaveClicked)
-                runCurrent()
+            viewModel.onIntent(CashEntryIntent.SaveClicked)
+            runCurrent()
 
-                assertTrue(viewModel.current.hasSaveError)
-                assertFalse(viewModel.current.isSaving)
-                assertEquals("70", viewModel.current.expression)
-                viewModel.effects.test {
-                    expectNoEvents()
-                    cancelAndIgnoreRemainingEvents()
-                }
+            assertTrue(viewModel.current.hasSaveError)
+            assertFalse(viewModel.current.isSaving)
+            assertEquals("70", viewModel.current.expression)
+            viewModel.effects.test {
+                expectNoEvents()
+                cancelAndIgnoreRemainingEvents()
             }
+        }
+
+    @Test
+    fun `failing last-choice read leaves empty lists and save disabled`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            transactions.failLastChoice = StorageException(RuntimeException("disk"))
+            val viewModel = open()
+            viewModel.press(CalcKey.D5)
+
+            assertTrue(viewModel.current.accounts.isEmpty())
+            assertFalse(viewModel.current.isSaveEnabled)
         }
 
     @Test

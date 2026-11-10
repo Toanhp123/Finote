@@ -12,8 +12,8 @@ import kotlinx.coroutines.flow.Flow
 interface TransactionRepository {
     suspend fun getTransaction(id: String): Transaction?
 
-    /** The subset of [accountIds] that exist and are neither soft-deleted nor archived. */
-    suspend fun getActiveAccountIds(accountIds: Set<String>): Set<String>
+    /** The subset of [accountIds] that exist and are usable: not soft-deleted, archived or ignored. */
+    suspend fun getUsableAccountIds(accountIds: Set<String>): Set<String>
 
     /** Null when the category does not exist. */
     suspend fun getCategoryType(categoryId: String): CategoryType?

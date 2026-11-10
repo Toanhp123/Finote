@@ -18,8 +18,8 @@ class UpdateTransactionUseCase
             require(existing != null && existing.deletedAt == null) { "transaction does not exist or is deleted" }
             val old = setOfNotNull(existing.accountId, existing.toAccountId)
             require(
-                repository.getActiveAccountIds(old).containsAll(old),
-            ) { "account does not exist, is deleted or archived" }
+                repository.getUsableAccountIds(old).containsAll(old),
+            ) { "account does not exist, is deleted, archived or ignored" }
             val updated =
                 transaction.copy(deletedAt = null, createdAt = existing.createdAt, updatedAt = clock.millis())
             validate(updated)

@@ -1,12 +1,13 @@
 package io.github.toanhp123.finote.ui.transactions
 
-import android.database.SQLException
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.toanhp123.finote.domain.account.repository.AccountRepository
+import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveBalanceDriftUseCase
-import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
+import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
+import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
@@ -34,8 +35,8 @@ class TransactionListViewModel
     constructor(
         private val savedStateHandle: SavedStateHandle,
         observeList: ObserveTransactionListUseCase,
-        accountRepository: AccountRepository,
-        categoryRepository: CategoryRepository,
+        observeAccounts: ObserveAccountsUseCase,
+        observeCategories: ObserveCategoriesUseCase,
         private val updateTransaction: UpdateTransactionUseCase,
         observeDrifts: ObserveBalanceDriftUseCase,
         private val adjustBalanceDrift: AdjustBalanceDriftUseCase,
@@ -63,8 +64,8 @@ class TransactionListViewModel
             viewModelScope.launch {
                 combine(
                     listing,
-                    accountRepository.observeAccounts(),
-                    categoryRepository.observeCategories(),
+                    observeAccounts(),
+                    observeCategories(),
                 ) { l, a, c ->
                     Triple(l, a, c)
                 }.catch {
@@ -73,7 +74,7 @@ class TransactionListViewModel
                     setState { copy(isLoading = false, hasError = true, editingId = null, hasSaveError = false) }
                 }.collect { (list, accountList, categoryList) ->
                     val id = list.accountId
-                    val chips = accountList.filter { !it.isArchived && !it.isIgnored }.sortedBy { it.sortOrder }
+                    val chips = accountList.filter(Account::isUsable)
                     if (id != null && chips.none { it.id == id }) {
                         // The chosen account is gone; days of the stale choice are dropped, `days` re-runs for all.
                         savedStateHandle[SELECTED_ACCOUNT_KEY] = null
@@ -176,7 +177,7 @@ class TransactionListViewModel
                     // The banner stays, so the user can tap again.
                 } catch (_: ArithmeticException) {
                     // A drift too large to book (Long overflow); the banner stays.
-                } catch (_: SQLException) {
+                } catch (_: StorageException) {
                     // Same: no message is logged because the content is financial data.
                 }
             }
@@ -192,7 +193,7 @@ class TransactionListViewModel
                         setState { copy(editingId = null, hasSaveError = false) }
                     } catch (_: IllegalArgumentException) {
                         setState { copy(hasSaveError = true) }
-                    } catch (_: SQLException) {
+                    } catch (_: StorageException) {
                         setState { copy(hasSaveError = true) }
                     }
                 }

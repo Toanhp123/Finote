@@ -14,15 +14,19 @@ class UpdateAccountUseCaseTest {
     private val repo = FakeAccountRepository()
     private val update = UpdateAccountUseCase(repo, ValidateAccountUseCase(), Clock.fixed(now, ZoneOffset.UTC))
 
+    init {
+        repo.stored["acc-1"] = testAccount()
+    }
+
     @Test
-    fun `updatedAt is stamped and isInitialized becomes true`() =
+    fun `updatedAt is stamped and isInitialized is unchanged`() =
         runTest {
             update(testAccount(name = "Renamed").copy(updatedAt = 2L, isInitialized = false))
 
             val saved = repo.stored.getValue("acc-1")
             assertEquals("Renamed", saved.name)
             assertEquals(now.toEpochMilli(), saved.updatedAt)
-            assertEquals(true, saved.isInitialized)
+            assertEquals(false, repo.lastUpdateArg?.isInitialized)
         }
 
     @Test
@@ -41,6 +45,6 @@ class UpdateAccountUseCaseTest {
         runTest {
             update(testAccount(initialBalance = -300_000L))
 
-            assertEquals(-300_000L, repo.stored.getValue("acc-1").initialBalance)
+            assertEquals(1, repo.writes)
         }
 }

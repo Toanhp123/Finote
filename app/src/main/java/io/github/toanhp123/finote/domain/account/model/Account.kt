@@ -31,4 +31,7 @@ data class Account(
     val mergedIntoId: String? = null,
     /** True when notifications for this account are dropped instead of recorded. */
     val isIgnored: Boolean = false,
-)
+) {
+    /** Live, not archived, not ignored: the account can take new or edited transactions and shows in pickers. */
+    val isUsable: Boolean get() = deletedAt == null && !isArchived && !isIgnored
+}

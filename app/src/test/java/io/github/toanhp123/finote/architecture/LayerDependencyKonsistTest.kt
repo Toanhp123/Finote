@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.architecture
 
+import com.lemonappdev.konsist.api.ext.list.classes
 import com.lemonappdev.konsist.api.verify.assertTrue
 import org.junit.Test
 
@@ -54,6 +55,30 @@ class LayerDependencyKonsistTest {
         val testName = "ui common does not import ui features"
         filesIn(UI_COMMON).assertNoImports(testName) { isUiFeature(it.name) }
         filesIn(UI_COMMON).assertNoQualifiedNames("$testName, fully qualified", isUiFeature)
+    }
+
+    @Test
+    fun `view models do not use repositories`() {
+        val testName = "view models do not use repositories"
+        productionFiles
+            .filter { it.name.endsWith("ViewModel") }
+            .assertNoImports(testName) { it.name.hasSegment("repository") }
+        productionFiles
+            .classes(includeNested = false, includeLocal = false)
+            .filter { it.name.endsWith("ViewModel") }
+            .assertTrue(strict = false, testName = "$testName, constructor") { viewModel ->
+                viewModel.primaryConstructor
+                    ?.parameters
+                    .orEmpty()
+                    .none { it.type.name.endsWith("Repository") }
+            }
+    }
+
+    @Test
+    fun `ui does not use the database`() {
+        filesIn(UI).assertNoImports("ui does not use the database") {
+            it.isFrom("android.database") || it.isFrom("androidx.sqlite")
+        }
     }
 
     @Test

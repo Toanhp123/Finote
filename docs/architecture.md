@@ -52,7 +52,7 @@ ui/<feature>/
 
 A new feature follows this shape. Shared components are grouped by role in `ui/common/component/<group>/` (docs/design-system.md). Theme colors are in `ui/common/theme/color/`.
 
-UI flow is MVI: Screen sends `Intent`, ViewModel calls a use case, ViewModel emits `State` and `Effect`, Screen draws.
+UI flow is MVI: Screen sends `Intent`, ViewModel calls use cases (reads included), ViewModel emits `State` and `Effect`, Screen draws.
 
 ## Naming and roles
 
@@ -67,7 +67,7 @@ UI flow is MVI: Screen sends `Intent`, ViewModel calls a use case, ViewModel emi
 | Entity, DAO | `TransactionEntity`, `TransactionDao` | `data/<f>` | Schema, queries |
 | Mapper | `TransactionMapper.kt` | `data/<f>` | Only `toDomain()` and `toEntity()` extensions |
 | Contract | `TransactionListContract.kt` | `ui/<f>` | Declare `State`, `Intent`, `Effect` |
-| ViewModel | `TransactionListViewModel` | `ui/<f>` | Take intents, call use cases, emit state |
+| ViewModel | `TransactionListViewModel` | `ui/<f>` | Take intents, call use cases, emit state. Never a repository |
 | Screen | `TransactionListScreen` | `ui/<f>` | Draw state. No use case calls |
 | Worker | `TrashPurgeWorker` | `work` | Call a use case |
 | DI | `DatabaseModule` | `di` | Bindings only |

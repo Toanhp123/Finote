@@ -5,6 +5,7 @@ import io.github.toanhp123.finote.data.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.account
 import io.github.toanhp123.finote.data.transaction.TransactionRepositoryImpl
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.flow.first
@@ -114,35 +115,43 @@ class AccountRepositoryImplTest {
         }
 
     @Test
-    fun `changing initialBalance rebuilds balance and every snapshot`() =
+    fun `update keeps type, currency, bank key, mask and initial balance`() =
         runTest {
-            repo.add(domainAccount())
+            dbRule.db.accountDao().insert(account(bankPackageName = "com.bank", accountNumberMask = "1234"))
             transactions.add(domainTx())
-            transactions.add(income50kInOctober())
+            val before = checkNotNull(rowOf("acc-1"))
 
-            repo.update(domainAccount(initialBalance = 2_000_000L))
-
-            assertEquals(1_850_000L, rowOf("acc-1")?.currentBalance)
-            assertEquals(
-                listOf(
-                    Triple("2026-09", 2_000_000L, 1_800_000L),
-                    Triple("2026-10", 1_800_000L, 1_850_000L),
-                    Triple("2026-11", 1_850_000L, 1_850_000L),
+            repo.update(
+                checkNotNull(repo.getAccount("acc-1")).copy(
+                    name = "Renamed",
+                    color = 5,
+                    type = AccountType.WALLET,
+                    currency = "USD",
+                    bankPackageName = "com.other",
+                    accountNumberMask = "9999",
+                    initialBalance = 2_000_000L,
                 ),
-                snapshotsOf("acc-1").map { Triple(it.monthYear, it.openingBalance, it.closingBalance) },
             )
+
+            val after = checkNotNull(rowOf("acc-1"))
+            assertEquals("Renamed", after.name)
+            assertEquals(5, after.color)
+            assertEquals(before.type, after.type)
+            assertEquals(before.currency, after.currency)
+            assertEquals(before.bankPackageName, after.bankPackageName)
+            assertEquals(before.accountNumberMask, after.accountNumberMask)
+            assertEquals(before.initialBalance, after.initialBalance)
+            assertEquals(before.currentBalance, after.currentBalance)
         }
 
     @Test
-    fun `changing initialBalance without transactions sets the balance and writes no snapshot`() =
+    fun `update keeps an uninitialized account uninitialized`() =
         runTest {
-            repo.add(domainAccount())
+            dbRule.db.accountDao().insert(account().copy(isInitialized = false))
 
-            repo.update(domainAccount(initialBalance = 2_000_000L))
+            repo.update(checkNotNull(repo.getAccount("acc-1")).copy(name = "Renamed", isInitialized = true))
 
-            assertEquals(2_000_000L, rowOf("acc-1")?.currentBalance)
-            assertEquals(2_000_000L, rowOf("acc-1")?.initialBalance)
-            assertTrue(snapshotsOf("acc-1").isEmpty())
+            assertEquals(false, rowOf("acc-1")?.isInitialized)
         }
 
     @Test
@@ -278,22 +287,6 @@ class AccountRepositoryImplTest {
             assertEquals(5L, rowOf("acc-1")?.deletedAt)
             assertEquals(5L, rowOf("acc-1")?.updatedAt)
             assertTrue(failureOf { repo.softDelete("ghost", deletedAt = 9L) } is IllegalArgumentException)
-        }
-
-    @Test
-    fun `failed rebuild rolls back the account row`() =
-        runTest {
-            repo.add(domainAccount())
-            transactions.add(domainTx(type = TransactionType.INCOME, amount = 50_000L))
-            val rowBefore = rowOf("acc-1")
-            val snapshotsBefore = snapshotsOf("acc-1")
-
-            val failure =
-                failureOf { repo.update(domainAccount(initialBalance = Long.MAX_VALUE).copy(name = "Renamed")) }
-
-            assertTrue(failure.toString(), failure is ArithmeticException)
-            assertEquals(rowBefore, rowOf("acc-1"))
-            assertEquals(snapshotsBefore, snapshotsOf("acc-1"))
         }
 
     @Test

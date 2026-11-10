@@ -5,8 +5,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountMergeRejectedException
 import io.github.toanhp123.finote.domain.account.model.MergeRejection
-import io.github.toanhp123.finote.domain.account.repository.AccountRepository
+import io.github.toanhp123.finote.domain.account.usecase.CountMergeMovesUseCase
+import io.github.toanhp123.finote.domain.account.usecase.CountTrashableTransactionsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.MergeAccountsUseCase
+import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.SetAccountIgnoredUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import kotlinx.coroutines.CancellationException
@@ -18,14 +20,15 @@ import javax.inject.Inject
 class AccountsSettingsViewModel
     @Inject
     constructor(
-        private val accounts: AccountRepository,
+        observeAccounts: ObserveAccountsUseCase,
+        private val countMergeMoves: CountMergeMovesUseCase,
+        private val countTrashable: CountTrashableTransactionsUseCase,
         private val mergeAccounts: MergeAccountsUseCase,
         private val setIgnored: SetAccountIgnoredUseCase,
     ) : BaseViewModel<AccountsSettingsState, AccountsSettingsIntent, AccountsSettingsEffect>(AccountsSettingsState()) {
         init {
             viewModelScope.launch {
-                accounts
-                    .observeAccounts()
+                observeAccounts()
                     .catch {
                         // The list keeps its last state. Nothing is logged: accounts and balances are private.
                     }.collect { list ->
@@ -88,7 +91,7 @@ class AccountsSettingsViewModel
             val target = state.value.mergeTargets.firstOrNull { it.id == targetId } ?: return
             viewModelScope.launch {
                 var count = 0
-                val failure = failureOf { count = accounts.getLiveTransactionCount(source.id) }
+                val failure = failureOf { count = countMergeMoves(source.id) }
                 if (failure != null) return@launch sendEffect(failure)
                 // The sheet may have closed while the count loaded.
                 if (state.value.selected?.id != source.id) return@launch
@@ -105,7 +108,7 @@ class AccountsSettingsViewModel
             val account = state.value.selected ?: return
             viewModelScope.launch {
                 var count = 0
-                val failure = failureOf { count = accounts.getTrashableTransactionCount(account.id) }
+                val failure = failureOf { count = countTrashable(account.id) }
                 if (failure != null) return@launch sendEffect(failure)
                 if (state.value.selected?.id != account.id) return@launch
                 setState { copy(isIgnoreDialogOpen = true, trashableCount = count) }

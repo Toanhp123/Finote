@@ -6,8 +6,11 @@ import io.github.toanhp123.finote.domain.account.model.AccountMergeRejectedExcep
 import io.github.toanhp123.finote.domain.account.model.MergeRejection
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.account.testAccount
+import io.github.toanhp123.finote.domain.account.usecase.CountMergeMovesUseCase
+import io.github.toanhp123.finote.domain.account.usecase.CountTrashableTransactionsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.FakeAccountRepository
 import io.github.toanhp123.finote.domain.account.usecase.MergeAccountsUseCase
+import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.SetAccountIgnoredUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,7 +60,13 @@ class AccountsSettingsViewModelTest {
         seed: FakeAccountRepository? = repo as? FakeAccountRepository,
     ): AccountsSettingsViewModel {
         seed?.let { fake -> accounts.forEach { fake.stored[it.id] = it } }
-        return AccountsSettingsViewModel(repo, MergeAccountsUseCase(repo, clock), SetAccountIgnoredUseCase(repo, clock))
+        return AccountsSettingsViewModel(
+            ObserveAccountsUseCase(repo),
+            CountMergeMovesUseCase(repo),
+            CountTrashableTransactionsUseCase(repo),
+            MergeAccountsUseCase(repo, clock),
+            SetAccountIgnoredUseCase(repo, clock),
+        )
     }
 
     @Test

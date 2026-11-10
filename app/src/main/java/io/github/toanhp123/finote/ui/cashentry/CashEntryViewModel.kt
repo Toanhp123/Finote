@@ -1,49 +1,53 @@
 package io.github.toanhp123.finote.ui.cashentry
 
-import android.database.SQLException
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.toanhp123.finote.domain.account.model.Account
-import io.github.toanhp123.finote.domain.account.repository.AccountRepository
+import io.github.toanhp123.finote.domain.account.usecase.ObserveUsableAccountsUseCase
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
-import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
-import io.github.toanhp123.finote.domain.transaction.model.Transaction
-import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
+import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
+import io.github.toanhp123.finote.domain.common.StorageException
+import io.github.toanhp123.finote.domain.transaction.model.ManualChoices
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
-import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
-import io.github.toanhp123.finote.domain.transaction.usecase.AddTransactionUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.AddManualTransactionUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.GetLastManualChoicesUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
 class CashEntryViewModel
     @Inject
     constructor(
-        private val accounts: AccountRepository,
-        private val categories: CategoryRepository,
-        private val transactions: TransactionRepository,
-        private val addTransaction: AddTransactionUseCase,
+        private val observeUsableAccounts: ObserveUsableAccountsUseCase,
+        private val observeCategories: ObserveCategoriesUseCase,
+        private val getLastManualChoices: GetLastManualChoicesUseCase,
+        private val addManualTransaction: AddManualTransactionUseCase,
         private val clock: Clock,
     ) : BaseViewModel<CashEntryState, CashEntryIntent, CashEntryEffect>(
             CashEntryState(date = LocalDate.now(clock)),
         ) {
         private var lastAccountId: String? = null
+        private var isSeeded = false
         private var allCategories: List<Category> = emptyList()
 
         init {
             viewModelScope.launch {
-                lastAccountId = transactions.getLastManualAccountId()
-                // Seed the choices with the last used ids; every emission below validates them.
-                val lastCategoryIds = CATEGORY_TYPES.associateWith { transactions.getLastManualCategoryId(it) }
-                setState { copy(selectedCategoryIds = lastCategoryIds) }
-                combine(accounts.observeAccounts(), categories.observeCategories()) { a, c -> a to c }
-                    .collect { (a, c) -> onLists(a, c) }
+                // The last-choice read is inside the flow, so a failure reaches catch; the lists then stay empty.
+                combine(
+                    flow { emit(getLastManualChoices()) },
+                    observeUsableAccounts(),
+                    observeCategories(),
+                ) { choices, a, c -> Triple(choices, a, c) }
+                    .catch {
+                        // Save stays disabled with no accounts. Nothing is logged: accounts and notes are private.
+                    }.collect { (choices, a, c) -> onLists(choices, a, c) }
             }
         }
 
@@ -109,25 +113,26 @@ class CashEntryViewModel
             }
 
         private fun onLists(
+            choices: ManualChoices,
             accountList: List<Account>,
             categoryList: List<Category>,
         ) {
             allCategories = categoryList
-            val live =
-                accountList
-                    .filter {
-                        it.deletedAt == null && !it.isArchived && !it.isIgnored
-                    }.sortedBy { it.sortOrder }
+            lastAccountId = choices.accountId
+            // Seed with the last used ids on the first value only; every value validates them.
+            val seed = !isSeeded
+            isSeeded = true
             setState {
+                val chosen = if (seed) choices.categoryIds else selectedCategoryIds
                 val account =
-                    selectedAccountId?.takeIf { id -> live.any { it.id == id } }
+                    selectedAccountId?.takeIf { id -> accountList.any { it.id == id } }
                         ?: CashEntryDefaults.pickAccount(accountList, lastAccountId)
                 val kept =
                     CATEGORY_TYPES.associateWith {
-                        CashEntryDefaults.pickCategory(categoryList, selectedCategoryIds[it], it.toCategoryType())
+                        CashEntryDefaults.pickCategory(categoryList, chosen[it], it.toCategoryType())
                     }
                 copy(
-                    accounts = live,
+                    accounts = accountList,
                     selectedAccountId = account,
                     selectedCategoryIds = kept,
                     categories = visible(type),
@@ -146,54 +151,30 @@ class CashEntryViewModel
             val accountId = s.selectedAccountId
             if (!s.isSaveEnabled || amount == null || accountId == null) return
             setState { copy(isSaving = true, hasSaveError = false) }
-            val transaction =
-                Transaction(
-                    id = UUID.randomUUID().toString(),
-                    amount = amount,
-                    feeAmount = 0,
-                    type = s.type,
-                    adjustmentDirection = null,
-                    accountId = accountId,
-                    toAccountId = null,
-                    timestamp = timestampOf(s.date),
-                    deletedAt = null,
-                    createdAt = 0,
-                    updatedAt = 0,
-                    categoryId = s.selectedCategoryIds[s.type],
-                    note = s.note.trim(),
-                    source = TransactionSource.MANUAL,
-                )
             viewModelScope.launch {
                 try {
-                    addTransaction(transaction)
+                    addManualTransaction(
+                        amount = amount,
+                        type = s.type,
+                        accountId = accountId,
+                        categoryId = s.selectedCategoryIds[s.type],
+                        date = s.date,
+                        note = s.note,
+                    )
                     sendEffect(CashEntryEffect.Close)
                 } catch (_: IllegalArgumentException) {
                     setState { copy(isSaving = false, hasSaveError = true) }
-                } catch (_: SQLException) {
-                    // androidx.sqlite.SQLiteException is an alias of this type on Android.
+                } catch (_: StorageException) {
                     setState { copy(isSaving = false, hasSaveError = true) }
                 }
             }
         }
-
-        /** Today keeps the current time of day; another day is noon local time. */
-        private fun timestampOf(date: LocalDate): Long =
-            if (date == LocalDate.now(clock)) {
-                clock.millis()
-            } else {
-                date
-                    .atTime(NOON, 0)
-                    .atZone(clock.zone)
-                    .toInstant()
-                    .toEpochMilli()
-            }
 
         private fun TransactionType.toCategoryType() =
             if (this == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
 
         companion object {
             const val MAX_NOTE_LENGTH = 200
-            private const val NOON = 12
             private val CATEGORY_TYPES = listOf(TransactionType.EXPENSE, TransactionType.INCOME)
         }
     }

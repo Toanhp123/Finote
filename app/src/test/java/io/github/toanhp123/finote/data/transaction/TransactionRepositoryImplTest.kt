@@ -465,7 +465,7 @@ class TransactionRepositoryImplTest {
             archive("acc-1")
             val failure = failureOf { repo.add(domainTx()) }
             assertTrue(failure.toString(), failure is IllegalArgumentException)
-            assertEquals("account does not exist, is deleted or archived", failure?.message)
+            assertEquals("account does not exist, is deleted, archived or ignored", failure?.message)
             assertNull(dbRule.db.transactionDao().getById("tx-1"))
             assertFlat("acc-1")
         }
@@ -511,17 +511,17 @@ class TransactionRepositoryImplTest {
         }
 
     @Test
-    fun `active account ids skip archived accounts`() =
+    fun `usable account ids skip archived accounts`() =
         runTest {
             archive("acc-2")
-            assertEquals(setOf("acc-1"), repo.getActiveAccountIds(setOf("acc-1", "acc-2")))
+            assertEquals(setOf("acc-1"), repo.getUsableAccountIds(setOf("acc-1", "acc-2")))
         }
 
     @Test
-    fun `active account ids skip deleted and unknown accounts`() =
+    fun `usable account ids skip deleted and unknown accounts`() =
         runTest {
             dbRule.db.accountDao().insert(account(id = "acc-gone", deletedAt = 1L))
-            val active = repo.getActiveAccountIds(setOf("acc-1", "acc-gone", "ghost"))
+            val active = repo.getUsableAccountIds(setOf("acc-1", "acc-gone", "ghost"))
             assertEquals(setOf("acc-1"), active)
         }
 
@@ -655,7 +655,7 @@ class TransactionRepositoryImplTest {
             listOf("arch", "gone", "missing").forEach { id ->
                 val failure = failureOf { repo.reconcile("adj-$id", id, 1L, clock.millis()) }
                 assertTrue(failure.toString(), failure is IllegalArgumentException)
-                assertEquals("account does not exist, is deleted or archived", failure?.message)
+                assertEquals("account does not exist, is deleted, archived or ignored", failure?.message)
             }
             assertEquals(0, liveTxCount())
             listOf("arch", "gone").forEach { id ->

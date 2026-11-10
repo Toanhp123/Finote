@@ -12,7 +12,7 @@ object CashEntryDefaults {
         accounts: List<Account>,
         lastUsedId: String?,
     ): String? {
-        val live = accounts.filter { it.deletedAt == null && !it.isArchived && !it.isIgnored }
+        val live = accounts.filter { it.isUsable }
         val picked =
             live.firstOrNull { it.id == lastUsedId }
                 ?: live.firstOrNull { it.id == SYSTEM_CASH_ACCOUNT_ID }

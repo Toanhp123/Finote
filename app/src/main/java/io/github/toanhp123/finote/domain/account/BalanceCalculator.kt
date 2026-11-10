@@ -63,10 +63,6 @@ object BalanceCalculator {
             .filter { it.touches(accountId) }
             .fold(Totals()) { acc, tx -> acc + tx.totalsFor(accountId) }
 
-    private fun Transaction.touches(accountId: String): Boolean =
-        deletedAt == null &&
-            (this.accountId == accountId || (type == TransactionType.TRANSFER && toAccountId == accountId))
-
     /** The fee is always charged to the source account, so it counts as expense there only. */
     private fun Transaction.totalsFor(accountId: String): Totals {
         var totals = Totals()
@@ -137,10 +133,3 @@ object BalanceCalculator {
         )
     }
 }
-
-/** Initial balance that makes the transactions end at the post balance. */
-fun BalanceCalculator.initialBalanceFor(
-    accountId: String,
-    postBalance: Long,
-    transactions: List<Transaction>,
-): Long = Math.subtractExact(postBalance, balance(accountId, 0L, transactions))

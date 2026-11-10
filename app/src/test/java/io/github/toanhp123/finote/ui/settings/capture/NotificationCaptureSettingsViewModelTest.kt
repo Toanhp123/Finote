@@ -4,9 +4,13 @@ import app.cash.turbine.test
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
+import io.github.toanhp123.finote.domain.notification.usecase.CheckRulesNowUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.FakeParserRuleRepository
 import io.github.toanhp123.finote.domain.notification.usecase.FakeRuleUpdateScheduler
 import io.github.toanhp123.finote.domain.notification.usecase.FakeRuleUpdateSettingsRepository
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveRuleCheckingUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveRuleUpdateStatusUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.SetRuleAutoUpdateUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,7 +32,13 @@ class NotificationCaptureSettingsViewModelTest {
     private val scheduler = FakeRuleUpdateScheduler()
 
     private fun viewModel() =
-        NotificationCaptureSettingsViewModel(settings, rules, scheduler, SetRuleAutoUpdateUseCase(settings, scheduler))
+        NotificationCaptureSettingsViewModel(
+            ObserveRuleUpdateStatusUseCase(settings),
+            ObserveParserRulesUseCase(rules),
+            ObserveRuleCheckingUseCase(scheduler),
+            CheckRulesNowUseCase(scheduler),
+            SetRuleAutoUpdateUseCase(settings, scheduler),
+        )
 
     private fun rule(
         id: String,

@@ -2,7 +2,6 @@ package io.github.toanhp123.finote.domain.account.usecase
 
 import io.github.toanhp123.finote.domain.account.detectBalanceDrift
 import io.github.toanhp123.finote.domain.account.model.BalanceDrift
-import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -12,18 +11,15 @@ import javax.inject.Inject
 class ObserveBalanceDriftUseCase
     @Inject
     constructor(
-        private val accountRepository: AccountRepository,
+        private val observeUsableAccounts: ObserveUsableAccountsUseCase,
         private val transactionRepository: TransactionRepository,
     ) {
-        /** One entry per live, unarchived, followed account whose balance disagrees with the bank. */
+        /** One entry per usable account whose balance disagrees with the bank, in the account order. */
         operator fun invoke(): Flow<List<BalanceDrift>> =
             combine(
-                accountRepository.observeAccounts(),
+                observeUsableAccounts(),
                 transactionRepository.observeTransactions(null),
             ) { accounts, transactions ->
-                accounts
-                    .filter { !it.isArchived && !it.isIgnored }
-                    .sortedBy { it.sortOrder }
-                    .mapNotNull { detectBalanceDrift(it, transactions) }
+                accounts.mapNotNull { detectBalanceDrift(it, transactions) }
             }
     }

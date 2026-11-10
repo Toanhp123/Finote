@@ -2,9 +2,10 @@ package io.github.toanhp123.finote.ui.settings.capture
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.toanhp123.finote.domain.notification.repository.ParserRuleRepository
-import io.github.toanhp123.finote.domain.notification.repository.RuleUpdateScheduler
-import io.github.toanhp123.finote.domain.notification.repository.RuleUpdateSettingsRepository
+import io.github.toanhp123.finote.domain.notification.usecase.CheckRulesNowUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveRuleCheckingUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveRuleUpdateStatusUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.SetRuleAutoUpdateUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import io.github.toanhp123.finote.ui.settings.summarizeBanks
@@ -17,9 +18,10 @@ import javax.inject.Inject
 class NotificationCaptureSettingsViewModel
     @Inject
     constructor(
-        settings: RuleUpdateSettingsRepository,
-        rules: ParserRuleRepository,
-        private val scheduler: RuleUpdateScheduler,
+        observeStatus: ObserveRuleUpdateStatusUseCase,
+        observeRules: ObserveParserRulesUseCase,
+        observeChecking: ObserveRuleCheckingUseCase,
+        private val checkRulesNow: CheckRulesNowUseCase,
         private val setAutoUpdate: SetRuleAutoUpdateUseCase,
     ) : BaseViewModel<
             NotificationCaptureSettingsState,
@@ -27,10 +29,11 @@ class NotificationCaptureSettingsViewModel
             NotificationCaptureSettingsEffect,
         >(NotificationCaptureSettingsState()) {
         init {
-            collectInto(settings.observeIsAutoUpdateEnabled()) { copy(isAutoUpdateEnabled = it) }
-            collectInto(settings.observeLastCheck()) { copy(lastCheck = it) }
-            collectInto(scheduler.observeIsChecking()) { copy(isChecking = it) }
-            collectInto(rules.observeRules()) { copy(banks = summarizeBanks(it)) }
+            collectInto(observeStatus()) {
+                copy(isAutoUpdateEnabled = it.isAutoUpdateEnabled, lastCheck = it.lastCheck)
+            }
+            collectInto(observeChecking()) { copy(isChecking = it) }
+            collectInto(observeRules()) { copy(banks = summarizeBanks(it)) }
         }
 
         private fun <T> collectInto(
@@ -60,7 +63,7 @@ class NotificationCaptureSettingsViewModel
                 }
 
                 NotificationCaptureSettingsIntent.CheckNowClicked -> {
-                    if (!state.value.isChecking) scheduler.checkNow()
+                    if (!state.value.isChecking) checkRulesNow()
                 }
 
                 NotificationCaptureSettingsIntent.BackClicked -> {

@@ -28,8 +28,8 @@ class ValidateTransactionUseCase
 
         private suspend fun validateAccounts(transaction: Transaction) {
             val wanted = setOfNotNull(transaction.accountId, transaction.toAccountId)
-            val active = repository.getActiveAccountIds(wanted)
-            require(active.containsAll(wanted)) { "account does not exist, is deleted or archived" }
+            val usable = repository.getUsableAccountIds(wanted)
+            require(usable.containsAll(wanted)) { "account does not exist, is deleted, archived or ignored" }
         }
 
         private suspend fun validateCategory(transaction: Transaction) {

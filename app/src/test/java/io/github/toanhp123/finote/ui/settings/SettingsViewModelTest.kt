@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.ui.settings
 import app.cash.turbine.test
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.repository.ParserRuleRepository
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -53,7 +54,7 @@ class SettingsViewModelTest {
     @Test
     fun `bank count follows rules`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(repo)
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo))
             runCurrent()
             assertEquals(0, vm.state.value.bankCount)
 
@@ -66,7 +67,7 @@ class SettingsViewModelTest {
     @Test
     fun `resumed updates access`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(repo)
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo))
 
             vm.onIntent(SettingsIntent.Resumed(isGranted = true))
             assertTrue(vm.state.value.isAccessEnabled)
@@ -78,7 +79,7 @@ class SettingsViewModelTest {
     @Test
     fun `capture click emits OpenCaptureSettings`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(repo)
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo))
 
             vm.effects.test {
                 vm.onIntent(SettingsIntent.CaptureClicked)
@@ -92,7 +93,7 @@ class SettingsViewModelTest {
     @Test
     fun `accounts click emits OpenAccountsSettings`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(repo)
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo))
 
             vm.effects.test {
                 vm.onIntent(SettingsIntent.AccountsClicked)

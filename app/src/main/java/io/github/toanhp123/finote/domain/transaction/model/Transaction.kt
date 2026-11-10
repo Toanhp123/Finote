@@ -33,4 +33,9 @@ data class Transaction(
             "only an adjustment has a direction, and it must have one"
         }
     }
+
+    /** Live, and [accountId] is its source or the destination of a transfer. Same rule as the `TransactionDao` SQL. */
+    fun touches(accountId: String): Boolean =
+        deletedAt == null &&
+            (this.accountId == accountId || (type == TransactionType.TRANSFER && toAccountId == accountId))
 }

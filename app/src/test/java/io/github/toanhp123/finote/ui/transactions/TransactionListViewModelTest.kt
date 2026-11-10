@@ -10,9 +10,13 @@ import io.github.toanhp123.finote.domain.account.model.BalanceDrift
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.account.tx
 import io.github.toanhp123.finote.domain.account.usecase.FakeAccountRepository
+import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveBalanceDriftUseCase
+import io.github.toanhp123.finote.domain.account.usecase.ObserveUsableAccountsUseCase
 import io.github.toanhp123.finote.domain.category.testCategory
 import io.github.toanhp123.finote.domain.category.usecase.FakeCategoryRepository
+import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
+import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
@@ -58,10 +62,11 @@ class TransactionListViewModelTest {
         TransactionListViewModel(
             savedStateHandle = handle,
             observeList = ObserveTransactionListUseCase(fakeTx, clock),
-            accountRepository = accounts,
-            categoryRepository = categories,
+            observeAccounts = ObserveAccountsUseCase(accounts),
+            observeCategories = ObserveCategoriesUseCase(categories),
             updateTransaction = UpdateTransactionUseCase(fakeTx, ValidateTransactionUseCase(fakeTx, clock), clock),
-            observeDrifts = ObserveBalanceDriftUseCase(accounts, fakeTx),
+            observeDrifts =
+                ObserveBalanceDriftUseCase(ObserveUsableAccountsUseCase(ObserveAccountsUseCase(accounts)), fakeTx),
             adjustBalanceDrift = AdjustBalanceDriftUseCase(fakeTx, clock),
             clock = clock,
         )
@@ -302,6 +307,22 @@ class TransactionListViewModelTest {
 
             assertNull(vm.state.value.editingId)
             assertFalse(vm.state.value.hasSaveError)
+        }
+
+    @Test
+    fun `storage failure on reimbursement write shows save error`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            store(row("e"))
+            val vm = open()
+            vm.onIntent(TransactionListIntent.RowClicked("e"))
+            fakeTx.failUpdate = StorageException(RuntimeException("disk"))
+
+            vm.onIntent(TransactionListIntent.ReimbursementPicked(ReimbursementChoice.PENDING))
+            runCurrent()
+
+            assertEquals("e", vm.state.value.editingId)
+            assertTrue(vm.state.value.hasSaveError)
         }
 
     @Test

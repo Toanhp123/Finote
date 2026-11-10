@@ -2,7 +2,7 @@ package io.github.toanhp123.finote.ui.settings
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.toanhp123.finote.domain.notification.repository.ParserRuleRepository
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -12,12 +12,11 @@ import javax.inject.Inject
 class SettingsViewModel
     @Inject
     constructor(
-        rules: ParserRuleRepository,
+        observeRules: ObserveParserRulesUseCase,
     ) : BaseViewModel<SettingsState, SettingsIntent, SettingsEffect>(SettingsState()) {
         init {
             viewModelScope.launch {
-                rules
-                    .observeRules()
+                observeRules()
                     .catch {
                         // The count is only a hint on the row; keep the last one. Nothing is logged: rules are data.
                     }.collect { setState { copy(bankCount = summarizeBanks(it).size) } }

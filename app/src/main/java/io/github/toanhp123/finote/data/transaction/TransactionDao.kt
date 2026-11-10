@@ -18,13 +18,19 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getById(id: String): TransactionEntity?
 
-    /** Live rows that move this account's balance: it is the source, or the destination of a transfer. */
+    /**
+     * Live rows that move this account's balance: it is the source, or the destination of a transfer.
+     * Same rule as `Transaction.touches`.
+     */
     @Query(
         "SELECT * FROM transactions WHERE deletedAt IS NULL AND (accountId = :accountId OR toAccountId = :accountId)",
     )
     suspend fun getActiveByAccount(accountId: String): List<TransactionEntity>
 
-    /** Live rows that touch this account, as source or as a transfer destination. */
+    /**
+     * Live rows that touch this account, as source or as a transfer destination.
+     * Same rule as `Transaction.touches`.
+     */
     @Query(
         "SELECT COUNT(*) FROM transactions " +
             "WHERE deletedAt IS NULL AND (accountId = :accountId OR toAccountId = :accountId)",
@@ -48,7 +54,10 @@ interface TransactionDao {
     )
     suspend fun countNonTransfers(accountId: String): Int
 
-    /** Live rows, newest first. A null [accountId] means every account; else rows as source or transfer destination. */
+    /**
+     * Live rows, newest first. A null [accountId] means every account; else rows as source or transfer destination.
+     * Same rule as `Transaction.touches`.
+     */
     @Query(
         "SELECT * FROM transactions WHERE deletedAt IS NULL " +
             "AND (:accountId IS NULL OR accountId = :accountId OR toAccountId = :accountId) " +

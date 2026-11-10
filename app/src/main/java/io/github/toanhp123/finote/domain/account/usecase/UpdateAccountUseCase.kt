@@ -12,9 +12,9 @@ class UpdateAccountUseCase
         private val validate: ValidateAccountUseCase,
         private val clock: Clock,
     ) {
-        /** Stamps `updatedAt` and marks it initialized. The repository keeps balance, `createdAt` and `deletedAt`. */
+        /** Stamps `updatedAt` and validates. The repository keeps every field it does not list as editable. */
         suspend operator fun invoke(account: Account) {
-            val updated = account.copy(isInitialized = true, updatedAt = clock.millis())
+            val updated = account.copy(updatedAt = clock.millis())
             validate(updated)
             repository.update(updated)
         }

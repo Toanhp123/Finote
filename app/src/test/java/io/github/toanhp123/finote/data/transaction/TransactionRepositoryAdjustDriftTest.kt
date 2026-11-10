@@ -173,7 +173,7 @@ class TransactionRepositoryAdjustDriftTest {
             listOf("arch", "gone", "missing").forEach { id ->
                 val failure = runCatching { repo.adjustDrift("adj-$id", id, clock.millis()) }.exceptionOrNull()
                 assertTrue(failure.toString(), failure is IllegalArgumentException)
-                assertEquals("account does not exist, is deleted or archived", failure?.message)
+                assertEquals("account does not exist, is deleted, archived or ignored", failure?.message)
             }
             assertEquals(0, liveTxCount())
         }

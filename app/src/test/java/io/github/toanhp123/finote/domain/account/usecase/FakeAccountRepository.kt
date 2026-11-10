@@ -29,9 +29,25 @@ class FakeAccountRepository : AccountRepository {
         notifyChanged()
     }
 
+    /** The argument of the last [update], before the contract drops machine-owned fields. */
+    var lastUpdateArg: Account? = null
+        private set
+
+    /** Same contract as the real repository: only display fields come from [account]. */
     override suspend fun update(account: Account) {
         writes++
-        stored[account.id] = account
+        lastUpdateArg = account
+        val old = checkNotNull(stored[account.id])
+        stored[account.id] =
+            old.copy(
+                name = account.name,
+                nameKey = if (account.name == old.name) old.nameKey else null,
+                icon = account.icon,
+                color = account.color,
+                sortOrder = account.sortOrder,
+                isExcludedFromNetWorth = account.isExcludedFromNetWorth,
+                updatedAt = account.updatedAt,
+            )
         notifyChanged()
     }
 

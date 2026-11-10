@@ -97,10 +97,4 @@ class BalanceCalculatorTest {
     fun `non positive amount is invalid`() {
         tx(TransactionType.EXPENSE, 0)
     }
-
-    @Test
-    fun `initial balance from post balance`() {
-        val expense = tx(TransactionType.EXPENSE, 50_000)
-        assertEquals(1_000_000L, BalanceCalculator.initialBalanceFor(A, 950_000, listOf(expense)))
-    }
 }

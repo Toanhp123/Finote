@@ -207,6 +207,7 @@ Trạng thái (2026-11-08): `rule-ota` xong, đã ở `dev` (`2956fae`).
 - Ngay sau P2c: `feature/account-merge-ignore` (gộp tài khoản, bỏ qua tài khoản), để user sửa khi app tự gán sai. Thiết kế: `docs/superpowers/specs/2026-11-09-account-merge-ignore-design.md`. Chốt 2026-11-09: chỉ gộp cùng app ngân hàng, gộp không hoàn tác, bỏ qua thì bật lại được.
 - Tương lai (sau `account-merge-ignore`):
   - Gợi ý gộp: banner trên màn giao dịch khi tài khoản tự tạo trông giống tài khoản cũ cùng ngân hàng. Chờ dữ liệu thật trên máy.
+  - Màn sửa tài khoản cần `setInitialBalance(id, value)`: đặt `isInitialized = true` và rebuild.
   - Màn thêm tài khoản tay (kiểu Cashew): có ô tuỳ chọn "liên kết app ngân hàng + 4 số cuối", và cho gộp vào tài khoản tay chưa gắn ngân hàng. Không có thì thông báo sẽ tạo tài khoản trùng.
 
 Trạng thái (2026-11-08): code xong trên `feature/account-dedup-balance`, review từng task và review cả nhánh đã chạy. Nợ P2a #3 đã sửa (ngưỡng đăng lại 10 phút khi có số dư, 3 giây khi không). Chưa thử trên máy thật.

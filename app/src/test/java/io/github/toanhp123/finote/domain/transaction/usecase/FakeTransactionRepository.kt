@@ -28,6 +28,8 @@ class FakeTransactionRepository(
     val transactionsFlow = MutableStateFlow<List<Transaction>>(emptyList())
     val observedAccountIds = mutableListOf<String?>()
     var failObserve: Throwable? = null
+    var failLastChoice: Throwable? = null
+    var failUpdate: Throwable? = null
 
     data class ReconcileCall(
         val id: String,
@@ -44,12 +46,12 @@ class FakeTransactionRepository(
 
     override suspend fun getTransaction(id: String): Transaction? = stored[id]
 
-    override suspend fun getActiveAccountIds(accountIds: Set<String>): Set<String> =
+    override suspend fun getUsableAccountIds(accountIds: Set<String>): Set<String> =
         accountIds.intersect(activeAccounts)
 
     override suspend fun getCategoryType(categoryId: String): CategoryType? = categories[categoryId]
 
-    override suspend fun getLastManualAccountId(): String? = lastAccountId
+    override suspend fun getLastManualAccountId(): String? = failLastChoice?.let { throw it } ?: lastAccountId
 
     override suspend fun getLastManualCategoryId(type: TransactionType): String? = lastCategoryIds[type]
 
@@ -90,6 +92,7 @@ class FakeTransactionRepository(
     }
 
     override suspend fun update(transaction: Transaction) {
+        failUpdate?.let { throw it }
         writes++
         stored[transaction.id] = transaction
     }

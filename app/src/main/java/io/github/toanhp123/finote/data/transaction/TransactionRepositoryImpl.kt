@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.data.transaction
 
+import android.database.SQLException
 import androidx.room3.withWriteTransaction
 import io.github.toanhp123.finote.data.FinoteDatabase
 import io.github.toanhp123.finote.data.account.AccountBalanceRebuilder
@@ -7,6 +8,7 @@ import io.github.toanhp123.finote.data.account.AccountEntity
 import io.github.toanhp123.finote.data.account.toDomain
 import io.github.toanhp123.finote.domain.account.detectBalanceDrift
 import io.github.toanhp123.finote.domain.category.model.CategoryType
+import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
@@ -27,28 +29,34 @@ class TransactionRepositoryImpl
         private val rebuilder =
             AccountBalanceRebuilder(db.accountDao(), transactions, db.accountBalanceSnapshotDao(), clock)
 
-        override suspend fun getTransaction(id: String): Transaction? = transactions.getById(id)?.toDomain()
+        override suspend fun getTransaction(id: String): Transaction? = storage { transactions.getById(id)?.toDomain() }
 
-        override suspend fun getActiveAccountIds(accountIds: Set<String>): Set<String> =
-            accountIds.filterTo(mutableSetOf()) { id ->
-                db.accountDao().getById(id)?.let { it.deletedAt == null && !it.isArchived } == true
+        override suspend fun getUsableAccountIds(accountIds: Set<String>): Set<String> =
+            storage {
+                accountIds.filterTo(mutableSetOf()) { id ->
+                    db
+                        .accountDao()
+                        .getById(id)
+                        ?.toDomain()
+                        ?.isUsable == true
+                }
             }
 
         override suspend fun getCategoryType(categoryId: String): CategoryType? =
-            db.categoryDao().getById(categoryId)?.type
+            storage { db.categoryDao().getById(categoryId)?.type }
 
-        override suspend fun getLastManualAccountId(): String? = transactions.getLastManualAccountId()
+        override suspend fun getLastManualAccountId(): String? = storage { transactions.getLastManualAccountId() }
 
         override suspend fun getLastManualCategoryId(type: TransactionType): String? =
-            transactions.getLastManualCategoryId(type)
+            storage { transactions.getLastManualCategoryId(type) }
 
         override fun observeTransactions(accountId: String?): Flow<List<Transaction>> =
             transactions.observeTransactions(accountId).map { rows -> rows.map { it.toDomain() } }
 
         override suspend fun add(transaction: Transaction) {
-            db.withWriteTransaction {
+            write {
                 val entity = transaction.toEntity()
-                requireActiveAccounts(entity.accountIds())
+                requireUsableAccounts(entity.accountIds())
                 transactions.insert(entity)
                 rebuilder.rebuild(entity.accountIds())
             }
@@ -60,8 +68,8 @@ class TransactionRepositoryImpl
             actualBalance: Long,
             now: Long,
         ): Transaction? =
-            db.withWriteTransaction {
-                val account = requireLiveAccount(accountId)
+            write {
+                val account = requireUsableAccount(accountId)
                 writeAdjustment(id, accountId, Math.subtractExact(actualBalance, account.currentBalance), now)
             }
 
@@ -70,19 +78,19 @@ class TransactionRepositoryImpl
             accountId: String,
             now: Long,
         ): Transaction? =
-            db.withWriteTransaction {
-                val account = requireLiveAccount(accountId)
+            write {
+                val account = requireUsableAccount(accountId)
                 val live = transactions.getActiveByAccount(accountId).map { it.toDomain() }
-                val drift = detectBalanceDrift(account.toDomain(), live) ?: return@withWriteTransaction null
+                val drift = detectBalanceDrift(account.toDomain(), live) ?: return@write null
                 writeAdjustment(id, accountId, drift.difference, now)
             }
 
         override suspend fun update(transaction: Transaction) {
-            db.withWriteTransaction {
+            write {
                 val old = requireNotNull(transactions.getById(transaction.id)) { "transaction does not exist" }
                 require(old.deletedAt == null) { "transaction is deleted" }
                 val entity = transaction.toEntity()
-                requireActiveAccounts(old.accountIds() + entity.accountIds())
+                requireUsableAccounts(old.accountIds() + entity.accountIds())
                 transactions.update(entity)
                 rebuilder.rebuild(old.accountIds() + entity.accountIds())
             }
@@ -92,22 +100,33 @@ class TransactionRepositoryImpl
             id: String,
             deletedAt: Long,
         ) {
-            db.withWriteTransaction {
+            write {
                 val old = requireNotNull(transactions.getById(id)) { "transaction does not exist" }
-                if (old.deletedAt != null) return@withWriteTransaction
+                if (old.deletedAt != null) return@write
                 transactions.update(old.copy(deletedAt = deletedAt, updatedAt = deletedAt))
                 rebuilder.rebuild(old.accountIds())
             }
         }
 
+        /** One write transaction; a SQLite failure reaches callers as [StorageException]. */
+        private suspend fun <T> write(block: suspend () -> T): T = storage { db.withWriteTransaction { block() } }
+
+        /** Runs a read or write; a SQLite failure reaches callers as [StorageException]. */
+        private suspend fun <T> storage(block: suspend () -> T): T =
+            try {
+                block()
+            } catch (e: SQLException) {
+                throw StorageException(e)
+            }
+
         /** Re-checks inside the write transaction: the use case's early check can be stale by now. */
-        private suspend fun requireActiveAccounts(wanted: Set<String>) {
-            require(getActiveAccountIds(wanted).containsAll(wanted)) { ACCOUNT_INACTIVE }
+        private suspend fun requireUsableAccounts(wanted: Set<String>) {
+            require(getUsableAccountIds(wanted).containsAll(wanted)) { ACCOUNT_INACTIVE }
         }
 
-        private suspend fun requireLiveAccount(accountId: String): AccountEntity {
+        private suspend fun requireUsableAccount(accountId: String): AccountEntity {
             val account = db.accountDao().getById(accountId)
-            require(account != null && account.deletedAt == null && !account.isArchived) { ACCOUNT_INACTIVE }
+            require(account?.toDomain()?.isUsable == true) { ACCOUNT_INACTIVE }
             return account
         }
 
@@ -142,6 +161,6 @@ class TransactionRepositoryImpl
         private fun TransactionEntity.accountIds() = setOfNotNull(accountId, toAccountId)
 
         private companion object {
-            const val ACCOUNT_INACTIVE = "account does not exist, is deleted or archived"
+            const val ACCOUNT_INACTIVE = "account does not exist, is deleted, archived or ignored"
         }
     }

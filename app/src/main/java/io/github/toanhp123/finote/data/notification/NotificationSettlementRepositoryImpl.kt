@@ -8,9 +8,8 @@ import io.github.toanhp123.finote.data.account.toDomain
 import io.github.toanhp123.finote.data.transaction.TransactionEntity
 import io.github.toanhp123.finote.data.transaction.toDomain
 import io.github.toanhp123.finote.domain.account.BalanceCalculator
-import io.github.toanhp123.finote.domain.account.initialBalanceFor
+import io.github.toanhp123.finote.domain.account.anchoredInitialBalance
 import io.github.toanhp123.finote.domain.account.model.Account
-import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
@@ -80,7 +79,7 @@ class NotificationSettlementRepositoryImpl
                         notificationLogId = bank.id,
                     ),
                 )
-                coldStart(account, parsed.postBalance, bank.postTime)
+                coldStart(account)
                 rebuilder.rebuild(setOf(account.id))
                 settle(listOf(bank.id), NotificationStatus.CONFIRMED, transactionId)
                 decision.walletSide?.let { settle(listOf(it.id), NotificationStatus.DEDUPLICATED, transactionId) }
@@ -123,7 +122,7 @@ class NotificationSettlementRepositoryImpl
                     }
                 }
             // The planner's check can be stale by now; throwing rolls back and leaves the log PENDING.
-            check(account.deletedAt == null && !account.isArchived && !account.isIgnored) {
+            check(account.toDomain().isUsable) {
                 "account is deleted, archived or ignored"
             }
             return account
@@ -160,20 +159,13 @@ class NotificationSettlementRepositoryImpl
             return account
         }
 
-        /** The first bank balance of an uninitialized account fixes its start. A credit card has no such balance. */
-        private suspend fun coldStart(
-            account: AccountEntity,
-            postBalance: Long?,
-            postTime: Long,
-        ) {
-            if (account.isInitialized || account.type == AccountType.CREDIT_CARD || postBalance == null) return
-            val upToNow =
-                transactions
-                    .getActiveByAccount(account.id)
-                    .filter { it.timestamp <= postTime }
-                    .map { it.toDomain() }
-            val initial = BalanceCalculator.initialBalanceFor(account.id, postBalance, upToNow)
-            accounts.update(account.copy(initialBalance = initial, isInitialized = true))
+        /** The balance anchor of an uninitialized account fixes its start. A credit card has no anchor. */
+        private suspend fun coldStart(account: AccountEntity) {
+            if (account.isInitialized) return
+            val rows = transactions.getActiveByAccount(account.id).map { it.toDomain() }
+            BalanceCalculator.anchoredInitialBalance(account.toDomain(), rows)?.let {
+                accounts.update(account.copy(initialBalance = it, isInitialized = true))
+            }
         }
 
         private suspend fun settle(

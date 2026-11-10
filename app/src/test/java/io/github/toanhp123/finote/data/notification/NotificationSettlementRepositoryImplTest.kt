@@ -3,6 +3,10 @@ package io.github.toanhp123.finote.data.notification
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.account
+import io.github.toanhp123.finote.data.account.toDomain
+import io.github.toanhp123.finote.data.transaction
+import io.github.toanhp123.finote.data.transaction.toDomain
+import io.github.toanhp123.finote.domain.account.detectBalanceDrift
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
@@ -175,6 +179,29 @@ class NotificationSettlementRepositoryImplTest {
             assertTrue(after.isInitialized)
             assertEquals(1_000_000L, after.initialBalance)
             assertEquals(900_000L, after.currentBalance)
+        }
+
+    @Test
+    fun `cold start then drift is null on equal timestamps`() =
+        runTest {
+            dbRule.db.accountDao().insert(
+                account(bankPackageName = PKG, accountNumberMask = "1234").copy(isInitialized = false),
+            )
+            // Same timestamp as the booked row; it is created later, so the shared order puts it after the anchor.
+            dbRule.db.transactionDao().insert(transaction(id = "manual", accountId = "acc-1", timestamp = 1_000L))
+            val bank = log("b1")
+            seed(bank)
+
+            repo.book(book(bank, target = AccountTarget.Existing("acc-1")), "tx-1", NOW)
+
+            val stored = checkNotNull(dbRule.db.accountDao().getById("acc-1"))
+            assertTrue(stored.isInitialized)
+            val rows =
+                dbRule.db
+                    .transactionDao()
+                    .getActiveByAccount("acc-1")
+                    .map { it.toDomain() }
+            assertNull(detectBalanceDrift(stored.toDomain(), rows))
         }
 
     @Test

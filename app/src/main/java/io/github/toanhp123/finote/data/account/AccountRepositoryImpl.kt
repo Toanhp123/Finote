@@ -4,10 +4,9 @@ import androidx.room3.withWriteTransaction
 import io.github.toanhp123.finote.data.FinoteDatabase
 import io.github.toanhp123.finote.data.transaction.toDomain
 import io.github.toanhp123.finote.domain.account.BalanceCalculator
-import io.github.toanhp123.finote.domain.account.initialBalanceFor
+import io.github.toanhp123.finote.domain.account.anchoredInitialBalance
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountMergeRejectedException
-import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.model.MergeRejection
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import kotlinx.coroutines.flow.Flow
@@ -39,17 +38,16 @@ class AccountRepositoryImpl
             db.withWriteTransaction {
                 val old = requireLive(account.id)
                 accounts.update(
-                    account.toEntity().copy(
-                        currentBalance = old.currentBalance,
-                        createdAt = old.createdAt,
-                        deletedAt = old.deletedAt,
-                        isArchived = old.isArchived,
-                        isIgnored = old.isIgnored,
-                        mergedIntoId = old.mergedIntoId,
+                    old.copy(
+                        name = account.name,
                         nameKey = if (account.name == old.name) old.nameKey else null,
+                        icon = account.icon,
+                        color = account.color,
+                        sortOrder = account.sortOrder,
+                        isExcludedFromNetWorth = account.isExcludedFromNetWorth,
+                        updatedAt = account.updatedAt,
                     ),
                 )
-                if (account.initialBalance != old.initialBalance) rebuilder.rebuild(setOf(account.id))
             }
         }
 
@@ -136,16 +134,11 @@ class AccountRepositoryImpl
             source: AccountEntity,
             target: AccountEntity,
         ): AccountEntity {
-            val rows = transactions.getActiveByAccount(target.id)
-            val latest = rows.filter { it.postBalance != null }.maxWithOrNull(compareBy({ it.timestamp }, { it.id }))
-            val postBalance = latest?.postBalance
+            val rows = transactions.getActiveByAccount(target.id).map { it.toDomain() }
+            val anchored = BalanceCalculator.anchoredInitialBalance(target.toDomain(), rows)
             return when {
-                latest != null && postBalance != null && target.type != AccountType.CREDIT_CARD -> {
-                    val upToLatest = rows.filter { it.timestamp <= latest.timestamp }.map { it.toDomain() }
-                    target.copy(
-                        initialBalance = BalanceCalculator.initialBalanceFor(target.id, postBalance, upToLatest),
-                        isInitialized = true,
-                    )
+                anchored != null -> {
+                    target.copy(initialBalance = anchored, isInitialized = true)
                 }
 
                 source.isInitialized && !target.isInitialized -> {

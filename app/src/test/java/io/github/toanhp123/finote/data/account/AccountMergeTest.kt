@@ -6,6 +6,9 @@ import io.github.toanhp123.finote.data.account
 import io.github.toanhp123.finote.data.snapshot
 import io.github.toanhp123.finote.data.transaction
 import io.github.toanhp123.finote.data.transaction.TransactionEntity
+import io.github.toanhp123.finote.data.transaction.TransactionRepositoryImpl
+import io.github.toanhp123.finote.data.transaction.toDomain
+import io.github.toanhp123.finote.domain.account.detectBalanceDrift
 import io.github.toanhp123.finote.domain.account.model.AccountMergeRejectedException
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.model.MergeRejection
@@ -187,6 +190,49 @@ class AccountMergeTest {
             assertTrue(target.isInitialized)
             assertEquals(6_970_000L, target.initialBalance)
             assertEquals(6_990_000L, target.currentBalance)
+        }
+
+    @Test
+    fun `merge after Adjust keeps balance and books no drift`() =
+        runTest {
+            bank("acc-a")
+            bank("acc-b", balance = 1_000_000L)
+            tx("b1", "acc-b", "11-01T00:00:00Z", postBalance = 800_000L)
+            TransactionRepositoryImpl(dbRule.db, clock).adjustDrift("adj-1", "acc-b", clock.millis())
+
+            repo.merge("acc-a", "acc-b", NOW)
+
+            val target = rowOf("acc-b")
+            assertEquals(800_000L, target.currentBalance)
+            assertEquals(1_000_000L, target.initialBalance)
+            val rows =
+                dbRule.db
+                    .transactionDao()
+                    .getActiveByAccount("acc-b")
+                    .map { it.toDomain() }
+            assertNull(detectBalanceDrift(target.toDomain(), rows))
+        }
+
+    @Test
+    fun `received transfer post balance does not re-anchor`() =
+        runTest {
+            bank("acc-a")
+            bank("acc-b")
+            bank("acc-c", pkg = "other")
+            tx("b1", "acc-b", "11-01T00:00:00Z", postBalance = 500L)
+            tx(
+                "in1",
+                "acc-c",
+                "11-05T00:00:00Z",
+                type = TransactionType.TRANSFER,
+                toAccountId = "acc-b",
+                postBalance = 9_999L,
+            )
+
+            repo.merge("acc-a", "acc-b", NOW)
+
+            assertEquals(100_500L, rowOf("acc-b").initialBalance)
+            assertEquals(100_500L, rowOf("acc-b").currentBalance)
         }
 
     @Test
