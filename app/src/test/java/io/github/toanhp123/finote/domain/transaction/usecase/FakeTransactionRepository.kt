@@ -9,7 +9,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
-/** In-memory stand-in. Accounts in [activeAccounts] count as existing and live. */
+/**
+ * Copies from the real repository: `observeTransactions` hides deleted rows, filters by `touches`, sorts newest first.
+ * Does not copy: business `require` checks and balance writes (R4/R5 of a later plan move them into the domain).
+ * Accounts in [activeAccounts] count as existing and live.
+ */
 class FakeTransactionRepository(
     val activeAccounts: Set<String> = emptySet(),
     val categories: Map<String, CategoryType> = emptyMap(),
@@ -62,7 +66,13 @@ class FakeTransactionRepository(
             flow { throw failure }
         } else {
             transactionsFlow.map { rows ->
-                rows.filter { accountId == null || it.accountId == accountId || it.toAccountId == accountId }
+                rows
+                    .filter { it.deletedAt == null && (accountId == null || it.touches(accountId)) }
+                    .sortedWith(
+                        compareByDescending<Transaction> { it.timestamp }
+                            .thenByDescending { it.createdAt }
+                            .thenByDescending { it.id },
+                    )
             }
         }
     }

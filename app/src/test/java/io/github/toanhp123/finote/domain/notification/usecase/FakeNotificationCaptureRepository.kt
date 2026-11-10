@@ -6,7 +6,10 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.repository.NotificationCaptureRepository
 
-/** In-memory stand-in: rules are served sorted like the real DAO, logs reject a repeated hash. */
+/**
+ * Copies from the real repository: rule order, a repeated `contentHash` is rejected, `getFailedLogs` filter and order.
+ * Does not copy: business `require` checks (R4/R5 of a later plan move them into the domain).
+ */
 class FakeNotificationCaptureRepository(
     private val rules: List<ParserRule> = emptyList(),
 ) : NotificationCaptureRepository {
@@ -29,7 +32,12 @@ class FakeNotificationCaptureRepository(
     }
 
     override suspend fun getFailedLogs(packages: Set<String>): List<NotificationLog> =
-        logs.filter { it.status == NotificationStatus.FAILED && it.packageName in packages }
+        logs
+            .filter {
+                it.status == NotificationStatus.FAILED &&
+                    it.failureReason == "no_rule_matched" &&
+                    it.packageName in packages
+            }.sortedWith(compareBy({ it.receivedAt }, { it.id }))
 
     override suspend fun updateFailedOutcome(
         id: String,

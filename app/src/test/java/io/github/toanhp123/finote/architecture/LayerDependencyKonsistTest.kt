@@ -1,18 +1,47 @@
 package io.github.toanhp123.finote.architecture
 
+import com.lemonappdev.konsist.api.declaration.KoClassDeclaration
 import com.lemonappdev.konsist.api.ext.list.classes
+import com.lemonappdev.konsist.api.ext.list.functions
 import com.lemonappdev.konsist.api.verify.assertTrue
+import org.junit.Assert
 import org.junit.Test
 
 class LayerDependencyKonsistTest {
     @Test
-    fun `domain has no framework imports`() {
-        filesIn(DOMAIN).assertNoImports("domain has no framework imports") { import ->
-            import.isFrom("android") ||
-                import.isFrom("androidx") ||
-                import.isFrom("dagger") ||
-                import.name.hasSegment("room")
+    fun `domain imports only allowed packages`() {
+        val files = filesIn(DOMAIN)
+        Assert.assertTrue(files.isNotEmpty())
+        files.assertNoImports("domain imports only allowed packages") { import ->
+            DOMAIN_ALLOWED_IMPORTS.none { import.isFrom(it) }
         }
+    }
+
+    @Test
+    fun `automation and work do not use repositories`() {
+        val files = filesIn(AUTOMATION) + filesIn(WORK)
+        Assert.assertTrue(files.isNotEmpty())
+        files.assertNoImports("automation and work do not use repositories") {
+            it.name.substringAfterLast('.').endsWith("Repository") ||
+                (it.isWildcard && it.name.hasSegment("repository"))
+        }
+    }
+
+    @Test
+    fun `di holds only bindings`() {
+        val files = filesIn(DI)
+        Assert.assertTrue(files.isNotEmpty())
+        val types = files.topLevelTypes()
+        types.assertTrue(strict = false, testName = "di holds only bindings, top-level types") { type ->
+            type.hasAnnotationWithName("Module") ||
+                (type is KoClassDeclaration && type.hasAnnotationModifier && type.hasAnnotationWithName("Qualifier"))
+        }
+        types
+            .filter { it.hasAnnotationWithName("Module") }
+            .functions(includeNested = false, includeLocal = false)
+            .assertTrue(strict = false, testName = "di holds only bindings, module functions") {
+                it.hasAnnotationWithName("Provides") || it.hasAnnotationWithName("Binds")
+            }
     }
 
     @Test
@@ -98,5 +127,20 @@ class LayerDependencyKonsistTest {
             (import.name == ROOT && import.isWildcard) || import.name.isRootClassName()
         }
         productionFiles.assertNoQualifiedNames("$testName, fully qualified") { it.isRootClassName() }
+    }
+
+    private companion object {
+        val DOMAIN_ALLOWED_IMPORTS =
+            listOf(
+                "kotlin",
+                "kotlinx.coroutines",
+                "java.time",
+                "java.util",
+                "java.text",
+                "java.security",
+                "java.math",
+                "javax.inject",
+                DOMAIN,
+            )
     }
 }

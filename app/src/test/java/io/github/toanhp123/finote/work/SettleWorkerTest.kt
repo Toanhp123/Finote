@@ -17,11 +17,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 @RunWith(AndroidJUnit4::class)
 class SettleWorkerTest {
+    private val clock = Clock.fixed(Instant.parse("2026-11-03T00:00:00Z"), ZoneOffset.UTC)
+
     private suspend fun run(repo: NotificationSettlementRepository): ListenableWorker.Result {
-        val useCase = SettlePendingLogsUseCase(repo, Clock.systemUTC())
+        val useCase = SettlePendingLogsUseCase(repo, clock)
         val factory =
             object : WorkerFactory() {
                 override fun createWorker(
@@ -44,7 +48,7 @@ class SettleWorkerTest {
             title = "",
             content = "",
             contentHash = "hash-a",
-            postTime = System.currentTimeMillis(),
+            postTime = clock.millis(),
             receivedAt = 2_000L,
             status = NotificationStatus.PENDING,
             failureReason = null,

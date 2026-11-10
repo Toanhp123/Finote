@@ -6,7 +6,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
-/** In-memory stand-in. It does no business checks: those belong to the real repository. */
+/**
+ * Copies from the real repository: `observeAccounts` hides deleted rows and sorts by sortOrder, createdAt, id;
+ * `update` keeps only display fields.
+ * Does not copy: business `require` checks, merge and trash effects (R4/R5 of a later plan move them into the domain).
+ */
 class FakeAccountRepository : AccountRepository {
     val stored = mutableMapOf<String, Account>()
     private val version = MutableStateFlow(0)
@@ -21,7 +25,11 @@ class FakeAccountRepository : AccountRepository {
     override suspend fun getAccount(id: String): Account? = stored[id]
 
     override fun observeAccounts(): Flow<List<Account>> =
-        version.map { stored.values.filter { account -> account.deletedAt == null } }
+        version.map { _ ->
+            stored.values
+                .filter { account -> account.deletedAt == null }
+                .sortedWith(compareBy<Account> { it.sortOrder }.thenBy { it.createdAt }.thenBy { it.id })
+        }
 
     override suspend fun add(account: Account) {
         writes++

@@ -6,7 +6,8 @@ import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParsedFields
-import io.github.toanhp123.finote.domain.notification.model.ParserRule
+import io.github.toanhp123.finote.domain.notification.testLog
+import io.github.toanhp123.finote.domain.notification.testRule
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -27,19 +28,10 @@ class SettlePendingLogsUseCaseTest {
     private val clock = Clock.fixed(Instant.ofEpochMilli(now), ZoneOffset.UTC)
 
     private fun rule(pkg: String) =
-        ParserRule(
+        testRule(
             id = "r-$pkg",
             packageName = pkg,
             bankName = pkg,
-            channelIdAllowlist = null,
-            ignoreKeywords = emptyList(),
-            priority = 0,
-            isUserCustom = false,
-            version = 1,
-            regexPattern = ".*",
-            fallbackTransactionType = null,
-            dateFormatPattern = null,
-            isActive = true,
             updatedAt = 1L,
             accountType = if (pkg == OTHER) AccountType.WALLET else null,
         )
@@ -50,17 +42,12 @@ class SettlePendingLogsUseCaseTest {
         postTime: Long,
         amount: Long = 50_000L,
         text: String = id,
-    ) = NotificationLog(
+    ) = testLog(
         id = id,
         packageName = pkg,
-        channelId = null,
         title = text,
         content = text,
-        contentHash = id,
         postTime = postTime,
-        receivedAt = postTime,
-        status = NotificationStatus.PENDING,
-        failureReason = null,
         matchedRuleId = "r-$pkg",
         parsed = ParsedFields(amount, TransactionType.EXPENSE, null, null, null, null),
     )

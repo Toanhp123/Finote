@@ -25,6 +25,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -44,7 +46,7 @@ class RuleUpdateWorkerTest {
                     FakeSettleScheduler(),
                 ),
                 settings,
-                Clock.systemUTC(),
+                Clock.fixed(Instant.parse("2026-11-03T00:00:00Z"), ZoneOffset.UTC),
             )
         val factory =
             object : WorkerFactory() {

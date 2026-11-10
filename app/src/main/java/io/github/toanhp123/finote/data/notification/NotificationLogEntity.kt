@@ -14,9 +14,9 @@ data class NotificationLogEntity(
     @PrimaryKey val id: String,
     val packageName: String,
     val channelId: String?,
-    /** Empty for an `IGNORED_SPAM` row. */
+    /** Empty only for an `IGNORED_SPAM` row whose `failureReason` starts with `secret:`; other rows keep the text. */
     val title: String,
-    /** Empty for an `IGNORED_SPAM` row. */
+    /** Empty only for an `IGNORED_SPAM` row whose `failureReason` starts with `secret:`; other rows keep the text. */
     val content: String,
     val contentHash: String,
     val postTime: Long,

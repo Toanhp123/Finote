@@ -32,6 +32,12 @@ internal fun String.inPackage(pkg: String): Boolean = this == pkg || startsWith(
 /** True when [segment] is one whole dotted segment of the name. */
 internal fun String.hasSegment(segment: String): Boolean = ".$this.".contains(".$segment.")
 
+/** Lower case words of a camelCase, PascalCase or SCREAMING_SNAKE name. A digit starts a word; `VNDAmount` is two. */
+internal fun String.nameWords(): List<String> = split(wordBoundary).filter { it.isNotEmpty() }.map { it.lowercase() }
+
+private val wordBoundary =
+    Regex("""_|(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[A-Za-z])(?=\d)|(?<=\d)(?=[A-Z])""")
+
 /** Number of real lines. A trailing line break does not open a new line. */
 internal fun String.lineCount(): Int = lines().let { if (it.last().isEmpty()) it.size - 1 else it.size }
 

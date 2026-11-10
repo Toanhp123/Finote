@@ -5,6 +5,10 @@ import io.github.toanhp123.finote.domain.notification.repository.RuleUpdateSetti
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
+/**
+ * Copies from the real repository: the auto-update flag and the last check are saved and observed.
+ * Does not copy: persistence, nor the real default (off); this fake starts with auto-update on.
+ */
 class FakeRuleUpdateSettingsRepository : RuleUpdateSettingsRepository {
     private val isEnabled = MutableStateFlow(true)
     val lastCheck = MutableStateFlow<RuleUpdateCheck?>(null)

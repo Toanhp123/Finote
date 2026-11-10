@@ -1,9 +1,9 @@
 package io.github.toanhp123.finote.ui.settings.capture
 
 import app.cash.turbine.test
-import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
+import io.github.toanhp123.finote.domain.notification.testRule
 import io.github.toanhp123.finote.domain.notification.usecase.CheckRulesNowUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.FakeParserRuleRepository
 import io.github.toanhp123.finote.domain.notification.usecase.FakeRuleUpdateScheduler
@@ -43,20 +43,11 @@ class NotificationCaptureSettingsViewModelTest {
     private fun rule(
         id: String,
         packageName: String,
-    ) = ParserRule(
+    ) = testRule(
         id = id,
         packageName = packageName,
         bankName = packageName,
-        channelIdAllowlist = null,
-        ignoreKeywords = emptyList(),
-        priority = 0,
-        isUserCustom = false,
-        version = 1,
         regexPattern = "(?<amount>[0-9]+)",
-        fallbackTransactionType = null,
-        dateFormatPattern = null,
-        isActive = true,
-        updatedAt = 0L,
     )
 
     @Test

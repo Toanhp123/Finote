@@ -9,7 +9,7 @@ import org.junit.Assert
 import org.junit.Test
 
 class ProjectRulesKonsistTest {
-    private val loggingCall = Regex("""\bprintln\(|::println\b|\bprintStackTrace\b""")
+    private val loggingCall = Regex("""\bprintln\(|::println\b|\bprintStackTrace\b|\bSystem\.(out|err)\b""")
     private val suppress = Regex("""\bSuppress(Lint|Warnings)?\b""")
     private val floatingType = Regex("""\b(Double|Float)\b""")
     private val initializer = Regex("""\b(?:val|var)\b[^=]*=(.*)""", RegexOption.DOT_MATCHES_ALL)
@@ -22,7 +22,8 @@ class ProjectRulesKonsistTest {
             val importsLog =
                 file.imports.any {
                     it.isFrom("android.util.Log") ||
-                        (it.isWildcard && it.name == "android.util")
+                        (it.isWildcard && it.name == "android.util") ||
+                        it.isFrom("java.util.logging")
                 }
             !importsLog && !file.hasTextContaining("android.util.Log") && !loggingCall.containsMatchIn(file.text)
         }
@@ -106,7 +107,22 @@ class ProjectRulesKonsistTest {
             }
     }
 
-    private fun String.isMoneyName() = MONEY_WORDS.any { contains(it, ignoreCase = true) }
+    @Test
+    fun `notification text holders hide it`() {
+        val files = filesIn("$DOMAIN.notification")
+        Assert.assertTrue(files.isNotEmpty())
+        val holders =
+            files
+                .classes(includeNested = true)
+                .filter { it.hasDataModifier && it.properties().any { p -> p.name in TEXT_PROPERTIES } }
+        Assert.assertTrue(holders.isNotEmpty())
+        holders
+            .assertTrue(strict = false, testName = "notification text holders hide it") { holder ->
+                holder.functions().any { it.name == "toString" && it.hasOverrideModifier }
+            }
+    }
+
+    private fun String.isMoneyName() = nameWords().any { it in MONEY_WORDS || it.removeSuffix("s") in MONEY_WORDS }
 
     /** A declared type is checked with its type arguments; without one, the initializer must not be floating. */
     private fun KoPropertyDeclaration.isFloating(): Boolean {
@@ -135,9 +151,28 @@ class ProjectRulesKonsistTest {
         // Only detekt size rules, never Konsist or Lint, and always with a reason of 10+ chars.
         val ALLOWED_SUPPRESS = Regex("""^\s*@Suppress\("$RULE"(, "$RULE")*\)\s*// why: \S.{9,}""")
 
+        val TEXT_PROPERTIES = setOf("title", "content", "accountMask", "mask", "postBalance", "merchant", "note")
+
         val NETWORK_PACKAGES =
             listOf("java.net", "javax.net", "android.net.http", "android.webkit", "okhttp3", "io.ktor")
 
-        val MONEY_WORDS = listOf("amount", "balance", "limit", "fee")
+        val MONEY_WORDS =
+            setOf(
+                "amount",
+                "balance",
+                "limit",
+                "fee",
+                "price",
+                "cost",
+                "total",
+                "debt",
+                "income",
+                "expense",
+                "spent",
+                "budget",
+                "difference",
+                "drift",
+                "delta",
+            )
     }
 }

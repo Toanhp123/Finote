@@ -1,9 +1,9 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
 import io.github.toanhp123.finote.domain.notification.SECRET_KEYWORDS
-import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
-import io.github.toanhp123.finote.domain.notification.model.ParserRule
+import io.github.toanhp123.finote.domain.notification.testLog
+import io.github.toanhp123.finote.domain.notification.testRule
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -15,33 +15,22 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReparseFailedLogsUseCaseTest {
     private fun rule(keywords: List<String> = emptyList()) =
-        ParserRule(
-            id = "r1",
+        testRule(
             packageName = PKG,
-            bankName = "Bank",
-            channelIdAllowlist = null,
             ignoreKeywords = keywords,
-            priority = 0,
-            isUserCustom = false,
-            version = 1,
             regexPattern = "(?<sign>[+-])(?<amount>[\\d,]+)",
-            fallbackTransactionType = null,
-            dateFormatPattern = null,
-            isActive = true,
-            updatedAt = 0L,
         )
 
     private fun failedLog(
         id: String,
         content: String,
-    ) = NotificationLog(
+    ) = testLog(
         id = id,
         packageName = PKG,
         channelId = "ch",
         title = "Biến động số dư",
         content = content,
         contentHash = "hash-$id",
-        postTime = 1_000L,
         receivedAt = 2_000L,
         status = NotificationStatus.FAILED,
         failureReason = "no_rule_matched",

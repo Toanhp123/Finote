@@ -1,8 +1,6 @@
 package io.github.toanhp123.finote.domain.notification
 
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
-import io.github.toanhp123.finote.domain.notification.model.ParserRule
-import io.github.toanhp123.finote.domain.notification.model.RawNotification
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -15,26 +13,17 @@ class NotificationClassifierTest {
         keywords: List<String> = emptyList(),
         allowlist: List<String>? = null,
         pattern: String = "(?<sign>[+-])(?<amount>[\\d,]+)",
-    ) = ParserRule(
-        id = "r1",
+    ) = testRule(
         packageName = PKG,
-        bankName = "Bank",
         channelIdAllowlist = allowlist,
         ignoreKeywords = keywords,
-        priority = 0,
-        isUserCustom = false,
-        version = 1,
         regexPattern = pattern,
-        fallbackTransactionType = null,
-        dateFormatPattern = null,
-        isActive = true,
-        updatedAt = 0L,
     )
 
     private fun raw(
         content: String = "SD TK -50,000 tai quan",
         channelId: String? = "ch",
-    ) = RawNotification(PKG, channelId, "Biến động số dư", content, 1_000L)
+    ) = testRaw(packageName = PKG, channelId = channelId, title = "Biến động số dư", content = content)
 
     @Test
     fun `secret text gives IGNORED_SPAM with isSecret`() {

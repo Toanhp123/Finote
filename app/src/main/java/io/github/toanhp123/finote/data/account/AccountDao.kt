@@ -17,7 +17,7 @@ interface AccountDao {
     @Query("SELECT * FROM accounts WHERE id = :id")
     suspend fun getById(id: String): AccountEntity?
 
-    @Query("SELECT * FROM accounts WHERE deletedAt IS NULL ORDER BY sortOrder ASC, createdAt ASC")
+    @Query("SELECT * FROM accounts WHERE deletedAt IS NULL ORDER BY sortOrder ASC, createdAt ASC, id ASC")
     fun observeAccounts(): Flow<List<AccountEntity>>
 
     @Query("SELECT * FROM accounts WHERE bankPackageName IS NOT NULL")

@@ -15,20 +15,12 @@ class NotificationParserTest {
         pattern: String,
         fallback: TransactionType? = null,
         isActive: Boolean = true,
-    ) = ParserRule(
+    ) = testRule(
         id = id,
-        packageName = "pkg",
-        bankName = "Bank",
-        channelIdAllowlist = null,
-        ignoreKeywords = emptyList(),
         priority = priority,
-        isUserCustom = false,
-        version = 1,
         regexPattern = pattern,
         fallbackTransactionType = fallback,
-        dateFormatPattern = null,
         isActive = isActive,
-        updatedAt = 0L,
     )
 
     private fun parse(

@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.di
+package io.github.toanhp123.finote.domain.common
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

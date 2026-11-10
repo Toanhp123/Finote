@@ -26,7 +26,7 @@ di/                  Hilt module
 
 | Layer | May depend on | Must not depend on |
 |---|---|---|
-| `domain` | Kotlin, coroutines, `javax.inject` | `android.*`, `androidx.*`, Room, Hilt, `data`, `ui`, `automation`, `work`, `di` |
+| `domain` | `kotlin`, `kotlinx.coroutines`, `java.time`, `java.util`, `java.text`, `java.security`, `java.math`, `javax.inject` (an import allowlist) | everything else, including `android.*`, `androidx.*`, Room, Hilt, `data`, `ui`, `automation`, `work`, `di` |
 | `data` | `domain` | `ui`, `automation`, `work` |
 | `ui` | `domain` | `data`, `automation`, `work` |
 | `automation` | `domain` | `ui`, `data`, `work` |
@@ -34,6 +34,8 @@ di/                  Hilt module
 | `di` | every layer | logic |
 
 `ui/<feature>` may use `ui/common`. `ui/common` must not use `ui/<feature>`.
+
+`automation` and `work` import no `*Repository`: they call a use case. `di` holds only `@Module` types (each function `@Provides` or `@Binds`) and `@Qualifier` annotations; other types go in their layer.
 
 ### Folder rules
 
@@ -97,8 +99,8 @@ When a file co-locates types, the declaration the file is named after comes firs
 Any class or interface named `*Repository` is an interface in `domain/<feature>/repository`. That package holds interfaces only: repositories and the other ports to the outside world (a feed, a scheduler). `*Mapper.kt` lives in `data`, `*Contract.kt` and `*Screen.kt` in `ui`.
 
 Project rules, checked over all production code:
-- No `android.util.Log`, no `println`, no `printStackTrace`, no `::println`.
-- No `Double` or `Float` in a property or parameter named like `amount`, `balance`, `limit`, `fee`. This covers type arguments (`List<Double>`) and an undeclared type whose initializer is a floating literal or ends in `.toDouble()` or `.toFloat()`. No `typealias` to `Double` or `Float`.
+- No `android.util.Log`, no `println`, no `printStackTrace`, no `::println`, no `System.out`, no `System.err`, no `java.util.logging`.
+- No `Double` or `Float` in a property or parameter whose name has a money word: `amount`, `balance`, `limit`, `fee`, `price`, `cost`, `total`, `debt`, `income`, `expense`, `spent`, `budget`, `difference`, `drift`, `delta`. Names are split into words before matching (`totalCost`, `MAX_FEE`, `VNDAmount`), so `feedback` is fine. This covers type arguments (`List<Double>`) and an undeclared type whose initializer is a floating literal or ends in `.toDouble()` or `.toFloat()`. No `typealias` to `Double` or `Float`.
 - `@Suppress` only for `LongMethod`, `CyclomaticComplexMethod`, `LongParameterList`, on one declaration, with `// why: <reason>` on the same line. No `@file:Suppress`, no `SuppressLint`, no `SuppressWarnings`, no `konsist.*`. Fix the cause first. If a rule is wrong for a valid case, change the rule in its own commit.
 
 ## Quality gate

@@ -7,4 +7,7 @@ data class RawNotification(
     val title: String,
     val content: String,
     val postTime: Long,
-)
+) {
+    // Text stays out of logs and crash reports.
+    override fun toString() = "RawNotification(packageName=$packageName, postTime=$postTime)"
+}

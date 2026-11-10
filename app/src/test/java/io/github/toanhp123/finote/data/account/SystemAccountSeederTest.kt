@@ -21,6 +21,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 @RunWith(AndroidJUnit4::class)
 class SystemAccountSeederTest {
@@ -112,7 +114,7 @@ class SystemAccountSeederTest {
             .databaseBuilder<FinoteDatabase>(ApplicationProvider.getApplicationContext(), file.path)
             .setDriver(AndroidSQLiteDriver())
             .fallbackToDestructiveMigration(dropAllTables = true)
-            .addCallback(SystemAccountSeeder(Clock.systemUTC()))
+            .addCallback(SystemAccountSeeder(Clock.fixed(Instant.ofEpochMilli(SEED_TIME), ZoneOffset.UTC)))
             .build()
 
     private suspend fun countAccounts(db: FinoteDatabase): Int =

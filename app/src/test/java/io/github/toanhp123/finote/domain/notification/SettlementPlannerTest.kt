@@ -29,19 +29,10 @@ class SettlementPlannerTest {
         id: String,
         pkg: String,
         type: AccountType?,
-    ) = ParserRule(
+    ) = testRule(
         id = id,
         packageName = pkg,
         bankName = pkg,
-        channelIdAllowlist = null,
-        ignoreKeywords = emptyList(),
-        priority = 0,
-        isUserCustom = false,
-        version = 1,
-        regexPattern = ".*",
-        fallbackTransactionType = null,
-        dateFormatPattern = null,
-        isActive = true,
         updatedAt = 1L,
         accountType = type,
     )
@@ -59,17 +50,14 @@ class SettlementPlannerTest {
         text: String = "t${seq++}",
         parsed: ParsedFields? = ParsedFields(amount, type, mask, balance, merchant, null),
         status: NotificationStatus = NotificationStatus.PENDING,
-    ) = NotificationLog(
+    ) = testLog(
         id = "id${seq++}",
         packageName = pkg,
-        channelId = null,
         title = text,
         content = text,
         contentHash = text,
         postTime = postTime,
-        receivedAt = postTime,
         status = status,
-        failureReason = null,
         matchedRuleId = ruleId,
         parsed = parsed,
     )

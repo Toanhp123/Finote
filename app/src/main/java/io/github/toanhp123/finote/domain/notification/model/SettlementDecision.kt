@@ -9,7 +9,10 @@ sealed interface SettlementDecision {
         val account: AccountTarget,
         val merchant: String?,
         val note: String?,
-    ) : SettlementDecision
+    ) : SettlementDecision {
+        // Merchant and note stay out of logs and crash reports.
+        override fun toString() = "Book(bankSide=$bankSide, walletSide=$walletSide, account=$account)"
+    }
 
     data class Fail(
         val log: NotificationLog,

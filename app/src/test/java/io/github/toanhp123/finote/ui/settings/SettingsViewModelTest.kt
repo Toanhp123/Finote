@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.ui.settings
 import app.cash.turbine.test
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.repository.ParserRuleRepository
+import io.github.toanhp123.finote.domain.notification.testRule
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,20 +36,12 @@ class SettingsViewModelTest {
         id: String,
         packageName: String,
         isActive: Boolean = true,
-    ) = ParserRule(
+    ) = testRule(
         id = id,
         packageName = packageName,
         bankName = packageName,
-        channelIdAllowlist = null,
-        ignoreKeywords = emptyList(),
-        priority = 0,
-        isUserCustom = false,
-        version = 1,
         regexPattern = "(?<amount>\\d+)",
-        fallbackTransactionType = null,
-        dateFormatPattern = null,
         isActive = isActive,
-        updatedAt = 0L,
     )
 
     @Test

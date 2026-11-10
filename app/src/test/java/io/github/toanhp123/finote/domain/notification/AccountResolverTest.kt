@@ -34,19 +34,10 @@ class AccountResolverTest {
         )
 
     private fun rule(accountType: AccountType? = null) =
-        ParserRule(
+        testRule(
             id = "r",
             packageName = pkg,
             bankName = "Vietcombank",
-            channelIdAllowlist = null,
-            ignoreKeywords = emptyList(),
-            priority = 0,
-            isUserCustom = false,
-            version = 1,
-            regexPattern = ".*",
-            fallbackTransactionType = null,
-            dateFormatPattern = null,
-            isActive = true,
             updatedAt = 1L,
             accountType = accountType,
         )

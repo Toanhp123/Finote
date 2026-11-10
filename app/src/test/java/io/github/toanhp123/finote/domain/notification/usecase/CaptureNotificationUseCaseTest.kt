@@ -4,7 +4,8 @@ import io.github.toanhp123.finote.domain.notification.contentHash
 import io.github.toanhp123.finote.domain.notification.model.CaptureResult
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
-import io.github.toanhp123.finote.domain.notification.model.RawNotification
+import io.github.toanhp123.finote.domain.notification.testRaw
+import io.github.toanhp123.finote.domain.notification.testRule
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -33,20 +34,15 @@ class CaptureNotificationUseCaseTest {
         pattern: String = "(?<sign>[+-])(?<amount>[\\d,]+)",
         fallback: TransactionType? = null,
         isActive: Boolean = true,
-    ) = ParserRule(
+    ) = testRule(
         id = id,
         packageName = PKG,
-        bankName = "Bank",
         channelIdAllowlist = allowlist,
         ignoreKeywords = keywords,
         priority = priority,
-        isUserCustom = false,
-        version = 1,
         regexPattern = pattern,
         fallbackTransactionType = fallback,
-        dateFormatPattern = null,
         isActive = isActive,
-        updatedAt = 0L,
     )
 
     private fun raw(
@@ -54,7 +50,7 @@ class CaptureNotificationUseCaseTest {
         content: String = "SD TK -50,000 tai quan",
         channelId: String? = "ch",
         postTime: Long = 1_000L,
-    ) = RawNotification(PKG, channelId, title, content, postTime)
+    ) = testRaw(PKG, channelId, title, content, postTime)
 
     private class Env(
         val repo: FakeNotificationCaptureRepository,

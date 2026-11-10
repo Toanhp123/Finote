@@ -1,6 +1,6 @@
 package io.github.toanhp123.finote.ui.settings
 
-import io.github.toanhp123.finote.domain.notification.model.ParserRule
+import io.github.toanhp123.finote.domain.notification.testRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -14,20 +14,14 @@ class BankSummaryTest {
         version: Int = 1,
         isActive: Boolean = true,
         isUserCustom: Boolean = false,
-    ) = ParserRule(
+    ) = testRule(
         id = id,
         packageName = packageName,
         bankName = bankName,
-        channelIdAllowlist = null,
-        ignoreKeywords = emptyList(),
-        priority = 0,
         isUserCustom = isUserCustom,
         version = version,
         regexPattern = "(?<amount>\\d+)",
-        fallbackTransactionType = null,
-        dateFormatPattern = null,
         isActive = isActive,
-        updatedAt = 0L,
     )
 
     @Test

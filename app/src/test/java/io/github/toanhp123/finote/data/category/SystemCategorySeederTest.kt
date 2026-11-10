@@ -16,6 +16,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 @RunWith(AndroidJUnit4::class)
 class SystemCategorySeederTest {
@@ -74,7 +76,7 @@ class SystemCategorySeederTest {
                     .databaseBuilder<FinoteDatabase>(context, file.path)
                     .setDriver(AndroidSQLiteDriver())
                     .fallbackToDestructiveMigration(dropAllTables = true)
-                    .addCallback(SystemCategorySeeder(Clock.systemUTC()))
+                    .addCallback(SystemCategorySeeder(Clock.fixed(Instant.ofEpochMilli(SEED_TIME), ZoneOffset.UTC)))
                     .build()
             try {
                 assertEquals(

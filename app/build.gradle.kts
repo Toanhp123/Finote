@@ -134,7 +134,6 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
     implementation(libs.room3.runtime)
-    implementation(libs.sqlite.framework)
     implementation(libs.sqlcipher.android)
     ksp(libs.room3.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
@@ -142,14 +141,15 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.espresso.core)
+    testImplementation(libs.sqlite.framework)
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.robolectric)
     testImplementation(libs.konsist)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.work.testing)
-    androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }
 // Konsist reads source text, but the test task tracks compiled classes only. Without this input a source-only
 // change (for example a new @Suppress line) leaves testDebugUnitTest up to date and the gate green.

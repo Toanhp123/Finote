@@ -4,6 +4,10 @@ import io.github.toanhp123.finote.domain.notification.repository.RuleUpdateSched
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
+/**
+ * Copies from the real scheduler: the periodic on/off state, and the checking flag a test drives by hand.
+ * Does not copy: WorkManager, so `checkNow` only counts calls and runs nothing.
+ */
 class FakeRuleUpdateScheduler : RuleUpdateScheduler {
     var isPeriodicEnabled = false
         private set

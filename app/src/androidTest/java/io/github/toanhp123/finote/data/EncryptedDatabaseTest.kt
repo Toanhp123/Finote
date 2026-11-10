@@ -21,13 +21,15 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.security.KeyStore
 import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 /** Runs against the real SQLCipher library and AndroidKeyStore, with its own file, key prefs and Keystore alias. */
 @RunWith(AndroidJUnit4::class)
 class EncryptedDatabaseTest {
     private val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
     private val dbFile: File = context.getDatabasePath(DB_NAME)
-    private val clock: Clock = Clock.systemUTC()
+    private val clock: Clock = Clock.fixed(Instant.parse("2026-11-03T00:00:00Z"), ZoneOffset.UTC)
 
     private fun keyStore() = DatabaseKeyStore(context, KeystoreKeyCipher(TEST_ALIAS), DB_NAME, PREFS_NAME)
 

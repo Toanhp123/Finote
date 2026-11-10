@@ -108,8 +108,8 @@ class TransactionListViewModelTest {
             seed()
             fakeTx.transactionsFlow.value =
                 listOf(
-                    tx(TransactionType.EXPENSE, 10_000).copy(id = "in-a"),
-                    tx(TransactionType.EXPENSE, 20_000, account = B).copy(id = "in-b"),
+                    tx(TransactionType.EXPENSE, 10_000, at = 2).copy(id = "in-a"),
+                    tx(TransactionType.EXPENSE, 20_000, account = B, at = 1).copy(id = "in-b"),
                 )
             val vm = open()
             assertEquals(

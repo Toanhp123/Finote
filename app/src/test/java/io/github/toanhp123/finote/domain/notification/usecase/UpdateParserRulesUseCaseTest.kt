@@ -1,12 +1,13 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
-import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RuleFeedError
 import io.github.toanhp123.finote.domain.notification.model.RuleFeedException
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
+import io.github.toanhp123.finote.domain.notification.testLog
+import io.github.toanhp123.finote.domain.notification.testRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -22,31 +23,20 @@ class UpdateParserRulesUseCaseTest {
     private val now = Instant.parse("2026-11-08T01:00:00Z")
 
     private fun rule(pkg: String) =
-        ParserRule(
+        testRule(
             id = "r-$pkg",
             packageName = pkg,
-            bankName = "Bank",
-            channelIdAllowlist = null,
-            ignoreKeywords = emptyList(),
-            priority = 0,
-            isUserCustom = false,
-            version = 1,
             regexPattern = "(?<sign>[+-])(?<amount>[\\d,]+)",
-            fallbackTransactionType = null,
-            dateFormatPattern = null,
-            isActive = true,
-            updatedAt = 0L,
         )
 
     private fun failedLog(pkg: String) =
-        NotificationLog(
+        testLog(
             id = "log-$pkg",
             packageName = pkg,
             channelId = "ch",
             title = "Biến động số dư",
             content = "SD TK -50,000",
             contentHash = "hash-$pkg",
-            postTime = 1_000L,
             receivedAt = 2_000L,
             status = NotificationStatus.FAILED,
             failureReason = "no_rule_matched",

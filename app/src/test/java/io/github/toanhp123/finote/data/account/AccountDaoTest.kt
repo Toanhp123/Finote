@@ -62,4 +62,13 @@ class AccountDaoTest {
             assertEquals(listOf("acc-a", "acc-b"), dao.observeAccounts().first().map { it.id })
             assertNotNull(dao.getById("acc-gone"))
         }
+
+    @Test
+    fun `observeAccounts breaks ties by id`() =
+        runTest {
+            dao.insert(account(id = "y", sortOrder = 0))
+            dao.insert(account(id = "x", sortOrder = 0))
+
+            assertEquals(listOf("x", "y"), dao.observeAccounts().first().map { it.id })
+        }
 }

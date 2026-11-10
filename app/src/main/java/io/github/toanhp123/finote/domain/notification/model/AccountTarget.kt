@@ -13,5 +13,9 @@ sealed interface AccountTarget {
         val mask: String?,
         val bankName: String,
         val type: AccountType,
-    ) : AccountTarget
+    ) : AccountTarget {
+        // The mask stays out of logs and crash reports.
+        override fun toString() =
+            "New(packageName=$packageName, bankName=$bankName, type=$type, hasMask=${mask != null})"
+    }
 }

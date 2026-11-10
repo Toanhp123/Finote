@@ -15,11 +15,11 @@ class ObserveUsableAccountsUseCaseTest {
         runTest {
             val rows =
                 listOf(
-                    testAccount(id = "b"),
+                    testAccount(id = "b").copy(sortOrder = 0),
                     testAccount(id = "gone").copy(deletedAt = 5L),
                     testAccount(id = "archived").copy(isArchived = true),
                     testAccount(id = "ignored").copy(isIgnored = true),
-                    testAccount(id = "a"),
+                    testAccount(id = "a").copy(sortOrder = 1),
                 )
             rows.forEach { repo.stored[it.id] = it }
 

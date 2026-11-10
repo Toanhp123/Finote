@@ -7,7 +7,10 @@ import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
 
-/** In-memory stand-in: each write moves the touched logs out of `PENDING`, like the real transaction does. */
+/**
+ * Copies from the real repository: log filters and order, and each write moves only `PENDING` logs out of `PENDING`.
+ * Does not copy: transaction or balance writes, and business `require` checks (R4/R5 of a later plan move them).
+ */
 class FakeNotificationSettlementRepository(
     val logs: MutableList<NotificationLog> = mutableListOf(),
     private val accounts: List<Account> = emptyList(),
@@ -38,11 +41,12 @@ class FakeNotificationSettlementRepository(
         logs.filter { it.status == NotificationStatus.PENDING }.sortedWith(compareBy({ it.postTime }, { it.id }))
 
     override suspend fun getSettledLogsSince(since: Long): List<NotificationLog> =
-        logs.filter {
-            it.status != NotificationStatus.PENDING &&
-                it.status != NotificationStatus.IGNORED_SPAM &&
-                it.postTime >= since
-        }
+        logs
+            .filter {
+                it.status != NotificationStatus.PENDING &&
+                    it.status != NotificationStatus.IGNORED_SPAM &&
+                    it.postTime >= since
+            }.sortedWith(compareBy({ it.postTime }, { it.id }))
 
     override suspend fun getAccounts(): List<Account> = accounts
 

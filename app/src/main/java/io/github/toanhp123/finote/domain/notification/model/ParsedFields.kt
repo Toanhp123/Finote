@@ -10,4 +10,8 @@ data class ParsedFields(
     val postBalance: Long?,
     val merchant: String?,
     val note: String?,
-)
+) {
+    // Amount, mask, balance and text stay out of logs and crash reports.
+    override fun toString() =
+        "ParsedFields(type=$type, hasMask=${accountMask != null}, hasPostBalance=${postBalance != null})"
+}
