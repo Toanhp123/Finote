@@ -17,17 +17,20 @@ class WorkSettleScheduler
     ) : SettleScheduler {
         private val workManager by lazy { WorkManager.getInstance(context) }
 
-        override fun scheduleAfterCapture() = enqueue(AFTER_CAPTURE_DELAY_SECONDS)
+        override fun scheduleAfterCapture() = enqueue(AFTER_CAPTURE_DELAY_SECONDS, ExistingWorkPolicy.KEEP)
 
-        override fun settleNow() = enqueue(0L)
+        override fun settleNow() = enqueue(0L, ExistingWorkPolicy.REPLACE)
 
-        private fun enqueue(delaySeconds: Long) {
+        private fun enqueue(
+            delaySeconds: Long,
+            policy: ExistingWorkPolicy,
+        ) {
             val request =
                 OneTimeWorkRequestBuilder<SettleWorker>()
                     .setInitialDelay(delaySeconds, TimeUnit.SECONDS)
                     .setBackoffCriteria(BackoffPolicy.LINEAR, BACKOFF_SECONDS, TimeUnit.SECONDS)
                     .build()
-            workManager.enqueueUniqueWork(NAME, ExistingWorkPolicy.REPLACE, request)
+            workManager.enqueueUniqueWork(NAME, policy, request)
         }
 
         private companion object {

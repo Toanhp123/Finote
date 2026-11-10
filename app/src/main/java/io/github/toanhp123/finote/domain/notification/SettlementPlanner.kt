@@ -18,6 +18,10 @@ import kotlin.math.abs
 const val FAIL_AMBIGUOUS_ACCOUNT = "ambiguous_account"
 const val FAIL_ACCOUNT_ARCHIVED = "account_archived"
 const val FAIL_INVALID_AMOUNT = "invalid_amount"
+const val FAIL_SETTLE_ERROR = "settle_error"
+
+// 10^15 VND: far above any real balance, far below Long.MAX_VALUE, so balance sums cannot overflow.
+const val MAX_AMOUNT = 1_000_000_000_000_000L
 
 const val PAIR_WINDOW_MILLIS = 30_000L
 const val REPOST_WINDOW_WITH_BALANCE_MILLIS = 600_000L
@@ -108,7 +112,7 @@ private class Planner(
 
     private fun NotificationLog.isDue() = postTime <= dueTime
 
-    private fun NotificationLog.hasValidAmount() = (parsed?.amount ?: 0L) > 0L
+    private fun NotificationLog.hasValidAmount() = (parsed?.amount ?: 0L) in 1L..MAX_AMOUNT
 
     private fun NotificationLog.isWallet() = rulesById[matchedRuleId]?.accountType == AccountType.WALLET
 

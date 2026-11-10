@@ -313,6 +313,22 @@ class SettlementPlannerTest {
     }
 
     @Test
+    fun `amount at the cap books`() {
+        val capped = log(vcb, old(0), amount = MAX_AMOUNT)
+        assertEquals(capped, (plan(capped).single() as Book).bankSide)
+    }
+
+    @Test
+    fun `amount over the cap or with 19 digits fails`() {
+        val over = log(vcb, old(0), amount = MAX_AMOUNT + 1)
+        val huge = log(vcb, old(1_000), amount = Long.MAX_VALUE)
+        assertEquals(
+            listOf<SettlementDecision>(Fail(over, null, FAIL_INVALID_AMOUNT), Fail(huge, null, FAIL_INVALID_AMOUNT)),
+            plan(over, huge),
+        )
+    }
+
+    @Test
     fun `missing rule books as bank named after the package`() {
         val log = log(vcb, old(0), ruleId = null)
         val book = plan(log, ruleMap = emptyMap()).single() as Book

@@ -156,6 +156,42 @@ class SettlePendingLogsUseCaseTest {
         }
 
     @Test
+    fun `a throwing book older than one hour fails the pair with settle_error`() =
+        runTest {
+            val stuck = old - 1
+            val repository = repo(log("bank", BANK, stuck, text = "x"), log("wallet", OTHER, stuck + 1_000, text = "w"))
+            repository.bookErrors["bank"] = IllegalStateException()
+            assertFalse(useCase(repository)())
+            assertEquals(mapOf("bank" to "settle_error"), repository.failed)
+            assertTrue(
+                repository.logs.all {
+                    it.status == NotificationStatus.FAILED &&
+                        it.failureReason == "settle_error"
+                },
+            )
+        }
+
+    @Test
+    fun `a throwing book of a young log stays pending`() =
+        runTest {
+            val repository = repo(log("a", BANK, old))
+            repository.bookErrors["a"] = IllegalStateException()
+            assertTrue(useCase(repository)())
+            assertTrue(repository.failed.isEmpty())
+        }
+
+    @Test
+    fun `a failing fallback leaves the log pending and later decisions still run`() =
+        runTest {
+            val repository = repo(log("a", BANK, old - 1), log("b", BANK, old + 60_000, text = "other"))
+            repository.bookErrors["a"] = IllegalStateException()
+            repository.failErrors["a"] = IllegalStateException()
+            assertTrue(useCase(repository)())
+            assertEquals(NotificationStatus.PENDING, repository.logs.first { it.id == "a" }.status)
+            assertEquals(setOf("b"), repository.booked.keys)
+        }
+
+    @Test
     fun `repost of an original whose book threw stays pending`() =
         runTest {
             val repository = repo(log("a", BANK, old, text = "same"), log("b", BANK, old + 1_000, text = "same"))

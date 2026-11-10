@@ -16,6 +16,9 @@ class FakeNotificationSettlementRepository(
     /** Bank side log id -> error thrown by [book] before anything is written. */
     val bookErrors = mutableMapOf<String, Throwable>()
 
+    /** Log id -> error thrown by [fail] before anything is written. */
+    val failErrors = mutableMapOf<String, Throwable>()
+
     /** Bank side log id -> transaction id, for each successful [book]. */
     val booked = mutableMapOf<String, String>()
 
@@ -58,6 +61,7 @@ class FakeNotificationSettlementRepository(
     }
 
     override suspend fun fail(decision: SettlementDecision.Fail): Boolean {
+        failErrors[decision.log.id]?.let { throw it }
         failed[decision.log.id] = decision.reason
         val changed = update(decision.log.id, NotificationStatus.FAILED, null, decision.reason)
         val partnerChanged = decision.partner?.let { update(it.id, NotificationStatus.FAILED, null, decision.reason) }

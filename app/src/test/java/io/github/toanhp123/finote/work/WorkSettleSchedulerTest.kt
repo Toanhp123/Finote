@@ -75,7 +75,16 @@ class WorkSettleSchedulerTest {
     }
 
     @Test
-    fun `second call replaces the first`() {
+    fun `second scheduleAfterCapture keeps the first request`() {
+        scheduler.scheduleAfterCapture()
+        val first = infos().single()
+        scheduler.scheduleAfterCapture()
+
+        assertEquals(first.id, infos().single().id)
+    }
+
+    @Test
+    fun `settleNow replaces a queued request`() {
         scheduler.scheduleAfterCapture()
         val first = infos().single()
         scheduler.settleNow()

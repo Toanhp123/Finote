@@ -1,8 +1,10 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
+import io.github.toanhp123.finote.domain.notification.FAIL_SETTLE_ERROR
 import io.github.toanhp123.finote.domain.notification.REPOST_WINDOW_WITH_BALANCE_MILLIS
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
+import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Fail
 import io.github.toanhp123.finote.domain.notification.planSettlement
 import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
 import kotlinx.coroutines.CancellationException
@@ -19,9 +21,11 @@ class SettlePendingLogsUseCase
         private val clock: Clock,
     ) {
         /**
-         * Plans the `PENDING` logs and runs each decision in order. A decision that throws is skipped; its logs
-         * stay `PENDING` and the next decisions still run. Returns true when `PENDING` logs remain (the worker
-         * retries). Runs one at a time in the whole process.
+         * Plans the `PENDING` logs and runs each decision in order. A decision that throws is skipped and the next
+         * decisions still run. Its logs stay `PENDING` and are retried, unless the log that carries it is older than
+         * [STUCK_AFTER_MILLIS]: then they are written `FAILED` with [FAIL_SETTLE_ERROR] (if that write throws too,
+         * they stay `PENDING`). Returns true when `PENDING` logs remain (the worker retries). Runs one at a time in
+         * the whole process.
          */
         suspend operator fun invoke(): Boolean = lock.withLock { settle() }
 
@@ -48,10 +52,37 @@ class SettlePendingLogsUseCase
                 } catch (error: CancellationException) {
                     throw error
                 } catch (_: Exception) {
-                    // Skipped: the logs stay PENDING and the next run tries again.
+                    failIfStuck(decision, written, now)
                 }
             }
             return repository.getPendingLogs().isNotEmpty()
+        }
+
+        /**
+         * Gives up on a decision that keeps throwing, so its logs do not stay `PENDING` forever. Age is counted from
+         * capture (`receivedAt`), not post time: a rescan can capture hours-old notifications.
+         */
+        private suspend fun failIfStuck(
+            decision: SettlementDecision,
+            written: MutableSet<String>,
+            now: Long,
+        ) {
+            val fallback =
+                when (decision) {
+                    is SettlementDecision.Book -> Fail(decision.bankSide, decision.walletSide, FAIL_SETTLE_ERROR)
+                    is SettlementDecision.Fail -> decision.copy(reason = FAIL_SETTLE_ERROR)
+                    is SettlementDecision.Ignore -> Fail(decision.log, decision.partner, FAIL_SETTLE_ERROR)
+                    is SettlementDecision.Repost -> Fail(decision.log, null, FAIL_SETTLE_ERROR)
+                }
+            if (now - fallback.log.receivedAt <= STUCK_AFTER_MILLIS) return
+            try {
+                repository.fail(fallback)
+                written += listOfNotNull(fallback.log.id, fallback.partner?.id)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                // Stay PENDING; the next run tries again.
+            }
         }
 
         private suspend fun execute(
@@ -89,5 +120,6 @@ class SettlePendingLogsUseCase
 
         private companion object {
             val lock = Mutex()
+            const val STUCK_AFTER_MILLIS = 3_600_000L
         }
     }
