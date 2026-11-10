@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.database.account
 import io.github.toanhp123.finote.domain.common.StorageException
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -41,6 +42,18 @@ class TransactionRepositoryStorageErrorTest {
             dbRule.execSql("DROP TABLE transactions")
 
             val failure = runCatching { repo.getTransaction("tx-1") }.exceptionOrNull()
+
+            assertTrue(failure.toString(), failure is StorageException)
+            assertTrue(failure?.cause.toString(), failure?.cause is android.database.SQLException)
+        }
+
+    @Test
+    fun `observe maps SQLException to StorageException`() =
+        runTest {
+            val repo = TransactionRepositoryImpl(dbRule.db, clock)
+            dbRule.execSql("DROP TABLE transactions")
+
+            val failure = runCatching { repo.observeTransactions(null).first() }.exceptionOrNull()
 
             assertTrue(failure.toString(), failure is StorageException)
             assertTrue(failure?.cause.toString(), failure?.cause is android.database.SQLException)

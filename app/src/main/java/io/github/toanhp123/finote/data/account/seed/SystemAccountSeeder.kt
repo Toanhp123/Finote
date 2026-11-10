@@ -2,7 +2,7 @@ package io.github.toanhp123.finote.data.account.seed
 
 import androidx.room3.RoomDatabase
 import androidx.sqlite.SQLiteConnection
-import androidx.sqlite.execSQL
+import io.github.toanhp123.finote.data.database.immediateTransaction
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.model.SYSTEM_CASH_ACCOUNT_ID
 import java.time.Clock
@@ -28,16 +28,7 @@ class SystemAccountSeeder(
     override suspend fun onOpen(connection: SQLiteConnection) {
         if (hasAnyAccount(connection)) return
         // Room runs onOpen outside a transaction, so a failed seed must not leave a half-written row behind.
-        connection.execSQL("BEGIN IMMEDIATE TRANSACTION")
-        var isCommitted = false
-        try {
-            seed(connection)
-            connection.execSQL("COMMIT")
-            isCommitted = true
-        } finally {
-            // A failing ROLLBACK must not hide the seed error that is already propagating.
-            if (!isCommitted) runCatching { connection.execSQL("ROLLBACK") }
-        }
+        connection.immediateTransaction { seed(connection) }
     }
 
     private fun hasAnyAccount(connection: SQLiteConnection): Boolean =

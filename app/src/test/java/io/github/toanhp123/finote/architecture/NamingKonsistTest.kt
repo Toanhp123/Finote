@@ -86,10 +86,14 @@ class NamingKonsistTest {
     @Test
     fun `flow functions start with observe`() {
         // A use case exposes its flow through `operator fun invoke`, so invoke is exempt.
+        // A Flow extension operator transforms a stream, it is not a source, so it is exempt too.
         (filesIn(DOMAIN) + filesIn(DATA))
             .functions(includeNested = true, includeLocal = false)
-            .filter { it.name != "invoke" && it.returnType?.name?.baseTypeName() == "Flow" }
-            .assertTrue(strict = false, testName = "flow functions start with observe") {
+            .filter {
+                it.name != "invoke" &&
+                    it.receiverType?.name?.baseTypeName() != "Flow" &&
+                    it.returnType?.name?.baseTypeName() == "Flow"
+            }.assertTrue(strict = false, testName = "flow functions start with observe") {
                 it.name.startsWith("observe")
             }
     }

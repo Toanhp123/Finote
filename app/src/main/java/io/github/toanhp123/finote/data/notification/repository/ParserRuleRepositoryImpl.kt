@@ -1,7 +1,8 @@
 package io.github.toanhp123.finote.data.notification.repository
 
-import androidx.room3.withWriteTransaction
 import io.github.toanhp123.finote.data.database.FinoteDatabase
+import io.github.toanhp123.finote.data.database.mapStorageErrors
+import io.github.toanhp123.finote.data.database.storageWrite
 import io.github.toanhp123.finote.data.notification.mapper.toDomain
 import io.github.toanhp123.finote.data.notification.mapper.toEntity
 import io.github.toanhp123.finote.data.notification.seed.StoredRule
@@ -22,7 +23,7 @@ class ParserRuleRepositoryImpl
         private val dao = db.parserRuleDao()
 
         override suspend fun applyRules(rules: List<ParserRule>): Int =
-            db.withWriteTransaction {
+            db.storageWrite {
                 val stored = dao.getAll().associate { it.id to StoredRule(it.version, it.isUserCustom) }
                 val now = clock.millis()
                 val toWrite = outdatedRules(stored, rules.map { it.toEntity().copy(updatedAt = now) })
@@ -31,5 +32,5 @@ class ParserRuleRepositoryImpl
             }
 
         override fun observeRules(): Flow<List<ParserRule>> =
-            dao.observeAll().map { list -> list.mapNotNull { it.toDomain() } }
+            dao.observeAll().map { list -> list.mapNotNull { it.toDomain() } }.mapStorageErrors()
     }

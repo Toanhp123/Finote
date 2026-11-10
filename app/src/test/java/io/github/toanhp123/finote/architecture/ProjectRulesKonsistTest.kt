@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.architecture
 
+import com.lemonappdev.konsist.api.declaration.KoFileDeclaration
 import com.lemonappdev.konsist.api.declaration.KoPropertyDeclaration
 import com.lemonappdev.konsist.api.ext.list.classes
 import com.lemonappdev.konsist.api.ext.list.functions
@@ -121,6 +122,27 @@ class ProjectRulesKonsistTest {
                 holder.functions().any { it.name == "toString" && it.hasOverrideModifier }
             }
     }
+
+    @Test
+    fun `write transactions open only in data database`() {
+        productionFiles
+            .filterNot { it.packageName().inPackage(DATA_DATABASE) }
+            .assertTrue(strict = false, testName = "write transactions open only in data database") { file ->
+                file.codeLines().none { it.contains("withWriteTransaction") }
+            }
+    }
+
+    @Test
+    fun `storage exceptions are created only in data database`() {
+        productionFiles
+            .filterNot { it.packageName().inPackage(DATA_DATABASE) }
+            .filterNot { it.packageName() == DOMAIN_COMMON && it.name == "StorageException" }
+            .assertTrue(strict = false, testName = "storage exceptions are created only in data database") { file ->
+                file.codeLines().none { it.contains("StorageException(") }
+            }
+    }
+
+    private fun KoFileDeclaration.codeLines() = text.lineSequence().filterNot { it.trimStart().startsWith("import ") }
 
     private fun String.isMoneyName() = nameWords().any { it in MONEY_WORDS || it.removeSuffix("s") in MONEY_WORDS }
 

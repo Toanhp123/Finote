@@ -52,6 +52,13 @@ di/                  Hilt module
 
 `automation` and `work` import no `*Repository`: they call a use case. `di` holds only `@Module` types (each function `@Provides` or `@Binds`) and `@Qualifier` annotations; other types go in their layer.
 
+### Storage rules
+
+- Write transactions open only through `TransactionRunner` (use cases) or `storageWrite` (repositories). `withWriteTransaction` appears only in `data/database`. A nested `storageWrite` joins the outer transaction as a savepoint.
+- `SQLException` maps to `StorageException` only in `data/database`. `StorageException(` is created only there; `domain/common` holds the definition.
+
+`ProjectRulesKonsistTest` enforces both.
+
 ### Folder rules
 
 Rules 2 and 3 apply to `ui` only. `domain/<f>` and `data/<f>` follow the role folders in Layers; `LayoutKonsistTest` enforces them.
@@ -98,7 +105,7 @@ UI flow is MVI: Screen sends `Intent`, ViewModel calls use cases (reads included
 
 | Kind | Rule | Example |
 |---|---|---|
-| Function returning `Flow` | `observeX` | `observeAccounts()` |
+| Function returning `Flow` | `observeX`. Flow extension operators (`Flow<T>.mapX()`) are exempt | `observeAccounts()` |
 | One-shot `suspend` read | `getX` | `getAccount(id)` |
 | Boolean | `is`, `has`, `should` | `isArchived` |
 | Constant | `UPPER_SNAKE_CASE` | `DEDUP_WINDOW_MS` |

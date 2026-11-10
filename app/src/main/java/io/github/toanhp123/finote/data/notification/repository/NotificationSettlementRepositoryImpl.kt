@@ -1,10 +1,11 @@
 package io.github.toanhp123.finote.data.notification.repository
 
-import androidx.room3.withWriteTransaction
 import io.github.toanhp123.finote.data.account.local.entity.AccountEntity
 import io.github.toanhp123.finote.data.account.mapper.toDomain
 import io.github.toanhp123.finote.data.account.repository.AccountBalanceRebuilder
 import io.github.toanhp123.finote.data.database.FinoteDatabase
+import io.github.toanhp123.finote.data.database.storage
+import io.github.toanhp123.finote.data.database.storageWrite
 import io.github.toanhp123.finote.data.notification.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntity
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
@@ -34,26 +35,29 @@ class NotificationSettlementRepositoryImpl
         private val transactions = db.transactionDao()
         private val rebuilder = AccountBalanceRebuilder(accounts, transactions, db.accountBalanceSnapshotDao(), clock)
 
-        override suspend fun getPendingLogs(): List<NotificationLog> = logs.getPending().map { it.toDomain() }
+        override suspend fun getPendingLogs(): List<NotificationLog> =
+            storage { logs.getPending().map { it.toDomain() } }
 
         override suspend fun getSettledLogsSince(since: Long): List<NotificationLog> =
-            logs.getSettledSince(since).map { it.toDomain() }
+            storage { logs.getSettledSince(since).map { it.toDomain() } }
 
-        override suspend fun getAccounts(): List<Account> = accounts.getWithBankKey().map { it.toDomain() }
+        override suspend fun getAccounts(): List<Account> = storage { accounts.getWithBankKey().map { it.toDomain() } }
 
         override suspend fun getRulesById(): Map<String, ParserRule> =
-            db
-                .parserRuleDao()
-                .getAll()
-                .mapNotNull { it.toDomain() }
-                .associateBy { it.id }
+            storage {
+                db
+                    .parserRuleDao()
+                    .getAll()
+                    .mapNotNull { it.toDomain() }
+                    .associateBy { it.id }
+            }
 
         override suspend fun book(
             decision: SettlementDecision.Book,
             transactionId: String,
             now: Long,
         ) {
-            db.withWriteTransaction {
+            db.storageWrite {
                 val bank = decision.bankSide
                 val parsed = checkNotNull(bank.parsed) { "bank side has no parsed fields" }
                 val account = resolveAccount(decision.account, now)
@@ -88,25 +92,30 @@ class NotificationSettlementRepositoryImpl
         }
 
         override suspend fun fail(decision: SettlementDecision.Fail): Boolean =
-            logs.markSettled(
-                ids = listOfNotNull(decision.log.id, decision.partner?.id),
-                status = NotificationStatus.FAILED,
-                linkedTransactionId = null,
-                failureReason = decision.reason,
-            ) > 0
+            storage {
+                logs.markSettled(
+                    ids = listOfNotNull(decision.log.id, decision.partner?.id),
+                    status = NotificationStatus.FAILED,
+                    linkedTransactionId = null,
+                    failureReason = decision.reason,
+                ) > 0
+            }
 
         override suspend fun ignore(decision: SettlementDecision.Ignore): Boolean =
-            logs.markSettled(
-                ids = listOfNotNull(decision.log.id, decision.partner?.id),
-                status = NotificationStatus.IGNORED_ACCOUNT,
-                linkedTransactionId = null,
-                failureReason = null,
-            ) > 0
+            storage {
+                logs.markSettled(
+                    ids = listOfNotNull(decision.log.id, decision.partner?.id),
+                    status = NotificationStatus.IGNORED_ACCOUNT,
+                    linkedTransactionId = null,
+                    failureReason = null,
+                ) > 0
+            }
 
         override suspend fun markRepost(
             logId: String,
             linkedTransactionId: String?,
-        ): Boolean = logs.markSettled(listOf(logId), NotificationStatus.DEDUPLICATED, linkedTransactionId, null) == 1
+        ): Boolean =
+            storage { logs.markSettled(listOf(logId), NotificationStatus.DEDUPLICATED, linkedTransactionId, null) == 1 }
 
         private suspend fun resolveAccount(
             target: AccountTarget,

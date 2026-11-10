@@ -50,11 +50,13 @@ class LayoutKonsistTest {
 
     @Test
     fun `services do not reach repositories or ports`() {
-        productionFiles
-            .filter { servicePackage.matches(it.packageName()) }
-            .assertNoImports("services do not reach repositories or ports") {
-                it.name.hasSegment("repository") || it.name.hasSegment("port")
-            }
+        val services = productionFiles.filter { servicePackage.matches(it.packageName()) }
+        services.assertNoImports("services do not reach repositories or ports") {
+            it.name.hasSegment("repository") || it.name.hasSegment("port")
+        }
+        services.assertNoQualifiedNames("services do not reach repositories or ports, fully qualified") {
+            it.hasSegment("repository") || it.hasSegment("port")
+        }
     }
 
     @Test

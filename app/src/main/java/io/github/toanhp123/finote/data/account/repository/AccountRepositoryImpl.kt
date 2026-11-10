@@ -1,10 +1,12 @@
 package io.github.toanhp123.finote.data.account.repository
 
-import androidx.room3.withWriteTransaction
 import io.github.toanhp123.finote.data.account.local.entity.AccountEntity
 import io.github.toanhp123.finote.data.account.mapper.toDomain
 import io.github.toanhp123.finote.data.account.mapper.toEntity
 import io.github.toanhp123.finote.data.database.FinoteDatabase
+import io.github.toanhp123.finote.data.database.mapStorageErrors
+import io.github.toanhp123.finote.data.database.storage
+import io.github.toanhp123.finote.data.database.storageWrite
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.domain.account.error.AccountMergeRejectedException
 import io.github.toanhp123.finote.domain.account.error.MergeRejection
@@ -28,17 +30,19 @@ class AccountRepositoryImpl
         private val transactions = db.transactionDao()
         private val rebuilder = AccountBalanceRebuilder(accounts, transactions, db.accountBalanceSnapshotDao(), clock)
 
-        override suspend fun getAccount(id: String): Account? = accounts.getById(id)?.toDomain()
+        override suspend fun getAccount(id: String): Account? = storage { accounts.getById(id)?.toDomain() }
 
         override fun observeAccounts(): Flow<List<Account>> =
-            accounts.observeAccounts().map { list -> list.map { it.toDomain() } }
+            accounts.observeAccounts().map { list -> list.map { it.toDomain() } }.mapStorageErrors()
 
         override suspend fun add(account: Account) {
-            accounts.insert(account.toEntity().copy(currentBalance = account.initialBalance, nameKey = null))
+            storage {
+                accounts.insert(account.toEntity().copy(currentBalance = account.initialBalance, nameKey = null))
+            }
         }
 
         override suspend fun update(account: Account) {
-            db.withWriteTransaction {
+            db.storageWrite {
                 val old = requireLive(account.id)
                 accounts.update(
                     old.copy(
@@ -59,7 +63,7 @@ class AccountRepositoryImpl
             archived: Boolean,
             updatedAt: Long,
         ) {
-            db.withWriteTransaction {
+            db.storageWrite {
                 accounts.update(requireLive(id).copy(isArchived = archived, updatedAt = updatedAt))
             }
         }
@@ -68,9 +72,9 @@ class AccountRepositoryImpl
             id: String,
             deletedAt: Long,
         ) {
-            db.withWriteTransaction {
+            db.storageWrite {
                 val old = requireNotNull(accounts.getById(id)) { "account does not exist" }
-                if (old.deletedAt != null) return@withWriteTransaction
+                if (old.deletedAt != null) return@storageWrite
                 require(transactions.countActiveByAccount(id) == 0) { "account still has transactions" }
                 accounts.update(old.copy(deletedAt = deletedAt, updatedAt = deletedAt))
             }
@@ -81,7 +85,7 @@ class AccountRepositoryImpl
             targetId: String,
             now: Long,
         ) {
-            db.withWriteTransaction {
+            db.storageWrite {
                 val (source, target) = requireMergeable(sourceId, targetId)
                 merges.moveSource(sourceId, targetId, now)
                 merges.moveDestination(sourceId, targetId, now)
@@ -93,7 +97,8 @@ class AccountRepositoryImpl
             }
         }
 
-        override suspend fun getLiveTransactionCount(id: String): Int = transactions.countActiveByAccount(id)
+        override suspend fun getLiveTransactionCount(id: String): Int =
+            storage { transactions.countActiveByAccount(id) }
 
         override suspend fun setIgnored(
             id: String,
@@ -101,7 +106,7 @@ class AccountRepositoryImpl
             shouldTrashOldTransactions: Boolean,
             now: Long,
         ) {
-            db.withWriteTransaction {
+            db.storageWrite {
                 accounts.update(requireLive(id).copy(isIgnored = ignored, updatedAt = now))
                 if (ignored && shouldTrashOldTransactions) {
                     transactions.trashNonTransfers(id, now)
@@ -110,7 +115,8 @@ class AccountRepositoryImpl
             }
         }
 
-        override suspend fun getTrashableTransactionCount(id: String): Int = transactions.countNonTransfers(id)
+        override suspend fun getTrashableTransactionCount(id: String): Int =
+            storage { transactions.countNonTransfers(id) }
 
         private suspend fun requireMergeable(
             sourceId: String,

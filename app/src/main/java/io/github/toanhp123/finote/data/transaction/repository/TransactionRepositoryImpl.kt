@@ -1,17 +1,17 @@
 package io.github.toanhp123.finote.data.transaction.repository
 
-import android.database.SQLException
-import androidx.room3.withWriteTransaction
 import io.github.toanhp123.finote.data.account.local.entity.AccountEntity
 import io.github.toanhp123.finote.data.account.mapper.toDomain
 import io.github.toanhp123.finote.data.account.repository.AccountBalanceRebuilder
 import io.github.toanhp123.finote.data.database.FinoteDatabase
+import io.github.toanhp123.finote.data.database.mapStorageErrors
+import io.github.toanhp123.finote.data.database.storage
+import io.github.toanhp123.finote.data.database.storageWrite
 import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntity
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.mapper.toEntity
 import io.github.toanhp123.finote.domain.account.service.detectBalanceDrift
 import io.github.toanhp123.finote.domain.category.model.CategoryType
-import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
@@ -54,10 +54,10 @@ class TransactionRepositoryImpl
             storage { transactions.getLastManualCategoryId(type) }
 
         override fun observeTransactions(accountId: String?): Flow<List<Transaction>> =
-            transactions.observeTransactions(accountId).map { rows -> rows.map { it.toDomain() } }
+            transactions.observeTransactions(accountId).map { rows -> rows.map { it.toDomain() } }.mapStorageErrors()
 
         override suspend fun add(transaction: Transaction) {
-            write {
+            db.storageWrite {
                 val entity = transaction.toEntity()
                 requireUsableAccounts(entity.accountIds())
                 transactions.insert(entity)
@@ -71,7 +71,7 @@ class TransactionRepositoryImpl
             actualBalance: Long,
             now: Long,
         ): Transaction? =
-            write {
+            db.storageWrite {
                 val account = requireUsableAccount(accountId)
                 writeAdjustment(id, accountId, Math.subtractExact(actualBalance, account.currentBalance), now)
             }
@@ -81,15 +81,15 @@ class TransactionRepositoryImpl
             accountId: String,
             now: Long,
         ): Transaction? =
-            write {
+            db.storageWrite {
                 val account = requireUsableAccount(accountId)
                 val live = transactions.getActiveByAccount(accountId).map { it.toDomain() }
-                val drift = detectBalanceDrift(account.toDomain(), live) ?: return@write null
+                val drift = detectBalanceDrift(account.toDomain(), live) ?: return@storageWrite null
                 writeAdjustment(id, accountId, drift.difference, now)
             }
 
         override suspend fun update(transaction: Transaction) {
-            write {
+            db.storageWrite {
                 val old = requireNotNull(transactions.getById(transaction.id)) { "transaction does not exist" }
                 require(old.deletedAt == null) { "transaction is deleted" }
                 val entity = transaction.toEntity()
@@ -103,24 +103,13 @@ class TransactionRepositoryImpl
             id: String,
             deletedAt: Long,
         ) {
-            write {
+            db.storageWrite {
                 val old = requireNotNull(transactions.getById(id)) { "transaction does not exist" }
-                if (old.deletedAt != null) return@write
+                if (old.deletedAt != null) return@storageWrite
                 transactions.update(old.copy(deletedAt = deletedAt, updatedAt = deletedAt))
                 rebuilder.rebuild(old.accountIds())
             }
         }
-
-        /** One write transaction; a SQLite failure reaches callers as [StorageException]. */
-        private suspend fun <T> write(block: suspend () -> T): T = storage { db.withWriteTransaction { block() } }
-
-        /** Runs a read or write; a SQLite failure reaches callers as [StorageException]. */
-        private suspend fun <T> storage(block: suspend () -> T): T =
-            try {
-                block()
-            } catch (e: SQLException) {
-                throw StorageException(e)
-            }
 
         /** Re-checks inside the write transaction: the use case's early check can be stale by now. */
         private suspend fun requireUsableAccounts(wanted: Set<String>) {

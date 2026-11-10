@@ -3,7 +3,7 @@ package io.github.toanhp123.finote.data.category.seed
 import androidx.room3.RoomDatabase
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.SQLiteStatement
-import androidx.sqlite.execSQL
+import io.github.toanhp123.finote.data.database.immediateTransaction
 import java.time.Clock
 
 private const val INSERT_SQL =
@@ -26,16 +26,7 @@ class SystemCategorySeeder(
     override suspend fun onOpen(connection: SQLiteConnection) {
         if (hasSystemCategories(connection)) return
         // Room runs onOpen outside a transaction, so a failed seed must not leave half of the rows behind.
-        connection.execSQL("BEGIN IMMEDIATE TRANSACTION")
-        var isCommitted = false
-        try {
-            seed(connection)
-            connection.execSQL("COMMIT")
-            isCommitted = true
-        } finally {
-            // A failing ROLLBACK must not hide the seed error that is already propagating.
-            if (!isCommitted) runCatching { connection.execSQL("ROLLBACK") }
-        }
+        connection.immediateTransaction { seed(connection) }
     }
 
     private fun hasSystemCategories(connection: SQLiteConnection): Boolean =

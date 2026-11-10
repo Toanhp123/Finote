@@ -3,7 +3,7 @@ package io.github.toanhp123.finote.data.notification.seed
 import androidx.room3.RoomDatabase
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.SQLiteStatement
-import androidx.sqlite.execSQL
+import io.github.toanhp123.finote.data.database.immediateTransaction
 import io.github.toanhp123.finote.data.notification.local.entity.ParserRuleEntity
 
 private const val UPSERT_SQL =
@@ -23,16 +23,9 @@ class ParserRuleSeeder : RoomDatabase.Callback() {
         // Cheap read outside the write lock: the common reopen has nothing to seed and takes no lock.
         if (outdatedRules(storedRules(connection), SystemParserRules).isEmpty()) return
         // Room runs onOpen outside a transaction, so a failed seed must not leave half of the rows behind.
-        connection.execSQL("BEGIN IMMEDIATE TRANSACTION")
-        var isCommitted = false
-        try {
+        connection.immediateTransaction {
             // Read again under the write lock: another connection may have seeded or edited since the check above.
             write(connection, outdatedRules(storedRules(connection), SystemParserRules))
-            connection.execSQL("COMMIT")
-            isCommitted = true
-        } finally {
-            // A failing ROLLBACK must not hide the seed error that is already propagating.
-            if (!isCommitted) runCatching { connection.execSQL("ROLLBACK") }
         }
     }
 
