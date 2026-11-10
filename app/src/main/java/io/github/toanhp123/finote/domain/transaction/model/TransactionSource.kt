@@ -4,5 +4,6 @@ enum class TransactionSource {
     MANUAL,
     NOTIFICATION_PARSER,
     RECURRING,
+    ADJUSTMENT,
     IMPORT,
 }

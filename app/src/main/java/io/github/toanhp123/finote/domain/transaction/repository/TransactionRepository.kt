@@ -43,6 +43,17 @@ interface TransactionRepository {
         now: Long,
     ): Transaction?
 
+    /**
+     * Writes one ADJUSTMENT that settles the account's current balance drift (see `detectBalanceDrift`), all in one
+     * atomic unit. The drift is recomputed from stored rows inside the write, so a booking that landed after the
+     * caller saw the drift cannot skew the amount. Returns null and writes nothing when there is no drift.
+     */
+    suspend fun adjustDrift(
+        id: String,
+        accountId: String,
+        now: Long,
+    ): Transaction?
+
     suspend fun update(transaction: Transaction)
 
     suspend fun softDelete(

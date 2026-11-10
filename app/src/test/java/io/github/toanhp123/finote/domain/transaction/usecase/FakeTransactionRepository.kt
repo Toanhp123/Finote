@@ -21,6 +21,8 @@ class FakeTransactionRepository(
         private set
     val reconcileCalls = mutableListOf<ReconcileCall>()
     var reconcileResult: Transaction? = null
+    val adjustCalls = mutableListOf<AdjustCall>()
+    var adjustResult: Transaction? = null
 
     /** Source of [observeTransactions]; a non-null account id keeps rows with that source or transfer destination. */
     val transactionsFlow = MutableStateFlow<List<Transaction>>(emptyList())
@@ -31,6 +33,12 @@ class FakeTransactionRepository(
         val id: String,
         val accountId: String,
         val actualBalance: Long,
+        val now: Long,
+    )
+
+    data class AdjustCall(
+        val id: String,
+        val accountId: String,
         val now: Long,
     )
 
@@ -70,6 +78,15 @@ class FakeTransactionRepository(
     ): Transaction? {
         reconcileCalls += ReconcileCall(id, accountId, actualBalance, now)
         return reconcileResult
+    }
+
+    override suspend fun adjustDrift(
+        id: String,
+        accountId: String,
+        now: Long,
+    ): Transaction? {
+        adjustCalls += AdjustCall(id, accountId, now)
+        return adjustResult
     }
 
     override suspend fun update(transaction: Transaction) {

@@ -16,9 +16,9 @@ import io.github.toanhp123.finote.domain.category.usecase.FakeCategoryRepository
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import io.github.toanhp123.finote.domain.transaction.usecase.AdjustBalanceDriftUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.ReconcileBalanceUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ValidateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
@@ -62,7 +62,7 @@ class TransactionListViewModelTest {
             categoryRepository = categories,
             updateTransaction = UpdateTransactionUseCase(fakeTx, ValidateTransactionUseCase(fakeTx, clock), clock),
             observeDrifts = ObserveBalanceDriftUseCase(accounts, fakeTx),
-            reconcileBalance = ReconcileBalanceUseCase(fakeTx, clock),
+            adjustBalanceDrift = AdjustBalanceDriftUseCase(fakeTx, clock),
             clock = clock,
         )
 
@@ -479,23 +479,7 @@ class TransactionListViewModelTest {
         }
 
     @Test
-    fun `adjust reconciles to current plus difference`() =
-        runTest(mainRule.dispatcher) {
-            seed()
-            accounts.stored[A] = testAccount(A).copy(currentBalance = 1_010_000)
-            store(row("e").copy(type = TransactionType.INCOME, postBalance = 1_700_000))
-            val vm = open()
-
-            vm.onIntent(TransactionListIntent.AdjustDrift(A))
-            runCurrent()
-
-            val call = fakeTx.reconcileCalls.single()
-            assertEquals(A, call.accountId)
-            assertEquals(1_010_000L + 690_000L, call.actualBalance)
-        }
-
-    @Test
-    fun `adjust without a drift writes nothing`() =
+    fun `adjust leaves the drift check to the repository`() =
         runTest(mainRule.dispatcher) {
             seed()
             val vm = open()
@@ -503,7 +487,7 @@ class TransactionListViewModelTest {
             vm.onIntent(TransactionListIntent.AdjustDrift(A))
             runCurrent()
 
-            assertTrue(fakeTx.reconcileCalls.isEmpty())
+            assertEquals(A, fakeTx.adjustCalls.single().accountId)
         }
 }
 

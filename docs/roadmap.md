@@ -224,6 +224,17 @@ Trạng thái (2026-11-09): `account-merge-ignore` code xong, review từng task
 - Nợ cho P2d: khi tính số dư đầu (gộp và cold start), chuyển khoản mà tài khoản chỉ là bên nhận có thể bị lấy làm mốc `postBalance` (số dư của bên kia). Chưa có dòng nào như vậy trước P2d. Sửa cả hai chỗ: chỉ lấy dòng có `accountId` = tài khoản.
 - Nợ nhỏ: màn Tài khoản bắt mọi lỗi thành snackbar "không thành công" mà không ghi nguyên nhân; sheet không tự cập nhật nếu danh sách đổi khi đang mở.
 
+### Dọn dẹp trước P2d
+Audit toàn dự án ngày 2026-11-10. Chi tiết từng mục (A1–A20): `docs/superpowers/handoff/2026-11-10-cleanup-before-p2d.md`. Làm theo thứ tự:
+1. `fix/balance-adjust` (A1, A3): nút Điều chỉnh tính lại độ lệch trong transaction ghi; dòng điều chỉnh có `source = ADJUSTMENT`.
+2. `fix/settle-stuck-logs` (A2, A7): chặn số tiền quá lớn, log PENDING lỗi mãi thì chuyển FAILED; settle dùng `KEEP`.
+3. `chore/domain-account-rules` (A8, A9, A11, A20): một hàm tính mốc số dư đầu, `Account.isUsable`, `Transaction.touches`. Phải xong trước P2d.
+4. `chore/ui-overlay-api` (A10, A6, A16): API `FinoteDialog`, overlay giữ nội dung khi đóng, đóng sheet nhập tiền mặt theo state.
+5. `chore/ui-components` (A12, A13, A14, A15): component dùng chung, bỏ số cứng, định dạng ngày theo locale, accessibility.
+6. `chore/test-hygiene` (A18, A19): fake đúng hợp đồng, builder test dùng chung, siết Konsist.
+7. `chore/release-readiness` (A4, A17): build release/R8 trong gate, loại cờ setup khỏi backup.
+8. `fix/notification-text-lines` (A5): chờ mẫu thông báo thật từ máy.
+
 ### P2d — `feature/transfer-pairing` (Module 7)
 - Pairing nằm ở `domain/notification`, không phụ thuộc `android.*`.
 - Hai biến động cùng số tiền, một trừ (tài khoản A) và một cộng (tài khoản B), trong 1–2 phút → gộp thành `TRANSFER`, `status = PAIRED_TRANSFER`.

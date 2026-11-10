@@ -42,27 +42,6 @@ class TransactionRepositoryImplTest {
             dbRule.db.accountDao().insert(account(id = "acc-2", currentBalance = 1_000_000L))
         }
 
-    private fun domainTx(
-        id: String = "tx-1",
-        type: TransactionType = TransactionType.EXPENSE,
-        amount: Long = 200_000L,
-        accountId: String = "acc-1",
-        toAccountId: String? = null,
-        at: String = "2026-09-10T00:00:00Z",
-    ) = Transaction(
-        id = id,
-        amount = amount,
-        feeAmount = 0L,
-        type = type,
-        adjustmentDirection = null,
-        accountId = accountId,
-        toAccountId = toAccountId,
-        timestamp = Instant.parse(at).toEpochMilli(),
-        deletedAt = null,
-        createdAt = 1L,
-        updatedAt = 1L,
-    )
-
     private suspend fun balanceOf(accountId: String) =
         dbRule.db
             .accountDao()
@@ -571,7 +550,7 @@ class TransactionRepositoryImplTest {
             assertEquals(300_000L, tx?.amount)
             assertEquals(0L, tx?.feeAmount)
             assertNull(tx?.categoryId)
-            assertEquals(TransactionSource.MANUAL, tx?.source)
+            assertEquals(TransactionSource.ADJUSTMENT, tx?.source)
             assertEquals(clock.millis(), tx?.timestamp)
             assertEquals(clock.millis(), tx?.createdAt)
             assertEquals(tx, repo.getTransaction("adj-1"))

@@ -10,8 +10,8 @@ import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import io.github.toanhp123.finote.domain.transaction.usecase.AdjustBalanceDriftUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.ReconcileBalanceUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
@@ -38,7 +38,7 @@ class TransactionListViewModel
         categoryRepository: CategoryRepository,
         private val updateTransaction: UpdateTransactionUseCase,
         observeDrifts: ObserveBalanceDriftUseCase,
-        private val reconcileBalance: ReconcileBalanceUseCase,
+        private val adjustBalanceDrift: AdjustBalanceDriftUseCase,
         private val clock: Clock,
     ) : BaseViewModel<TransactionListState, TransactionListIntent, TransactionListEffect>(
             TransactionListState(today = LocalDate.now(clock)),
@@ -169,13 +169,13 @@ class TransactionListViewModel
 
         // The drift flow re-emits once the adjustment lands, which removes the banner.
         private fun adjust(accountId: String) {
-            val drift = state.value.drifts.firstOrNull { it.accountId == accountId } ?: return
-            val account = state.value.accountsById[accountId] ?: return
             viewModelScope.launch {
                 try {
-                    reconcileBalance(accountId, Math.addExact(account.currentBalance, drift.difference))
+                    adjustBalanceDrift(accountId)
                 } catch (_: IllegalArgumentException) {
                     // The banner stays, so the user can tap again.
+                } catch (_: ArithmeticException) {
+                    // A drift too large to book (Long overflow); the banner stays.
                 } catch (_: SQLException) {
                     // Same: no message is logged because the content is financial data.
                 }
