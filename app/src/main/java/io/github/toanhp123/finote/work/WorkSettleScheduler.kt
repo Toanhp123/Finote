@@ -6,7 +6,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.github.toanhp123.finote.domain.notification.repository.SettleScheduler
+import io.github.toanhp123.finote.domain.notification.port.SettleScheduler
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 

@@ -4,7 +4,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import io.github.toanhp123.finote.domain.notification.repository.SettleScheduler
+import io.github.toanhp123.finote.domain.notification.port.SettleScheduler
 import io.github.toanhp123.finote.work.WorkSettleScheduler
 
 @Module

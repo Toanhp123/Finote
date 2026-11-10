@@ -1,12 +1,12 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
-import io.github.toanhp123.finote.domain.notification.FAIL_SETTLE_ERROR
-import io.github.toanhp123.finote.domain.notification.REPOST_WINDOW_WITH_BALANCE_MILLIS
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Fail
-import io.github.toanhp123.finote.domain.notification.planSettlement
 import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
+import io.github.toanhp123.finote.domain.notification.service.FAIL_SETTLE_ERROR
+import io.github.toanhp123.finote.domain.notification.service.REPOST_WINDOW_WITH_BALANCE_MILLIS
+import io.github.toanhp123.finote.domain.notification.service.planSettlement
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

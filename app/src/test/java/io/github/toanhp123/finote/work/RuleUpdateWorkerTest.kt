@@ -8,8 +8,8 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.workDataOf
-import io.github.toanhp123.finote.domain.notification.model.RuleFeedError
-import io.github.toanhp123.finote.domain.notification.model.RuleFeedException
+import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
+import io.github.toanhp123.finote.domain.notification.error.RuleFeedException
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
 import io.github.toanhp123.finote.domain.notification.usecase.FakeNotificationCaptureRepository
 import io.github.toanhp123.finote.domain.notification.usecase.FakeParserRuleFeed

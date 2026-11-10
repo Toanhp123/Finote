@@ -1,9 +1,9 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
-import io.github.toanhp123.finote.domain.notification.contentHash
 import io.github.toanhp123.finote.domain.notification.model.CaptureResult
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
+import io.github.toanhp123.finote.domain.notification.service.contentHash
 import io.github.toanhp123.finote.domain.notification.testRaw
 import io.github.toanhp123.finote.domain.notification.testRule
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType

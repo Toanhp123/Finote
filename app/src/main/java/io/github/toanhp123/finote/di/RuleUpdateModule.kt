@@ -4,10 +4,10 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import io.github.toanhp123.finote.data.notification.HttpParserRuleFeed
-import io.github.toanhp123.finote.data.notification.RuleUpdateSettingsRepositoryImpl
-import io.github.toanhp123.finote.domain.notification.repository.ParserRuleFeed
-import io.github.toanhp123.finote.domain.notification.repository.RuleUpdateScheduler
+import io.github.toanhp123.finote.data.notification.remote.HttpParserRuleFeed
+import io.github.toanhp123.finote.data.notification.repository.RuleUpdateSettingsRepositoryImpl
+import io.github.toanhp123.finote.domain.notification.port.ParserRuleFeed
+import io.github.toanhp123.finote.domain.notification.port.RuleUpdateScheduler
 import io.github.toanhp123.finote.domain.notification.repository.RuleUpdateSettingsRepository
 import io.github.toanhp123.finote.work.WorkRuleUpdateScheduler
 

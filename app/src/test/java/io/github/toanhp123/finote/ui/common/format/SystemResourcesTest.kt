@@ -1,7 +1,7 @@
 package io.github.toanhp123.finote.ui.common.format
 
 import io.github.toanhp123.finote.R
-import io.github.toanhp123.finote.data.category.SystemCategories
+import io.github.toanhp123.finote.data.category.seed.SystemCategories
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull

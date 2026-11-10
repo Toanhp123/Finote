@@ -1,9 +1,9 @@
 package io.github.toanhp123.finote.ui.settings.accounts
 
 import app.cash.turbine.test
+import io.github.toanhp123.finote.domain.account.error.AccountMergeRejectedException
+import io.github.toanhp123.finote.domain.account.error.MergeRejection
 import io.github.toanhp123.finote.domain.account.model.Account
-import io.github.toanhp123.finote.domain.account.model.AccountMergeRejectedException
-import io.github.toanhp123.finote.domain.account.model.MergeRejection
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.account.usecase.CountMergeMovesUseCase

@@ -1,0 +1,82 @@
+package io.github.toanhp123.finote.data.transaction.local.dao
+
+import androidx.room3.Dao
+import androidx.room3.Insert
+import androidx.room3.Query
+import androidx.room3.Update
+import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntity
+import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface TransactionDao {
+    @Insert
+    suspend fun insert(transaction: TransactionEntity)
+
+    @Update
+    suspend fun update(transaction: TransactionEntity)
+
+    @Query("SELECT * FROM transactions WHERE id = :id")
+    suspend fun getById(id: String): TransactionEntity?
+
+    /**
+     * Live rows that move this account's balance: it is the source, or the destination of a transfer.
+     * Same rule as `Transaction.touches`.
+     */
+    @Query(
+        "SELECT * FROM transactions WHERE deletedAt IS NULL AND (accountId = :accountId OR toAccountId = :accountId)",
+    )
+    suspend fun getActiveByAccount(accountId: String): List<TransactionEntity>
+
+    /**
+     * Live rows that touch this account, as source or as a transfer destination.
+     * Same rule as `Transaction.touches`.
+     */
+    @Query(
+        "SELECT COUNT(*) FROM transactions " +
+            "WHERE deletedAt IS NULL AND (accountId = :accountId OR toAccountId = :accountId)",
+    )
+    suspend fun countActiveByAccount(accountId: String): Int
+
+    /** Soft-deletes the live non-transfer rows whose source is [accountId]; returns how many. */
+    @Query(
+        "UPDATE transactions SET deletedAt = :now, updatedAt = :now " +
+            "WHERE accountId = :accountId AND type != 'TRANSFER' AND deletedAt IS NULL",
+    )
+    suspend fun trashNonTransfers(
+        accountId: String,
+        now: Long,
+    ): Int
+
+    /** Live non-transfer rows whose source is [accountId]: what [trashNonTransfers] would delete. */
+    @Query(
+        "SELECT COUNT(*) FROM transactions " +
+            "WHERE accountId = :accountId AND type != 'TRANSFER' AND deletedAt IS NULL",
+    )
+    suspend fun countNonTransfers(accountId: String): Int
+
+    /**
+     * Live rows, newest first. A null [accountId] means every account; else rows as source or transfer destination.
+     * Same rule as `Transaction.touches`.
+     */
+    @Query(
+        "SELECT * FROM transactions WHERE deletedAt IS NULL " +
+            "AND (:accountId IS NULL OR accountId = :accountId OR toAccountId = :accountId) " +
+            "ORDER BY timestamp DESC, createdAt DESC, id DESC",
+    )
+    fun observeTransactions(accountId: String?): Flow<List<TransactionEntity>>
+
+    /** Account of the newest live manual entry; null when there is none. */
+    @Query(
+        "SELECT accountId FROM transactions " +
+            "WHERE deletedAt IS NULL AND source = 'MANUAL' ORDER BY createdAt DESC, id DESC LIMIT 1",
+    )
+    suspend fun getLastManualAccountId(): String?
+
+    /** Category of the newest live manual entry of this [type] that has one. */
+    @Query(
+        "SELECT categoryId FROM transactions WHERE deletedAt IS NULL AND source = 'MANUAL' " +
+            "AND type = :type AND categoryId IS NOT NULL ORDER BY createdAt DESC, id DESC LIMIT 1",
+    )
+    suspend fun getLastManualCategoryId(type: TransactionType): String?
+}

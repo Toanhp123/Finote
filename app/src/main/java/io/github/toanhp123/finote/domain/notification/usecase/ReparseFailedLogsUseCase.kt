@@ -1,13 +1,13 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
 import io.github.toanhp123.finote.domain.common.DefaultDispatcher
-import io.github.toanhp123.finote.domain.notification.classifyNotification
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RawNotification
+import io.github.toanhp123.finote.domain.notification.port.SettleScheduler
 import io.github.toanhp123.finote.domain.notification.repository.NotificationCaptureRepository
-import io.github.toanhp123.finote.domain.notification.repository.SettleScheduler
+import io.github.toanhp123.finote.domain.notification.service.classifyNotification
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext

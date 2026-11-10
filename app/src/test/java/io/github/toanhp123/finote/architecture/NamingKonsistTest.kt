@@ -21,12 +21,12 @@ class NamingKonsistTest {
     }
 
     @Test
-    fun `repository package holds only interfaces`() {
+    fun `repository package holds only repository interfaces`() {
         productionFiles
             .filter { repositoryPackage.matches(it.packageName()) }
             .topLevelDeclarations()
-            .assertTrue(strict = false, testName = "repository package holds only interfaces") {
-                it is KoInterfaceDeclaration
+            .assertTrue(strict = false, testName = "repository package holds only repository interfaces") {
+                it is KoInterfaceDeclaration && it.name.endsWith("Repository")
             }
     }
 

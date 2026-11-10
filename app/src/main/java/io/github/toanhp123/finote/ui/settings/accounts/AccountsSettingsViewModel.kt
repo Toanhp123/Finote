@@ -2,9 +2,9 @@ package io.github.toanhp123.finote.ui.settings.accounts
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.toanhp123.finote.domain.account.error.AccountMergeRejectedException
+import io.github.toanhp123.finote.domain.account.error.MergeRejection
 import io.github.toanhp123.finote.domain.account.model.Account
-import io.github.toanhp123.finote.domain.account.model.AccountMergeRejectedException
-import io.github.toanhp123.finote.domain.account.model.MergeRejection
 import io.github.toanhp123.finote.domain.account.usecase.CountMergeMovesUseCase
 import io.github.toanhp123.finote.domain.account.usecase.CountTrashableTransactionsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.MergeAccountsUseCase

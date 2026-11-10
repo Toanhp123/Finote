@@ -1,5 +1,7 @@
 package io.github.toanhp123.finote.data.notification
 
+import io.github.toanhp123.finote.data.notification.local.entity.NotificationLogEntity
+import io.github.toanhp123.finote.data.notification.local.entity.ParserRuleEntity
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 
 // why: test fixture with one named default per entity field the tests vary.

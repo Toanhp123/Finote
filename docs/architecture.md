@@ -7,9 +7,23 @@ Binding for every human and agent in this repo. Machines enforce most rules. A r
 One Gradle module, `:app`. Layers are packages. Inside a layer, packages split by feature. Root package: `io.github.toanhp123.finote`.
 
 ```text
-domain/<feature>/    model, repository interface, use case, pure logic
-domain/common/       shared kinds with no logic (qualifiers such as DefaultDispatcher)
-data/<feature>/      Room entity, DAO, mapper, repository impl
+domain/common/       StorageException, DefaultDispatcher, SystemZoneClock; Outcome, TransactionRunner (R2)
+domain/<feature>/
+  model/             data classes and enums only, no Throwable subclasses
+  error/             error types (today: RuleFeedError enum and RuleFeedException); sealed <Feature>Error types (R6)
+  repository/        *Repository interfaces only
+  port/              other outward interfaces (ParserRuleFeed, RuleUpdateScheduler, SettleScheduler)
+  service/           pure logic (NotificationParser, BalanceCalculator, <Feature>Rules)
+  usecase/           *UseCase
+data/database/       FinoteDatabase, FinoteDatabaseFactory; RoomTransactionRunner, StorageCalls.kt, SeedTransaction.kt (R2)
+data/security/       DatabaseKeyStore, KeyCipher, KeystoreKeyCipher, PlaintextDatabase
+data/<feature>/
+  local/dao/         *Dao
+  local/entity/      *Entity, TransactionTagCrossRef
+  mapper/            *Mapper.kt
+  repository/        *RepositoryImpl, AccountBalanceRebuilder
+  seed/              System*, *Seeder
+  remote/            HttpParserRuleFeed, RuleFeedCodec (notification only)
 ui/<feature>/        Screen, Contract, ViewModel
 ui/common/           theme, shared components, BaseViewModel (tokens and components: docs/design-system.md)
 automation/          NotificationListenerService, thin
@@ -17,6 +31,7 @@ work/                Worker, thin
 di/                  Hilt module
 ```
 
+- `domain/<f>` and `data/<f>` use the fixed role folders above. A feature creates a role folder only when it has a file of that role. No empty folders. Every feature has the same shape, even when a folder holds one file.
 - Starting features: `transaction`, `account`, `category`, `notification`.
 - The root package holds only `MainActivity` and `FinoteApplication`. No layer imports it.
 - Every production package is the root or sits under `domain`, `data`, `ui`, `automation`, `work`, or `di`. A stray or misspelled package fails.
@@ -39,9 +54,11 @@ di/                  Hilt module
 
 ### Folder rules
 
+Rules 2 and 3 apply to `ui` only. `domain/<f>` and `data/<f>` follow the role folders in Layers; `LayoutKonsistTest` enforces them.
+
 1. Split a package into subfolders only when it mixes two or more roles.
 2. A subfolder should hold three or more files. Exceptions: infrastructure groups (`glass/`, `preview/`) and the `component/` folder of a feature, so every feature has the same shape.
-3. Do not split when the file suffix already names the role (`Dao`, `Entity`, `Mapper`, `RepositoryImpl`). `data/<feature>/` stays flat.
+3. Do not split when the file suffix already names the role (for example `*Screen`, `*ViewModel`).
 4. At most one level of subfolder under `component/`, `theme/`, or a feature.
 
 ### Feature template
@@ -62,12 +79,17 @@ UI flow is MVI: Screen sends `Intent`, ViewModel calls use cases (reads included
 |---|---|---|---|
 | Model | `Transaction` | `domain/<f>/model` | Hold data. No I/O |
 | Use case | `AddTransactionUseCase` | `domain/<f>/usecase` | One job. One public `operator fun invoke` |
-| Pure logic | `NotificationParser` | `domain/<f>` | Pure business rules. No I/O |
+| Pure logic | `NotificationParser` | `domain/<f>/service` | Pure business rules. No I/O. Imports nothing from `repository` or `port` |
+| Port | `ParserRuleFeed` | `domain/<f>/port` | Interface only. Outward interface that is not a repository |
+| Error | `RuleFeedException` (holds `RuleFeedError`) | `domain/<f>/error` | Error types. Sealed `<Feature>Error` types come in R6 |
 | Screen logic | `AmountExpression` | `ui/<screen>` | Pure input or display logic that serves one screen. Not in `domain` |
 | Repository | `TransactionRepository` | `domain/<f>/repository` | Interface only |
-| Repository impl | `TransactionRepositoryImpl` | `data/<f>` | Drive DAOs, map |
-| Entity, DAO | `TransactionEntity`, `TransactionDao` | `data/<f>` | Schema, queries |
-| Mapper | `TransactionMapper.kt` | `data/<f>` | Only `toDomain()` and `toEntity()` extensions |
+| Repository impl | `TransactionRepositoryImpl` | `data/<f>/repository` | Drive DAOs, map |
+| Entity | `TransactionEntity` | `data/<f>/local/entity` | Schema |
+| DAO | `TransactionDao` | `data/<f>/local/dao` | Queries |
+| Mapper | `TransactionMapper.kt` | `data/<f>/mapper` | Only `toDomain()` and `toEntity()` extensions |
+| Seeder | `SystemCategorySeeder` | `data/<f>/seed` | Insert system rows |
+| Remote | `HttpParserRuleFeed` | `data/<f>/remote` | Network source, codec |
 | Contract | `TransactionListContract.kt` | `ui/<f>` | Declare `State`, `Intent`, `Effect` |
 | ViewModel | `TransactionListViewModel` | `ui/<f>` | Take intents, call use cases, emit state. Never a repository |
 | Screen | `TransactionListScreen` | `ui/<f>` | Draw state. No use case calls |
@@ -96,7 +118,7 @@ Private helpers of a class stay inside the class; detekt `TooManyFunctions` igno
 
 When a file co-locates types, the declaration the file is named after comes first and the serving types (style enum, item class, state holder) go below it. detekt `MatchingDeclarationName` (`mustBeFirst`) relies on this order: a file that starts with its only class must be named after that class.
 
-Any class or interface named `*Repository` is an interface in `domain/<feature>/repository`. That package holds interfaces only: repositories and the other ports to the outside world (a feed, a scheduler). `*Mapper.kt` lives in `data`, `*Contract.kt` and `*Screen.kt` in `ui`.
+Any class or interface named `*Repository` is an interface in `domain/<feature>/repository`. That package holds only `*Repository` interfaces; other outward interfaces (a feed, a scheduler) go in `port/`. `*Mapper.kt` lives in `data`, `*Contract.kt` and `*Screen.kt` in `ui`.
 
 Project rules, checked over all production code:
 - No `android.util.Log`, no `println`, no `printStackTrace`, no `::println`, no `System.out`, no `System.err`, no `java.util.logging`.

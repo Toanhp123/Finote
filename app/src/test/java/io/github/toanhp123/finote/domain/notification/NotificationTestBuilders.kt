@@ -6,6 +6,7 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParsedFields
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RawNotification
+import io.github.toanhp123.finote.domain.notification.service.contentHash
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 
 // why: test builders, every parameter is one knob of the model

@@ -1,6 +1,6 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
-import io.github.toanhp123.finote.domain.notification.repository.SettleScheduler
+import io.github.toanhp123.finote.domain.notification.port.SettleScheduler
 
 /**
  * Copies from the real scheduler: the two entry points, `scheduleAfterCapture` and `settleNow`.

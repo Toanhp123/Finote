@@ -5,7 +5,7 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.toanhp123.finote.domain.notification.model.RawNotification
-import io.github.toanhp123.finote.domain.notification.notificationContent
+import io.github.toanhp123.finote.domain.notification.service.notificationContent
 import io.github.toanhp123.finote.domain.notification.usecase.CaptureNotificationUseCase
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope

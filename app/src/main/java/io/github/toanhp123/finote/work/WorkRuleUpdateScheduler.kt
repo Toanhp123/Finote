@@ -11,7 +11,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.github.toanhp123.finote.domain.notification.repository.RuleUpdateScheduler
+import io.github.toanhp123.finote.domain.notification.port.RuleUpdateScheduler
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged

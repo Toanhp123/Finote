@@ -1,10 +1,10 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
-import io.github.toanhp123.finote.domain.notification.model.RuleFeedError
-import io.github.toanhp123.finote.domain.notification.model.RuleFeedException
+import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
+import io.github.toanhp123.finote.domain.notification.error.RuleFeedException
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
-import io.github.toanhp123.finote.domain.notification.repository.ParserRuleFeed
+import io.github.toanhp123.finote.domain.notification.port.ParserRuleFeed
 import io.github.toanhp123.finote.domain.notification.repository.ParserRuleRepository
 import io.github.toanhp123.finote.domain.notification.repository.RuleUpdateSettingsRepository
 import kotlinx.coroutines.CancellationException

@@ -11,6 +11,9 @@ import com.lemonappdev.konsist.api.verify.assertTrue
 internal const val ROOT = "io.github.toanhp123.finote"
 internal const val DOMAIN = "$ROOT.domain"
 internal const val DATA = "$ROOT.data"
+internal const val DOMAIN_COMMON = "$ROOT.domain.common"
+internal const val DATA_DATABASE = "$ROOT.data.database"
+internal const val DATA_SECURITY = "$ROOT.data.security"
 internal const val UI = "$ROOT.ui"
 internal const val UI_COMMON = "$ROOT.ui.common"
 internal const val UI_THEME = "$ROOT.ui.common.theme"
@@ -19,6 +22,10 @@ internal const val UI_FORMAT = "$ROOT.ui.common.format"
 internal const val AUTOMATION = "$ROOT.automation"
 internal const val WORK = "$ROOT.work"
 internal const val DI = "$ROOT.di"
+
+/** Role folders allowed below a feature: `domain/<feature>/<role>` and `data/<feature>/<role>`. */
+internal val DOMAIN_ROLES = setOf("model", "error", "repository", "port", "service", "usecase")
+internal val DATA_ROLES = setOf("local.dao", "local.entity", "mapper", "repository", "seed", "remote")
 
 /**
  * Production sources only. No path filter on purpose: `scopeFromProduction()` does not reach `app/build/generated`

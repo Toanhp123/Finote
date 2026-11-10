@@ -1,7 +1,7 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
-import io.github.toanhp123.finote.domain.notification.SECRET_KEYWORDS
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
+import io.github.toanhp123.finote.domain.notification.service.SECRET_KEYWORDS
 import io.github.toanhp123.finote.domain.notification.testLog
 import io.github.toanhp123.finote.domain.notification.testRule
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType

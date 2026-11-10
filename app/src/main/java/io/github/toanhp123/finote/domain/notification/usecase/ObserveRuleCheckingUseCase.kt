@@ -1,6 +1,6 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
-import io.github.toanhp123.finote.domain.notification.repository.RuleUpdateScheduler
+import io.github.toanhp123.finote.domain.notification.port.RuleUpdateScheduler
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

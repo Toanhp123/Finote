@@ -1,7 +1,7 @@
 package io.github.toanhp123.finote.domain.account.usecase
 
-import io.github.toanhp123.finote.domain.account.detectBalanceDrift
 import io.github.toanhp123.finote.domain.account.model.BalanceDrift
+import io.github.toanhp123.finote.domain.account.service.detectBalanceDrift
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine

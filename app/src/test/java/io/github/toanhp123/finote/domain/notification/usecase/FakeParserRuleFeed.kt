@@ -1,7 +1,7 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
-import io.github.toanhp123.finote.domain.notification.repository.ParserRuleFeed
+import io.github.toanhp123.finote.domain.notification.port.ParserRuleFeed
 
 /**
  * Copies from the real feed: `fetch` returns the rules or throws the failure.

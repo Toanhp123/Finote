@@ -1,6 +1,6 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
-import io.github.toanhp123.finote.domain.notification.repository.RuleUpdateScheduler
+import io.github.toanhp123.finote.domain.notification.port.RuleUpdateScheduler
 import io.github.toanhp123.finote.domain.notification.repository.RuleUpdateSettingsRepository
 import javax.inject.Inject
 

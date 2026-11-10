@@ -1,9 +1,9 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
+import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
+import io.github.toanhp123.finote.domain.notification.error.RuleFeedException
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
-import io.github.toanhp123.finote.domain.notification.model.RuleFeedError
-import io.github.toanhp123.finote.domain.notification.model.RuleFeedException
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
 import io.github.toanhp123.finote.domain.notification.testLog
