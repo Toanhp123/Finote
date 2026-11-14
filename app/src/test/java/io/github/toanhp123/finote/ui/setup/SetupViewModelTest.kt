@@ -32,7 +32,7 @@ class SetupViewModelTest {
 
     private val repo = FakeSetupRepository()
 
-    private fun viewModel() = SetupViewModel(CompleteSetupUseCase(repo))
+    private fun viewModel() = SetupViewModel(CompleteSetupUseCase(repo), isDebuggable = true)
 
     @Test
     fun `first resume without access keeps intro`() =

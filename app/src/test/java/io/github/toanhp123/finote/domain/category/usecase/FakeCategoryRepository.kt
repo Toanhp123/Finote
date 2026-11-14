@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.map
 
 /**
  * Copies from the real repository: `observeCategories` hides deleted rows and sorts by sortOrder, createdAt.
- * Does not copy: business `require` checks (R4/R5 of a later plan move them into the domain).
+ * Does not copy: field preservation on write. Business rules live in `CategoryRules`, not in the repository.
  */
 class FakeCategoryRepository : CategoryRepository {
     val stored = mutableMapOf<String, Category>()
@@ -29,6 +29,9 @@ class FakeCategoryRepository : CategoryRepository {
                 .filter { category -> category.deletedAt == null }
                 .sortedWith(compareBy<Category> { it.sortOrder }.thenBy { it.createdAt })
         }
+
+    override suspend fun countLiveChildren(id: String): Int =
+        stored.values.count { it.parentId == id && it.deletedAt == null }
 
     override suspend fun add(category: Category) {
         writes++

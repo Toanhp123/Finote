@@ -7,6 +7,7 @@ import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveBalanceDriftUseCase
 import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
+import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
@@ -41,8 +42,10 @@ class TransactionListViewModel
         observeDrifts: ObserveBalanceDriftUseCase,
         private val adjustBalanceDrift: AdjustBalanceDriftUseCase,
         private val clock: Clock,
+        @IsDebuggable isDebuggable: Boolean,
     ) : BaseViewModel<TransactionListState, TransactionListIntent, TransactionListEffect>(
             TransactionListState(today = LocalDate.now(clock)),
+            isDebuggable,
         ) {
         // The write in flight; another pick is ignored until it ends.
         private var pickJob: Job? = null

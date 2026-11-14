@@ -38,6 +38,7 @@ class NotificationCaptureSettingsViewModelTest {
             ObserveRuleCheckingUseCase(scheduler),
             CheckRulesNowUseCase(scheduler),
             SetRuleAutoUpdateUseCase(settings, scheduler),
+            isDebuggable = true,
         )
 
     private fun rule(

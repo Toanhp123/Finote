@@ -69,6 +69,7 @@ class TransactionListViewModelTest {
                 ObserveBalanceDriftUseCase(ObserveUsableAccountsUseCase(ObserveAccountsUseCase(accounts)), fakeTx),
             adjustBalanceDrift = AdjustBalanceDriftUseCase(fakeTx, clock),
             clock = clock,
+            isDebuggable = true,
         )
 
     private fun TestScope.open(handle: SavedStateHandle = SavedStateHandle()) = viewModel(handle).also { runCurrent() }

@@ -66,6 +66,7 @@ class AccountsSettingsViewModelTest {
             CountTrashableTransactionsUseCase(repo),
             MergeAccountsUseCase(repo, clock),
             SetAccountIgnoredUseCase(repo, clock),
+            isDebuggable = true,
         )
     }
 

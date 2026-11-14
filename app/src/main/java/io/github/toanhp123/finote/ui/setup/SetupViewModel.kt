@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.ui.setup
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.domain.setup.usecase.CompleteSetupUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import kotlinx.coroutines.delay
@@ -16,7 +17,8 @@ class SetupViewModel
     @Inject
     constructor(
         private val completeSetup: CompleteSetupUseCase,
-    ) : BaseViewModel<SetupState, SetupIntent, SetupEffect>(SetupState()) {
+        @IsDebuggable isDebuggable: Boolean,
+    ) : BaseViewModel<SetupState, SetupIntent, SetupEffect>(SetupState(), isDebuggable) {
         override fun onIntent(intent: SetupIntent) {
             when (intent) {
                 is SetupIntent.Resumed -> {

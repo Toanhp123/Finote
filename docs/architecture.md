@@ -7,10 +7,10 @@ Binding for every human and agent in this repo. Machines enforce most rules. A r
 One Gradle module, `:app`. Layers are packages. Inside a layer, packages split by feature. Root package: `io.github.toanhp123.finote`.
 
 ```text
-domain/common/       StorageException, DefaultDispatcher, SystemZoneClock; Outcome, TransactionRunner (R2)
+domain/common/       StorageException, DefaultDispatcher, IsDebuggable, SystemZoneClock; Outcome, TransactionRunner (R2)
 domain/<feature>/
   model/             data classes and enums only, no Throwable subclasses
-  error/             error types (today: RuleFeedError enum and RuleFeedException); sealed <Feature>Error types (R6)
+  error/             error types (today: RuleFeedError enum and RuleFeedException, sealed CategoryError); sealed <Feature>Error types arrive in R3 to R6
   repository/        *Repository interfaces only
   port/              other outward interfaces (ParserRuleFeed, RuleUpdateScheduler, SettleScheduler)
   service/           pure logic (NotificationParser, BalanceCalculator, <Feature>Rules)
@@ -58,6 +58,22 @@ di/                  Hilt module
 - `SQLException` maps to `StorageException` only in `data/database`. `StorageException(` is created only there; `domain/common` holds the definition.
 
 `ProjectRulesKonsistTest` enforces both.
+
+### Error handling
+
+| Kind | Reported as | Handled by |
+|---|---|---|
+| Expected business failure | use case returns `Outcome.Err(<Feature>Error)` | ViewModel, exhaustive `when` |
+| Expected port failure | port returns `Outcome<..., <Port>Error>` | use case |
+| Infrastructure failure | `StorageException` (only `data/database` creates it) | `BaseViewModel` helper |
+| Bug (broken invariant) | exception | debug: crash. Release: generic failure |
+
+`BaseViewModel` has two helpers. Both log nothing, and `CancellationException` always passes through.
+
+- `launchCatching(onStorageError, onUnexpected = onStorageError) { ... }` launches in `viewModelScope`. `StorageException` calls `onStorageError`. Any other error is rethrown in a debuggable build and calls `onUnexpected` in release.
+- `Flow<T>.catchStorage { ... }` is the same split for `observe*` flows. Like `catch`, it ends the flow; the block may emit a fallback.
+
+The debug flag is `@IsDebuggable isDebuggable: Boolean` (from `ApplicationInfo.FLAG_DEBUGGABLE`, provided in `di/BuildModule`), passed to the `BaseViewModel` constructor. Each screen maps its own `Outcome.Err` to its own state or effect.
 
 ### Folder rules
 

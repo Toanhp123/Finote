@@ -40,19 +40,6 @@ class CategoryRepositoryImplTest {
 
     private suspend fun rowOf(id: String) = dao.getById(id)
 
-    private suspend fun failureOf(block: suspend () -> Unit) = runCatching { block() }.exceptionOrNull()
-
-    /** The call must throw [IllegalArgumentException] and leave every given row exactly as it was. */
-    private suspend fun assertRejected(
-        vararg ids: String,
-        block: suspend () -> Unit,
-    ) {
-        val before = ids.map { rowOf(it) }
-        val failure = failureOf(block)
-        assertTrue(failure.toString(), failure is IllegalArgumentException)
-        assertEquals(before, ids.map { rowOf(it) })
-    }
-
     @Test
     fun `add forces isSystemDefault false, nameKey null, isHidden false`() =
         runTest {
@@ -75,54 +62,6 @@ class CategoryRepositoryImplTest {
         }
 
     @Test
-    fun `add with a child as parent is rejected`() =
-        runTest {
-            assertRejected("cat-2") { repo.add(category(id = "cat-2", parentId = "sys_food_coffee").toDomain()) }
-            assertNull(rowOf("cat-2"))
-        }
-
-    @Test
-    fun `add with a parent of the other type is rejected`() =
-        runTest {
-            assertRejected { repo.add(category(id = "cat-2", parentId = "sys_income_salary").toDomain()) }
-            assertNull(rowOf("cat-2"))
-        }
-
-    @Test
-    fun `add with a soft-deleted parent is rejected`() =
-        runTest {
-            seed(category(id = "cat-1", deletedAt = 5L))
-
-            assertRejected { repo.add(category(id = "cat-2", parentId = "cat-1").toDomain()) }
-            assertNull(rowOf("cat-2"))
-        }
-
-    @Test
-    fun `add with a missing parent is rejected`() =
-        runTest {
-            assertRejected { repo.add(category(id = "cat-2", parentId = "ghost").toDomain()) }
-            assertNull(rowOf("cat-2"))
-        }
-
-    @Test
-    fun `update setting parentId to itself is rejected`() =
-        runTest {
-            seed(category(id = "cat-1"))
-
-            assertRejected("cat-1") { repo.update(category(id = "cat-1", parentId = "cat-1").toDomain()) }
-        }
-
-    @Test
-    fun `update giving a parent to a category with live children is rejected`() =
-        runTest {
-            seed(category(id = "cat-1"), category(id = "cat-2", parentId = "cat-1"))
-
-            assertRejected("cat-1", "cat-2") {
-                repo.update(category(id = "cat-1", parentId = "sys_food").toDomain())
-            }
-        }
-
-    @Test
     fun `update giving a parent to a childless category works`() =
         runTest {
             seed(category(id = "cat-1"))
@@ -130,23 +69,6 @@ class CategoryRepositoryImplTest {
             repo.update(category(id = "cat-1", parentId = "sys_food").toDomain())
 
             assertEquals("sys_food", rowOf("cat-1")?.parentId)
-        }
-
-    @Test
-    fun `update with an invalid parent is rejected`() =
-        runTest {
-            seed(category(id = "cat-1"))
-
-            assertRejected("cat-1") { repo.update(category(id = "cat-1", parentId = "sys_food_coffee").toDomain()) }
-            assertRejected("cat-1") { repo.update(category(id = "cat-1", parentId = "sys_income_salary").toDomain()) }
-        }
-
-    @Test
-    fun `update changing type is rejected`() =
-        runTest {
-            seed(category(id = "cat-1"))
-
-            assertRejected("cat-1") { repo.update(category().toDomain().copy(type = CategoryType.INCOME)) }
         }
 
     @Test
@@ -202,21 +124,10 @@ class CategoryRepositoryImplTest {
         }
 
     @Test
-    fun `update changing parentId of a system category is rejected`() =
+    fun `update of a missing row does nothing`() =
         runTest {
-            val coffee = checkNotNull(rowOf("sys_food_coffee")).toDomain()
+            repo.update(category(id = "ghost").toDomain())
 
-            assertRejected("sys_food_coffee") { repo.update(coffee.copy(parentId = "sys_other")) }
-            assertRejected("sys_food_coffee") { repo.update(coffee.copy(parentId = null)) }
-        }
-
-    @Test
-    fun `update of a missing or soft-deleted row is rejected`() =
-        runTest {
-            seed(category(id = "cat-1", deletedAt = 5L))
-
-            assertRejected("cat-1") { repo.update(category(id = "cat-1", name = "New").toDomain()) }
-            assertRejected { repo.update(category(id = "ghost").toDomain()) }
             assertNull(rowOf("ghost"))
         }
 
@@ -236,32 +147,11 @@ class CategoryRepositoryImplTest {
         }
 
     @Test
-    fun `setHidden of a missing or soft-deleted row is rejected`() =
+    fun `setHidden of a missing row does nothing`() =
         runTest {
-            seed(category(id = "cat-1", deletedAt = 5L))
+            repo.setHidden("ghost", hidden = true, updatedAt = 8L)
 
-            assertRejected("cat-1") { repo.setHidden("cat-1", hidden = true, updatedAt = 8L) }
-            assertRejected { repo.setHidden("ghost", hidden = true, updatedAt = 8L) }
-        }
-
-    @Test
-    fun `softDelete of a system category is rejected`() =
-        runTest {
-            assertRejected("sys_other") { repo.softDelete("sys_other", deletedAt = 8L) }
-            assertRejected("sys_food_coffee") { repo.softDelete("sys_food_coffee", deletedAt = 8L) }
-        }
-
-    @Test
-    fun `softDelete of a parent with live children is rejected, then works after the children go`() =
-        runTest {
-            seed(category(id = "cat-1"), category(id = "cat-2", parentId = "cat-1"))
-
-            assertRejected("cat-1", "cat-2") { repo.softDelete("cat-1", deletedAt = 8L) }
-
-            repo.softDelete("cat-2", deletedAt = 8L)
-            repo.softDelete("cat-1", deletedAt = 9L)
-
-            assertEquals(9L, rowOf("cat-1")?.deletedAt)
+            assertNull(rowOf("ghost"))
         }
 
     @Test
@@ -297,10 +187,24 @@ class CategoryRepositoryImplTest {
         }
 
     @Test
-    fun `softDelete of a missing id is rejected`() =
+    fun `softDelete of a missing id does nothing`() =
         runTest {
-            assertRejected { repo.softDelete("ghost", deletedAt = 8L) }
+            repo.softDelete("ghost", deletedAt = 8L)
+
             assertNull(rowOf("ghost"))
+        }
+
+    @Test
+    fun `countLiveChildren ignores soft-deleted children`() =
+        runTest {
+            seed(
+                category(id = "cat-1"),
+                category(id = "cat-2", parentId = "cat-1"),
+                category(id = "cat-3", parentId = "cat-1", deletedAt = 5L),
+            )
+
+            assertEquals(1, repo.countLiveChildren("cat-1"))
+            assertEquals(0, repo.countLiveChildren("cat-2"))
         }
 
     @Test

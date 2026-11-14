@@ -47,7 +47,7 @@ class SettingsViewModelTest {
     @Test
     fun `bank count follows rules`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo))
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isDebuggable = true)
             runCurrent()
             assertEquals(0, vm.state.value.bankCount)
 
@@ -60,7 +60,7 @@ class SettingsViewModelTest {
     @Test
     fun `resumed updates access`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo))
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isDebuggable = true)
 
             vm.onIntent(SettingsIntent.Resumed(isGranted = true))
             assertTrue(vm.state.value.isAccessEnabled)
@@ -72,7 +72,7 @@ class SettingsViewModelTest {
     @Test
     fun `capture click emits OpenCaptureSettings`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo))
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isDebuggable = true)
 
             vm.effects.test {
                 vm.onIntent(SettingsIntent.CaptureClicked)
@@ -86,7 +86,7 @@ class SettingsViewModelTest {
     @Test
     fun `accounts click emits OpenAccountsSettings`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo))
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isDebuggable = true)
 
             vm.effects.test {
                 vm.onIntent(SettingsIntent.AccountsClicked)

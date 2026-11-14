@@ -7,6 +7,7 @@ import io.github.toanhp123.finote.domain.account.usecase.ObserveUsableAccountsUs
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
+import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.transaction.model.ManualChoices
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
@@ -30,8 +31,10 @@ class CashEntryViewModel
         private val getLastManualChoices: GetLastManualChoicesUseCase,
         private val addManualTransaction: AddManualTransactionUseCase,
         private val clock: Clock,
+        @IsDebuggable isDebuggable: Boolean,
     ) : BaseViewModel<CashEntryState, CashEntryIntent, CashEntryEffect>(
             CashEntryState(date = LocalDate.now(clock)),
+            isDebuggable,
         ) {
         private var lastAccountId: String? = null
         private var isSeeded = false

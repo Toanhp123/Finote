@@ -10,6 +10,7 @@ import io.github.toanhp123.finote.domain.account.usecase.CountTrashableTransacti
 import io.github.toanhp123.finote.domain.account.usecase.MergeAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.SetAccountIgnoredUseCase
+import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.catch
@@ -25,7 +26,11 @@ class AccountsSettingsViewModel
         private val countTrashable: CountTrashableTransactionsUseCase,
         private val mergeAccounts: MergeAccountsUseCase,
         private val setIgnored: SetAccountIgnoredUseCase,
-    ) : BaseViewModel<AccountsSettingsState, AccountsSettingsIntent, AccountsSettingsEffect>(AccountsSettingsState()) {
+        @IsDebuggable isDebuggable: Boolean,
+    ) : BaseViewModel<AccountsSettingsState, AccountsSettingsIntent, AccountsSettingsEffect>(
+            AccountsSettingsState(),
+            isDebuggable,
+        ) {
         init {
             viewModelScope.launch {
                 observeAccounts()

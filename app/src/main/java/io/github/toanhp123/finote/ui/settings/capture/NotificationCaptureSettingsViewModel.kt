@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.ui.settings.capture
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.domain.notification.usecase.CheckRulesNowUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveRuleCheckingUseCase
@@ -23,11 +24,12 @@ class NotificationCaptureSettingsViewModel
         observeChecking: ObserveRuleCheckingUseCase,
         private val checkRulesNow: CheckRulesNowUseCase,
         private val setAutoUpdate: SetRuleAutoUpdateUseCase,
+        @IsDebuggable isDebuggable: Boolean,
     ) : BaseViewModel<
             NotificationCaptureSettingsState,
             NotificationCaptureSettingsIntent,
             NotificationCaptureSettingsEffect,
-        >(NotificationCaptureSettingsState()) {
+        >(NotificationCaptureSettingsState(), isDebuggable) {
         init {
             collectInto(observeStatus()) {
                 copy(isAutoUpdateEnabled = it.isAutoUpdateEnabled, lastCheck = it.lastCheck)

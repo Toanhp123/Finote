@@ -67,6 +67,7 @@ class CashEntryViewModelTest {
             GetLastManualChoicesUseCase(repo),
             AddManualTransactionUseCase(add, clock),
             clock,
+            isDebuggable = true,
         ).also { runCurrent() }
     }
 

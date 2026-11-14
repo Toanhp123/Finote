@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.ui.settings
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import kotlinx.coroutines.flow.catch
@@ -13,7 +14,8 @@ class SettingsViewModel
     @Inject
     constructor(
         observeRules: ObserveParserRulesUseCase,
-    ) : BaseViewModel<SettingsState, SettingsIntent, SettingsEffect>(SettingsState()) {
+        @IsDebuggable isDebuggable: Boolean,
+    ) : BaseViewModel<SettingsState, SettingsIntent, SettingsEffect>(SettingsState(), isDebuggable) {
         init {
             viewModelScope.launch {
                 observeRules()
