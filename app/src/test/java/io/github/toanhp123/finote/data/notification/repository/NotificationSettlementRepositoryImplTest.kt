@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.data.notification.repository
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.account.mapper.toDomain
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
+import io.github.toanhp123.finote.data.database.RoomTransactionRunner
 import io.github.toanhp123.finote.data.database.account
 import io.github.toanhp123.finote.data.database.transaction
 import io.github.toanhp123.finote.data.notification.mapper.toDomain
@@ -11,6 +12,8 @@ import io.github.toanhp123.finote.data.notification.parserRuleEntity
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.service.detectBalanceDrift
+import io.github.toanhp123.finote.domain.common.Outcome
+import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
@@ -25,7 +28,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -77,6 +79,18 @@ class NotificationSettlementRepositoryImplTest {
         wallet: NotificationLog? = null,
         target: AccountTarget = newAccount(),
     ) = SettlementDecision.Book(bank, wallet, target, merchant = "Shop", note = null)
+
+    /** Books the way the use case does: an error rolls the whole write back. */
+    private suspend fun bookInTx(
+        decision: SettlementDecision.Book,
+        transactionId: String = "tx-1",
+    ): SettlementError? {
+        val outcome =
+            RoomTransactionRunner(dbRule.db).write {
+                repo.book(decision, transactionId, NOW)?.let { Outcome.Err(it) } ?: Outcome.Ok(Unit)
+            }
+        return (outcome as? Outcome.Err)?.error
+    }
 
     private suspend fun storedLog(id: String) =
         dbRule.db
@@ -236,18 +250,13 @@ class NotificationSettlementRepositoryImplTest {
         }
 
     @Test
-    fun `pair update that hits one row rolls back`() =
+    fun `pair update that hits one row returns LogNotPending and rolls back`() =
         runTest {
             val bank = log("b1")
             val wallet = log("w1", status = NotificationStatus.CONFIRMED)
             seed(bank, wallet)
 
-            try {
-                repo.book(book(bank, wallet), "tx-1", NOW)
-                fail("expected IllegalStateException")
-            } catch (_: IllegalStateException) {
-                // expected
-            }
+            assertEquals(SettlementError.LogNotPending, bookInTx(book(bank, wallet)))
 
             assertNull(dbRule.db.transactionDao().getById("tx-1"))
             assertTrue(repo.getAccounts().isEmpty())
@@ -263,12 +272,7 @@ class NotificationSettlementRepositoryImplTest {
         bank: NotificationLog,
         target: AccountTarget,
     ) {
-        try {
-            repo.book(book(bank, target = target), "tx-1", NOW)
-            fail("expected IllegalStateException")
-        } catch (_: IllegalStateException) {
-            // expected
-        }
+        assertEquals(SettlementError.AccountUnusable, bookInTx(book(bank, target = target)))
         assertNull(dbRule.db.transactionDao().getById("tx-1"))
         assertEquals(NotificationStatus.PENDING, storedLog(bank.id).status)
     }
@@ -296,6 +300,15 @@ class NotificationSettlementRepositoryImplTest {
         }
 
     @Test
+    fun `Existing account that is gone is not booked into`() =
+        runTest {
+            val bank = log("b1")
+            seed(bank)
+
+            assertBookRollsBack(bank, AccountTarget.Existing("missing"))
+        }
+
+    @Test
     fun `book into an account ignored after planning rolls back`() =
         runTest {
             dbRule.db.accountDao().insert(account(bankPackageName = PKG, accountNumberMask = "1234"))
@@ -309,12 +322,7 @@ class NotificationSettlementRepositoryImplTest {
                     .copy(isIgnored = true),
             )
 
-            try {
-                repo.book(planned, "tx-1", NOW)
-                fail("expected IllegalStateException")
-            } catch (_: IllegalStateException) {
-                // expected
-            }
+            assertEquals(SettlementError.AccountUnusable, bookInTx(planned))
 
             assertNull(dbRule.db.transactionDao().getById("tx-1"))
             assertEquals(NotificationStatus.PENDING, storedLog("b1").status)
@@ -331,12 +339,7 @@ class NotificationSettlementRepositoryImplTest {
             val planned = book(bank, target = AccountTarget.Existing("b"))
             accountDao.update(accountDao.getById("b")!!.copy(deletedAt = NOW, mergedIntoId = "c"))
 
-            try {
-                repo.book(planned, "tx-1", NOW)
-                fail("expected IllegalStateException")
-            } catch (_: IllegalStateException) {
-                // expected
-            }
+            assertEquals(SettlementError.AccountUnusable, bookInTx(planned))
             assertNull(dbRule.db.transactionDao().getById("tx-1"))
             assertEquals(NotificationStatus.PENDING, storedLog("b1").status)
 

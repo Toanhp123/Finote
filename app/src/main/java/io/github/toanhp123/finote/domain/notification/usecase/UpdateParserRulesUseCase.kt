@@ -1,7 +1,8 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
+import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
-import io.github.toanhp123.finote.domain.notification.error.RuleFeedException
+import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
 import io.github.toanhp123.finote.domain.notification.port.ParserRuleFeed
@@ -33,15 +34,22 @@ class UpdateParserRulesUseCase
 
         private suspend fun update(): RuleUpdateResult =
             try {
-                val feedRules = feed.fetch()
-                val written = rules.applyRules(feedRules)
-                reparse(feedRules.mapTo(HashSet()) { it.packageName })
-                if (written > 0) RuleUpdateResult.Updated(written) else RuleUpdateResult.UpToDate
+                when (val fetched = feed.fetch()) {
+                    is Outcome.Ok -> merge(fetched.value)
+                    is Outcome.Err -> fetched.error.toResult()
+                }
             } catch (error: CancellationException) {
                 throw error
-            } catch (error: RuleFeedException) {
-                if (error.reason == RuleFeedError.NETWORK) RuleUpdateResult.Network else RuleUpdateResult.Invalid
             } catch (_: Exception) {
                 RuleUpdateResult.Error
             }
+
+        private fun RuleFeedError.toResult() =
+            if (this == RuleFeedError.NETWORK) RuleUpdateResult.Network else RuleUpdateResult.Invalid
+
+        private suspend fun merge(feedRules: List<ParserRule>): RuleUpdateResult {
+            val written = rules.applyRules(feedRules)
+            reparse(feedRules.mapTo(HashSet()) { it.packageName })
+            return if (written > 0) RuleUpdateResult.Updated(written) else RuleUpdateResult.UpToDate
+        }
     }

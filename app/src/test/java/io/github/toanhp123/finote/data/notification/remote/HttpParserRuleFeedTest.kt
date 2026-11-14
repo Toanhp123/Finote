@@ -1,7 +1,7 @@
 package io.github.toanhp123.finote.data.notification.remote
 
+import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
-import io.github.toanhp123.finote.domain.notification.error.RuleFeedException
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -74,11 +74,11 @@ class HttpParserRuleFeedTest {
     @Test
     fun `readCapped stops at the cap when length is unknown`() {
         val e =
-            assertThrows(RuleFeedException::class.java) {
+            assertThrows(RuleFeedFailure::class.java) {
                 readCapped(ByteArrayInputStream(ByteArray(256 * 1024 + 1)), 256 * 1024)
             }
 
-        assertEquals(RuleFeedError.INVALID, e.reason)
+        assertEquals(RuleFeedError.INVALID, e.error)
         assertEquals("too_large", e.message)
     }
 
@@ -94,12 +94,12 @@ class HttpParserRuleFeedTest {
         runTest {
             val (server, request) = serveOnce("200 OK", signRuleFeed(listOf(rule), keys.private))
 
-            val rules = feedAt(server).fetch()
+            val result = feedAt(server).fetch()
 
             val lines = request.get().lines()
             assertEquals("GET /feed.json HTTP/1.1", lines.first())
             assertTrue(lines.any { it.equals("User-Agent: Finote", ignoreCase = true) })
-            assertEquals(listOf(rule.id), rules.map { it.id })
+            assertEquals(Outcome.Ok(listOf(rule)), result)
         }
 
     @Test
@@ -107,9 +107,15 @@ class HttpParserRuleFeedTest {
         runTest {
             val (server, _) = serveOnce("404 Not Found", ByteArray(0))
 
-            val e = runCatching { feedAt(server).fetch() }.exceptionOrNull()
+            assertEquals(Outcome.Err(RuleFeedError.NETWORK), feedAt(server).fetch())
+        }
 
-            assertEquals(RuleFeedError.NETWORK, (e as RuleFeedException).reason)
+    @Test
+    fun `unsigned body is INVALID`() =
+        runTest {
+            val (server, _) = serveOnce("200 OK", "nope".toByteArray())
+
+            assertEquals(Outcome.Err(RuleFeedError.INVALID), feedAt(server).fetch())
         }
 
     @Test
@@ -117,8 +123,6 @@ class HttpParserRuleFeedTest {
         runTest {
             val closed = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).also { it.close() }
 
-            val e = runCatching { feedAt(closed).fetch() }.exceptionOrNull()
-
-            assertEquals(RuleFeedError.NETWORK, (e as RuleFeedException).reason)
+            assertEquals(Outcome.Err(RuleFeedError.NETWORK), feedAt(closed).fetch())
         }
 }

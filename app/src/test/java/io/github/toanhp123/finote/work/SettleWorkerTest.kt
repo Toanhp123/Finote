@@ -7,6 +7,7 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
+import io.github.toanhp123.finote.domain.common.FakeTransactionRunner
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
@@ -25,7 +26,7 @@ class SettleWorkerTest {
     private val clock = Clock.fixed(Instant.parse("2026-11-03T00:00:00Z"), ZoneOffset.UTC)
 
     private suspend fun run(repo: NotificationSettlementRepository): ListenableWorker.Result {
-        val useCase = SettlePendingLogsUseCase(repo, clock)
+        val useCase = SettlePendingLogsUseCase(repo, FakeTransactionRunner(), clock)
         val factory =
             object : WorkerFactory() {
                 override fun createWorker(

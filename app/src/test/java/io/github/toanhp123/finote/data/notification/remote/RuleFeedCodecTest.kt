@@ -2,7 +2,6 @@ package io.github.toanhp123.finote.data.notification.remote
 
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
-import io.github.toanhp123.finote.domain.notification.error.RuleFeedException
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.serialization.json.Json
@@ -45,8 +44,8 @@ class RuleFeedCodecTest {
     private fun feed(vararg rules: ParserRule) = signRuleFeed(rules.toList(), keys.private)
 
     private fun assertInvalid(envelope: ByteArray) {
-        val e = assertThrows(RuleFeedException::class.java) { decodeRuleFeed(envelope, keys.public) }
-        assertEquals(RuleFeedError.INVALID, e.reason)
+        val e = assertThrows(RuleFeedFailure::class.java) { decodeRuleFeed(envelope, keys.public) }
+        assertEquals(RuleFeedError.INVALID, e.error)
     }
 
     private fun assertInvalidRule(rule: ParserRule) = assertInvalid(feed(rule))
@@ -195,7 +194,7 @@ class RuleFeedCodecTest {
     @Test
     fun `exception message is a reason code only`() {
         val e =
-            assertThrows(RuleFeedException::class.java) { decodeRuleFeed(feed(good.copy(version = 0)), keys.public) }
+            assertThrows(RuleFeedFailure::class.java) { decodeRuleFeed(feed(good.copy(version = 0)), keys.public) }
         assertEquals("bad_rule", e.message)
     }
 }

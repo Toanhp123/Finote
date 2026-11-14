@@ -12,6 +12,9 @@ import org.junit.Test
 class ProjectRulesKonsistTest {
     private val loggingCall = Regex("""\bprintln\(|::println\b|\bprintStackTrace\b|\bSystem\.(out|err)\b""")
     private val suppress = Regex("""\bSuppress(Lint|Warnings)?\b""")
+    private val broadCatch =
+        Regex("""\bcatch\s*\(\s*\w+\s*:\s*(?:\w+\.)*($BROAD_EXCEPTIONS)\b""")
+    private val flowCatch = Regex("""\.catch\s*\{""")
     private val floatingType = Regex("""\b(Double|Float)\b""")
     private val initializer = Regex("""\b(?:val|var)\b[^=]*=(.*)""", RegexOption.DOT_MATCHES_ALL)
     private val floatingLiteral = """\d[\d_]*\.\d[\d_]*([eE][-+]?\d+)?[fF]?|\d[\d_]*[eE][-+]?\d+[fF]?|\d[\d_]*[fF]"""
@@ -142,6 +145,26 @@ class ProjectRulesKonsistTest {
             }
     }
 
+    @Test
+    fun `ui does not catch broad exceptions`() {
+        uiFiles("ui/common/BaseViewModel.kt", "ui/cashentry/AmountExpression.kt")
+            .assertTrue(strict = false, testName = "ui does not catch broad exceptions") { file ->
+                file.codeLines().none { broadCatch.containsMatchIn(it) }
+            }
+    }
+
+    @Test
+    fun `ui flows catch only through catchStorage`() {
+        uiFiles("ui/common/BaseViewModel.kt")
+            .assertTrue(strict = false, testName = "ui flows catch only through catchStorage") { file ->
+                file.imports.none { it.name == "kotlinx.coroutines.flow.catch" } &&
+                    file.codeLines().none { flowCatch.containsMatchIn(it) }
+            }
+    }
+
+    private fun uiFiles(vararg exemptPaths: String) =
+        filesIn(UI).filterNot { file -> exemptPaths.any { file.path.replace('\\', '/').endsWith("/$it") } }
+
     private fun KoFileDeclaration.codeLines() = text.lineSequence().filterNot { it.trimStart().startsWith("import ") }
 
     private fun String.isMoneyName() = nameWords().any { it in MONEY_WORDS || it.removeSuffix("s") in MONEY_WORDS }
@@ -168,6 +191,8 @@ class ProjectRulesKonsistTest {
             .orEmpty()
 
     private companion object {
+        const val BROAD_EXCEPTIONS =
+            "IllegalArgumentException|IllegalStateException|ArithmeticException|RuntimeException|Exception|Throwable"
         const val RULE = "(LongMethod|CyclomaticComplexMethod|LongParameterList)"
 
         // Only detekt size rules, never Konsist or Lint, and always with a reason of 10+ chars.

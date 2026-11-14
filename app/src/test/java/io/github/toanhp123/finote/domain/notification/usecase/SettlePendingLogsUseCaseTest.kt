@@ -3,6 +3,8 @@ package io.github.toanhp123.finote.domain.notification.usecase
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.testAccount
+import io.github.toanhp123.finote.domain.common.FakeTransactionRunner
+import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParsedFields
@@ -61,7 +63,10 @@ class SettlePendingLogsUseCaseTest {
         rules = listOf(BANK, OTHER).associate { "r-$it" to rule(it) },
     )
 
-    private fun useCase(repository: FakeNotificationSettlementRepository) = SettlePendingLogsUseCase(repository, clock)
+    private val runner = FakeTransactionRunner()
+
+    private fun useCase(repository: FakeNotificationSettlementRepository) =
+        SettlePendingLogsUseCase(repository, runner, clock)
 
     @Test
     fun `settle books due logs with no scheduler involvement`() =
@@ -130,6 +135,59 @@ class SettlePendingLogsUseCaseTest {
             // The repost of the paired wallet log is written because both ids count as written.
             assertTrue("again" in repository.reposted)
             assertNull(repository.reposted["again"])
+        }
+
+    @Test
+    fun `stale account leaves the log pending and books nothing`() =
+        runTest {
+            val repository = repo(log("a", BANK, old))
+            repository.bookRejections["a"] = SettlementError.AccountUnusable
+            assertTrue(useCase(repository)())
+            assertTrue(repository.booked.isEmpty())
+            assertTrue(repository.bookTimes.isEmpty())
+            assertTrue(repository.failed.isEmpty())
+            assertEquals(NotificationStatus.PENDING, repository.logs.single().status)
+            assertEquals(1, runner.writes)
+        }
+
+    @Test
+    fun `log settled by another run returns LogNotPending and books nothing`() =
+        runTest {
+            val repository = repo(log("a", BANK, old), log("b", BANK, old + 1_000, text = "same"))
+            repository.bookRejections["a"] = SettlementError.LogNotPending
+            assertTrue(useCase(repository)())
+            assertTrue("a" !in repository.booked)
+            assertEquals(NotificationStatus.PENDING, repository.logs.first { it.id == "a" }.status)
+        }
+
+    @Test
+    fun `one stale decision does not stop the next`() =
+        runTest {
+            val repository = repo(log("a", BANK, old), log("b", BANK, old + 60_000, text = "other"))
+            repository.bookRejections["a"] = SettlementError.AccountUnusable
+            assertTrue(useCase(repository)())
+            assertEquals(setOf("b"), repository.booked.keys)
+            assertEquals(NotificationStatus.PENDING, repository.logs.first { it.id == "a" }.status)
+            assertEquals(NotificationStatus.CONFIRMED, repository.logs.first { it.id == "b" }.status)
+        }
+
+    @Test
+    fun `repost of an original whose book was rejected stays pending`() =
+        runTest {
+            val repository = repo(log("a", BANK, old, text = "same"), log("b", BANK, old + 1_000, text = "same"))
+            repository.bookRejections["a"] = SettlementError.AccountUnusable
+            assertTrue(useCase(repository)())
+            assertTrue(repository.reposted.isEmpty())
+            assertTrue(repository.logs.all { it.status == NotificationStatus.PENDING })
+        }
+
+    @Test
+    fun `a rejected book older than one hour fails the log with settle_error`() =
+        runTest {
+            val repository = repo(log("a", BANK, old - 1))
+            repository.bookRejections["a"] = SettlementError.AccountUnusable
+            assertFalse(useCase(repository)())
+            assertEquals(mapOf("a" to "settle_error"), repository.failed)
         }
 
     @Test

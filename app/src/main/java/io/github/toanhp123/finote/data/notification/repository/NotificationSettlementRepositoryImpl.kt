@@ -12,6 +12,7 @@ import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.service.BalanceCalculator
 import io.github.toanhp123.finote.domain.account.service.anchoredInitialBalance
+import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
@@ -56,11 +57,12 @@ class NotificationSettlementRepositoryImpl
             decision: SettlementDecision.Book,
             transactionId: String,
             now: Long,
-        ) {
+        ): SettlementError? =
             db.storageWrite {
                 val bank = decision.bankSide
                 val parsed = checkNotNull(bank.parsed) { "bank side has no parsed fields" }
-                val account = resolveAccount(decision.account, now)
+                val account =
+                    resolveAccount(decision.account, now) ?: return@storageWrite SettlementError.AccountUnusable
                 transactions.insert(
                     TransactionEntity(
                         id = transactionId,
@@ -87,9 +89,14 @@ class NotificationSettlementRepositoryImpl
                 coldStart(account)
                 rebuilder.rebuild(setOf(account.id))
                 settle(listOf(bank.id), NotificationStatus.CONFIRMED, transactionId)
-                decision.walletSide?.let { settle(listOf(it.id), NotificationStatus.DEDUPLICATED, transactionId) }
+                    ?: decision.walletSide?.let {
+                        settle(
+                            listOf(it.id),
+                            NotificationStatus.DEDUPLICATED,
+                            transactionId,
+                        )
+                    }
             }
-        }
 
         override suspend fun fail(decision: SettlementDecision.Fail): Boolean =
             storage {
@@ -120,22 +127,20 @@ class NotificationSettlementRepositoryImpl
         private suspend fun resolveAccount(
             target: AccountTarget,
             now: Long,
-        ): AccountEntity {
+        ): AccountEntity? {
             val account =
                 when (target) {
                     is AccountTarget.Existing -> {
-                        checkNotNull(accounts.getById(target.accountId)) { "account is gone" }
+                        accounts.getById(target.accountId)
                     }
 
                     is AccountTarget.New -> {
-                        accounts.getByBankKey(target.packageName, target.mask) ?: newAccount(target, now)
+                        accounts.getByBankKey(target.packageName, target.mask)
+                            ?: newAccount(target, now)
                     }
                 }
-            // The planner's check can be stale by now; throwing rolls back and leaves the log PENDING.
-            check(account.toDomain().isUsable) {
-                "account is deleted, archived or ignored"
-            }
-            return account
+            // The planner's check can be stale by now.
+            return account?.takeIf { it.toDomain().isUsable }
         }
 
         private suspend fun newAccount(
@@ -182,10 +187,8 @@ class NotificationSettlementRepositoryImpl
             ids: List<String>,
             status: NotificationStatus,
             transactionId: String,
-        ) {
-            val updated = logs.markSettled(ids, status, transactionId, null)
-            check(updated == ids.size) { "log is no longer pending" }
-        }
+        ): SettlementError? =
+            if (logs.markSettled(ids, status, transactionId, null) == ids.size) null else SettlementError.LogNotPending
 
         private companion object {
             const val ACCOUNT_COLOR = 0xFF546E7A.toInt()

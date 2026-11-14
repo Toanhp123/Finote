@@ -5,7 +5,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,7 +18,7 @@ class SettingsViewModel
         init {
             viewModelScope.launch {
                 observeRules()
-                    .catch {
+                    .catchStorage {
                         // The count is only a hint on the row; keep the last one. Nothing is logged: rules are data.
                     }.collect { setState { copy(bankCount = summarizeBanks(it).size) } }
             }

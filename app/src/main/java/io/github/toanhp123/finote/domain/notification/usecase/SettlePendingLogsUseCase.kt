@@ -1,5 +1,8 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
+import io.github.toanhp123.finote.domain.common.Outcome
+import io.github.toanhp123.finote.domain.common.TransactionRunner
+import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Fail
@@ -18,11 +21,13 @@ class SettlePendingLogsUseCase
     @Inject
     constructor(
         private val repository: NotificationSettlementRepository,
+        private val tx: TransactionRunner,
         private val clock: Clock,
     ) {
         /**
-         * Plans the `PENDING` logs and runs each decision in order. A decision that throws is skipped and the next
-         * decisions still run. Its logs stay `PENDING` and are retried, unless the log that carries it is older than
+         * Plans the `PENDING` logs and runs each decision in order, each `book` in its own `tx.write`. A decision that
+         * throws or comes back with a [SettlementError] (stale data, rolled back) is skipped and the next decisions
+         * still run. Its logs stay `PENDING` and are retried, unless the log that carries it is older than
          * [STUCK_AFTER_MILLIS]: then they are written `FAILED` with [FAIL_SETTLE_ERROR] (if that write throws too,
          * they stay `PENDING`). Returns true when `PENDING` logs remain (the worker retries). Runs one at a time in
          * the whole process.
@@ -48,7 +53,7 @@ class SettlePendingLogsUseCase
             val written = HashSet<String>()
             for (decision in decisions) {
                 try {
-                    execute(decision, booked, written, now)
+                    if (execute(decision, booked, written, now) != null) failIfStuck(decision, written, now)
                 } catch (error: CancellationException) {
                     throw error
                 } catch (_: Exception) {
@@ -90,33 +95,56 @@ class SettlePendingLogsUseCase
             booked: MutableMap<String, String>,
             written: MutableSet<String>,
             now: Long,
-        ) {
+        ): SettlementError? =
             when (decision) {
                 is SettlementDecision.Book -> {
                     val transactionId = UUID.randomUUID().toString()
-                    repository.book(decision, transactionId, now)
-                    booked[decision.bankSide.id] = transactionId
-                    decision.walletSide?.let { booked[it.id] = transactionId }
-                    written += listOfNotNull(decision.bankSide.id, decision.walletSide?.id)
+                    val error = bookInTransaction(decision, transactionId, now)
+                    if (error == null) {
+                        booked[decision.bankSide.id] = transactionId
+                        decision.walletSide?.let { booked[it.id] = transactionId }
+                        written += listOfNotNull(decision.bankSide.id, decision.walletSide?.id)
+                    }
+                    error
                 }
 
                 is SettlementDecision.Fail -> {
                     repository.fail(decision)
                     written += listOfNotNull(decision.log.id, decision.partner?.id)
+                    null
                 }
 
                 is SettlementDecision.Ignore -> {
                     repository.ignore(decision)
                     written += listOfNotNull(decision.log.id, decision.partner?.id)
+                    null
                 }
 
                 is SettlementDecision.Repost -> {
                     val original = decision.original
-                    if (original.status == NotificationStatus.PENDING && original.id !in written) return
-                    repository.markRepost(decision.log.id, original.linkedTransactionId ?: booked[original.id])
+                    if (original.status != NotificationStatus.PENDING || original.id in written) {
+                        repository.markRepost(decision.log.id, original.linkedTransactionId ?: booked[original.id])
+                    }
+                    null
                 }
             }
-        }
+
+        /** `book` may write rows before it reports stale data; an `Err` here rolls all of them back. */
+        private suspend fun bookInTransaction(
+            decision: SettlementDecision.Book,
+            transactionId: String,
+            now: Long,
+        ): SettlementError? =
+            when (
+                val outcome =
+                    tx.write {
+                        repository.book(decision, transactionId, now)?.let { Outcome.Err(it) }
+                            ?: Outcome.Ok(Unit)
+                    }
+            ) {
+                is Outcome.Ok -> null
+                is Outcome.Err -> outcome.error
+            }
 
         private companion object {
             val lock = Mutex()

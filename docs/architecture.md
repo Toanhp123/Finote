@@ -10,7 +10,7 @@ One Gradle module, `:app`. Layers are packages. Inside a layer, packages split b
 domain/common/       StorageException, DefaultDispatcher, IsDebuggable, SystemZoneClock; Outcome, TransactionRunner (R2)
 domain/<feature>/
   model/             data classes and enums only, no Throwable subclasses
-  error/             error types (today: RuleFeedError enum and RuleFeedException, sealed CategoryError); sealed <Feature>Error types arrive in R3 to R6
+  error/             sealed <Feature>Error interfaces, and enums for a reason or a port error (MergeRejection, RuleFeedError)
   repository/        *Repository interfaces only
   port/              other outward interfaces (ParserRuleFeed, RuleUpdateScheduler, SettleScheduler)
   service/           pure logic (NotificationParser, BalanceCalculator, <Feature>Rules)
@@ -75,6 +75,20 @@ di/                  Hilt module
 
 The debug flag is `@IsDebuggable isDebuggable: Boolean` (from `ApplicationInfo.FLAG_DEBUGGABLE`, provided in `di/BuildModule`), passed to the `BaseViewModel` constructor. Each screen maps its own `Outcome.Err` to its own state or effect.
 
+Konsist rules (`ProjectRulesKonsistTest`, `LayoutKonsistTest`):
+
+- `ui does not catch broad exceptions`: no `catch (` with `IllegalArgumentException`, `IllegalStateException`, `ArithmeticException`, `RuntimeException`, `Exception`, or `Throwable` in `ui`. Exempt by path: `ui/common/BaseViewModel.kt` (defines the helpers) and `ui/cashentry/AmountExpression.kt` (catches `ArithmeticException` for its own math).
+- `ui flows catch only through catchStorage`: no `.catch {` and no import of `kotlinx.coroutines.flow.catch` in `ui`, except `ui/common/BaseViewModel.kt`.
+- `error folders hold sealed errors`: every top-level declaration in `domain/<f>/error` is a sealed interface, a sealed class, or an enum class. Any other type there must extend a sealed type declared in the same file.
+
+Callers outside `ui`:
+
+| Caller | `Outcome.Err` | `StorageException` | Other exception |
+|---|---|---|---|
+| `SettleWorker` | per-log status, decided by the settlement use case | `Result.retry()` (today's behavior) | `Result.retry()` (today's behavior) |
+| `RuleUpdateWorker` | the use case returns `RuleUpdateResult`, mapped as today | recorded as `RuleUpdateResult.Error` by the use case | same |
+| `FinoteNotificationListener` | the capture use case records a log status | dropped; the next `onListenerConnected` rescan retries (today's behavior) | same |
+
 ### Folder rules
 
 Rules 2 and 3 apply to `ui` only. `domain/<f>` and `data/<f>` follow the role folders in Layers; `LayoutKonsistTest` enforces them.
@@ -104,7 +118,7 @@ UI flow is MVI: Screen sends `Intent`, ViewModel calls use cases (reads included
 | Use case | `AddTransactionUseCase` | `domain/<f>/usecase` | One job. One public `operator fun invoke` |
 | Pure logic | `NotificationParser` | `domain/<f>/service` | Pure business rules. No I/O. Imports nothing from `repository` or `port` |
 | Port | `ParserRuleFeed` | `domain/<f>/port` | Interface only. Outward interface that is not a repository |
-| Error | `RuleFeedException` (holds `RuleFeedError`) | `domain/<f>/error` | Error types. Sealed `<Feature>Error` types come in R6 |
+| Error | `AccountError`, `RuleFeedError` | `domain/<f>/error` | Sealed `<Feature>Error` interfaces, enums for a reason or a port error. Nothing else |
 | Screen logic | `AmountExpression` | `ui/<screen>` | Pure input or display logic that serves one screen. Not in `domain` |
 | Repository | `TransactionRepository` | `domain/<f>/repository` | Interface only |
 | Repository impl | `TransactionRepositoryImpl` | `data/<f>/repository` | Drive DAOs, map |

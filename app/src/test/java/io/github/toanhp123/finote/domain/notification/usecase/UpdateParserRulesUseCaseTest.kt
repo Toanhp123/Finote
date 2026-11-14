@@ -1,7 +1,6 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
 import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
-import io.github.toanhp123.finote.domain.notification.error.RuleFeedException
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
@@ -117,7 +116,7 @@ class UpdateParserRulesUseCaseTest {
     fun `network error gives Network and writes no rule`() =
         runTest {
             val env = env()
-            env.feed.error = RuleFeedException(RuleFeedError.NETWORK, "timeout")
+            env.feed.error = RuleFeedError.NETWORK
 
             val result = env.useCase()
 
@@ -130,7 +129,7 @@ class UpdateParserRulesUseCaseTest {
     fun `invalid feed gives Invalid and writes no rule`() =
         runTest {
             val env = env()
-            env.feed.error = RuleFeedException(RuleFeedError.INVALID, "bad_signature")
+            env.feed.error = RuleFeedError.INVALID
 
             val result = env.useCase()
 

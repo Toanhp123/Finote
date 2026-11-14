@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.notification.repository
 
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
@@ -18,12 +19,15 @@ interface NotificationSettlementRepository {
 
     suspend fun getRulesById(): Map<String, ParserRule>
 
-    /** One write transaction. Throws [IllegalStateException] when a log is no longer `PENDING` (all rolled back). */
+    /**
+     * Books the decision. Null when written. A [SettlementError] means the planned data is stale; rows may already
+     * be written, so the caller must run this inside `TransactionRunner.write` and return `Err` to roll them back.
+     */
     suspend fun book(
         decision: SettlementDecision.Book,
         transactionId: String,
         now: Long,
-    )
+    ): SettlementError?
 
     /**
      * Marks the log (and its partner) `FAILED` with the reason. True when at least one of the two rows changed;

@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
@@ -9,7 +10,7 @@ import io.github.toanhp123.finote.domain.notification.repository.NotificationSet
 
 /**
  * Copies from the real repository: log filters and order, and each write moves only `PENDING` logs out of `PENDING`.
- * Does not copy: transaction or balance writes, and business `require` checks (R4/R5 of a later plan move them).
+ * Does not copy: transaction or balance writes, and stale-account checks (use [bookRejections]).
  */
 class FakeNotificationSettlementRepository(
     val logs: MutableList<NotificationLog> = mutableListOf(),
@@ -18,6 +19,9 @@ class FakeNotificationSettlementRepository(
 ) : NotificationSettlementRepository {
     /** Bank side log id -> error thrown by [book] before anything is written. */
     val bookErrors = mutableMapOf<String, Throwable>()
+
+    /** Bank side log id -> error returned by [book] before anything is written (stale data). */
+    val bookRejections = mutableMapOf<String, SettlementError>()
 
     /** Log id -> error thrown by [fail] before anything is written. */
     val failErrors = mutableMapOf<String, Throwable>()
@@ -56,12 +60,14 @@ class FakeNotificationSettlementRepository(
         decision: SettlementDecision.Book,
         transactionId: String,
         now: Long,
-    ) {
+    ): SettlementError? {
         bookErrors[decision.bankSide.id]?.let { throw it }
+        bookRejections[decision.bankSide.id]?.let { return it }
         bookTimes += now
         booked[decision.bankSide.id] = transactionId
         update(decision.bankSide.id, NotificationStatus.CONFIRMED, transactionId, null)
         decision.walletSide?.let { update(it.id, NotificationStatus.PAIRED_TRANSFER, transactionId, null) }
+        return null
     }
 
     override suspend fun fail(decision: SettlementDecision.Fail): Boolean {

@@ -1,7 +1,7 @@
 package io.github.toanhp123.finote.data.notification.remote
 
+import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
-import io.github.toanhp123.finote.domain.notification.error.RuleFeedException
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.port.ParserRuleFeed
 import java.io.ByteArrayOutputStream
@@ -33,7 +33,12 @@ class HttpParserRuleFeed internal constructor(
     constructor() : this(FEED_URL, publicKeyFromBase64(RULE_FEED_PUBLIC_KEY))
 
     // shortcut: blocking IO on the caller's dispatcher and not cancellable mid-read, the worker is the only caller.
-    override suspend fun fetch(): List<ParserRule> = decodeRuleFeed(download(), publicKey)
+    override suspend fun fetch(): Outcome<List<ParserRule>, RuleFeedError> =
+        try {
+            Outcome.Ok(decodeRuleFeed(download(), publicKey))
+        } catch (failure: RuleFeedFailure) {
+            Outcome.Err(failure.error)
+        }
 
     private fun download(): ByteArray {
         var connection: HttpURLConnection? = null
@@ -44,11 +49,11 @@ class HttpParserRuleFeed internal constructor(
             connection.readTimeout = TIMEOUT_MILLIS
             connection.setRequestProperty("User-Agent", "Finote")
             if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                throw RuleFeedException(RuleFeedError.NETWORK, "http_${connection.responseCode}")
+                throw RuleFeedFailure(RuleFeedError.NETWORK, "http_${connection.responseCode}")
             }
             return connection.inputStream.use { readCapped(it, MAX_BODY_BYTES) }
         } catch (_: IOException) {
-            throw RuleFeedException(RuleFeedError.NETWORK, "io")
+            throw RuleFeedFailure(RuleFeedError.NETWORK, "io")
         } finally {
             connection?.disconnect()
         }
@@ -64,7 +69,7 @@ internal fun readCapped(
     val buffer = ByteArray(BUFFER_BYTES)
     var read = input.read(buffer)
     while (read >= 0) {
-        if (out.size() + read > maxBytes) throw RuleFeedException(RuleFeedError.INVALID, "too_large")
+        if (out.size() + read > maxBytes) throw RuleFeedFailure(RuleFeedError.INVALID, "too_large")
         out.write(buffer, 0, read)
         read = input.read(buffer)
     }

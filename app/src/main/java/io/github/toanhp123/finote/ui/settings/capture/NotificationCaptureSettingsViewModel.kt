@@ -11,7 +11,6 @@ import io.github.toanhp123.finote.domain.notification.usecase.SetRuleAutoUpdateU
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import io.github.toanhp123.finote.ui.settings.summarizeBanks
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -44,7 +43,7 @@ class NotificationCaptureSettingsViewModel
         ) {
             viewModelScope.launch {
                 flow
-                    .catch {
+                    .catchStorage {
                         // The value keeps its last state. Nothing is logged: rules and checks are data.
                     }.collect { value -> setState { reduce(value) } }
             }

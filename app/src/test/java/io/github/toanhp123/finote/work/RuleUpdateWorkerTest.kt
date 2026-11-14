@@ -9,7 +9,6 @@ import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.workDataOf
 import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
-import io.github.toanhp123.finote.domain.notification.error.RuleFeedException
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
 import io.github.toanhp123.finote.domain.notification.usecase.FakeNotificationCaptureRepository
 import io.github.toanhp123.finote.domain.notification.usecase.FakeParserRuleFeed
@@ -66,7 +65,7 @@ class RuleUpdateWorkerTest {
     @Test
     fun `manual run without network fails and records NETWORK`() =
         runTest {
-            feed.error = RuleFeedException(RuleFeedError.NETWORK, "timeout")
+            feed.error = RuleFeedError.NETWORK
 
             assertEquals(ListenableWorker.Result.failure(), run(isManual = true))
             assertEquals(RuleUpdateResult.Network, settings.lastCheck.value?.result)
@@ -75,7 +74,7 @@ class RuleUpdateWorkerTest {
     @Test
     fun `periodic run without network retries`() =
         runTest {
-            feed.error = RuleFeedException(RuleFeedError.NETWORK, "timeout")
+            feed.error = RuleFeedError.NETWORK
 
             assertEquals(ListenableWorker.Result.retry(), run(isManual = false))
         }
@@ -83,7 +82,7 @@ class RuleUpdateWorkerTest {
     @Test
     fun `invalid feed fails in both modes`() =
         runTest {
-            feed.error = RuleFeedException(RuleFeedError.INVALID, "bad_signature")
+            feed.error = RuleFeedError.INVALID
 
             assertEquals(ListenableWorker.Result.failure(), run(isManual = false))
             assertEquals(ListenableWorker.Result.failure(), run(isManual = true))

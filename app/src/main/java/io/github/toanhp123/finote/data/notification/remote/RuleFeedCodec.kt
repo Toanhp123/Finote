@@ -2,7 +2,6 @@ package io.github.toanhp123.finote.data.notification.remote
 
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
-import io.github.toanhp123.finote.domain.notification.error.RuleFeedException
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.service.regexGroupNames
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
@@ -49,7 +48,7 @@ private class RuleDto(
 // The payload is signed, so extra fields are trusted; an additive field must not make old installs reject the feed.
 private val feedJson = Json { ignoreUnknownKeys = true }
 
-private fun invalid(code: String): Nothing = throw RuleFeedException(RuleFeedError.INVALID, code)
+private fun invalid(code: String): Nothing = throw RuleFeedFailure(RuleFeedError.INVALID, code)
 
 /** Reads the base64 X.509 (SubjectPublicKeyInfo) form of an EC public key. */
 fun publicKeyFromBase64(x509: String): PublicKey =
@@ -59,7 +58,7 @@ fun publicKeyFromBase64(x509: String): PublicKey =
 
 /**
  * Decodes a signed rule feed. Checks run in order: envelope, signature (over the decoded payload bytes,
- * before the payload is parsed), schema, rules. Any failure throws [RuleFeedException] with INVALID.
+ * before the payload is parsed), schema, rules. Any failure throws [RuleFeedFailure] with INVALID.
  */
 fun decodeRuleFeed(
     envelope: ByteArray,

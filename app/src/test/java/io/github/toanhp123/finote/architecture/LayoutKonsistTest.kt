@@ -1,6 +1,10 @@
 package io.github.toanhp123.finote.architecture
 
+import com.lemonappdev.konsist.api.declaration.KoBaseDeclaration
+import com.lemonappdev.konsist.api.declaration.KoClassDeclaration
+import com.lemonappdev.konsist.api.declaration.KoFileDeclaration
 import com.lemonappdev.konsist.api.declaration.KoInterfaceDeclaration
+import com.lemonappdev.konsist.api.declaration.KoObjectDeclaration
 import com.lemonappdev.konsist.api.ext.list.classes
 import com.lemonappdev.konsist.api.verify.assertTrue
 import org.junit.Test
@@ -11,6 +15,7 @@ class LayoutKonsistTest {
     private val modelPackage = Regex("""^${Regex.escape(DOMAIN)}\.[^.]+\.model$""")
     private val portPackage = Regex("""^${Regex.escape(DOMAIN)}\.[^.]+\.port$""")
     private val servicePackage = Regex("""^${Regex.escape(DOMAIN)}\.[^.]+\.service$""")
+    private val errorPackage = Regex("""^${Regex.escape(DOMAIN)}\.[^.]+\.error$""")
 
     @Test
     fun `domain feature files sit in a role folder`() {
@@ -49,6 +54,13 @@ class LayoutKonsistTest {
     }
 
     @Test
+    fun `error folders hold sealed errors`() {
+        productionFiles
+            .filter { errorPackage.matches(it.packageName()) }
+            .assertTrue(strict = false, testName = "error folders hold sealed errors") { it.holdsOnlySealedErrors() }
+    }
+
+    @Test
     fun `services do not reach repositories or ports`() {
         val services = productionFiles.filter { servicePackage.matches(it.packageName()) }
         services.assertNoImports("services do not reach repositories or ports") {
@@ -73,6 +85,41 @@ class LayoutKonsistTest {
                 featureRolePackage(DATA, setOf("mapper")).matches(it.packageName())
             }
     }
+
+    /**
+     * Top level: a sealed interface or class, or an enum class. Any other type must extend a sealed type of the same
+     * file. A function, property or alias there fails.
+     */
+    private fun KoFileDeclaration.holdsOnlySealedErrors(): Boolean {
+        val types = listOf(this).topLevelDeclarations().map { it.asErrorType() ?: return false }
+        val sealedNames = types.filter { it.isSealedOrEnum }.map { it.name }.toSet()
+        return types.all { it.isSealedOrEnum || it.parents.any { parent -> parent in sealedNames } }
+    }
+
+    private class ErrorType(
+        val name: String,
+        val isSealedOrEnum: Boolean,
+        val parents: List<String>,
+    )
+
+    private fun KoBaseDeclaration.asErrorType(): ErrorType? =
+        when (this) {
+            is KoInterfaceDeclaration -> {
+                ErrorType(name, hasSealedModifier, parents().map { it.name.baseTypeName() })
+            }
+
+            is KoClassDeclaration -> {
+                ErrorType(name, hasSealedModifier || hasEnumModifier, parents().map { it.name.baseTypeName() })
+            }
+
+            is KoObjectDeclaration -> {
+                ErrorType(name, false, parents().map { it.name.baseTypeName() })
+            }
+
+            else -> {
+                null
+            }
+        }
 
     /** Every top-level type accepted by [hasSuffix] must sit in `data.<feature>.<role>`. One-way check. */
     private fun assertTypesIn(
