@@ -15,10 +15,11 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 - Never read the whole spec. Use `offset` and `limit` on these lines: `2.2` notification engine L32–51, `3.1–3.10` Room schema L61–228, `4` MoSCoW scope L229–404, `5–9` acceptance criteria L405–422.
 
 ## Current state
-- `app/src/main/java/` has no production Kotlin yet. Tests exist, including Konsist rules in `app/src/test/java/io/github/toanhp123/finote/architecture/`.
+- Phases P0–P2c are on `dev`. Order of work, shared foundations (N1–N8), and the debt ledger: `docs/roadmap.md`. Read section 5 for the next step.
+- Konsist rules live in `app/src/test/java/io/github/toanhp123/finote/architecture/`.
 - Git history exists. Branches: `main`, `dev`, work branches.
 - Package: `io.github.toanhp123.finote`. `minSdk` 26 (per spec). `targetSdk` 37 (intentionally above the spec's 35).
-- Compose, Hilt, KSP, detekt, Spotless, and Konsist are in `gradle/libs.versions.toml`. Room, SQLCipher, WorkManager, Robolectric, and Turbine are not. Add a dependency only when a task needs it, through the version catalog. Never hardcode versions in `build.gradle.kts`.
+- Dependencies live in `gradle/libs.versions.toml`. Add one only when a task needs it, through the version catalog. Never hardcode versions in `build.gradle.kts`.
 
 ## Model routing (subagents in `.claude/agents/`)
 - Find code: call `codegraph_explore` yourself. It is one call. Do not delegate a lookup.
@@ -30,6 +31,22 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 - Escalate to `architect` only when `coder` is stuck or the cost of a wrong answer is high.
 - `reviewer` never edits. Send its findings back to `coder` to fix, then review again.
 - The main session model is the user's choice (`/model`). Do not switch it yourself.
+
+## Skills (invoke with the Skill tool before the work, not after)
+- IMPORTANT: a subagent starts without the session's skills. `coder` and `reviewer` invoke their own (see their files). When you brief one, name the skills that fit the task.
+
+| When | Skill |
+|---|---|
+| Writing or changing any code | `ponytail:ponytail` |
+| Compose state, effects, navigation, focus | `compose-state-and-effects` |
+| Coroutines, `Flow`, `StateFlow`, scopes | `kotlin-concurrency-and-flow` |
+| Test of a `suspend` function or ViewModel | `testing-coroutines-with-runtest` |
+| Test that asserts `Flow` emissions | `testing-flows-with-turbine` |
+| Room or Android-aware JVM test | `using-robolectric-correctly` |
+| Any Gradle task | `gradle-run` |
+| Bug or failing test | `superpowers:systematic-debugging` |
+| Review of a branch | `ponytail:ponytail-review`, inside `reviewer` |
+| Before saying "done" | `superpowers:verification-before-completion` |
 
 ## Commands
 - Build: `assembleDebug`

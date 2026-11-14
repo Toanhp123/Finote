@@ -1,319 +1,289 @@
-# Roadmap chi tiết — Finote
+# Roadmap — Finote
 
-Trạng thái: bản nháp v1. Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9; `CLAUDE.md`; `docs/git-workflow.md`.
+Bản v2, viết lại ngày 2026-11-15 sau khi rà toàn bộ luồng tiền và spec. Bản cũ (chi tiết các nhánh đã xong, ghi chú nghiên cứu SQLCipher, bảng nợ P2a gốc): `docs/roadmap-history.md`.
 
-Hiện trạng (đã kiểm tra):
-- Catalog đã có Compose BOM, Hilt, KSP, detekt, Spotless, Konsist, Navigation3. Room 3, Robolectric, Turbine đã có. Chưa có SQLCipher, WorkManager.
-- `app/src/main/java/` chưa có source Kotlin production. Đã có luật Konsist trong `app/src/test/`.
-- `minSdk = 26`, `targetSdk = 37` (spec ghi 35, đã chốt ở mục D3).
-- Git: nhánh `dev` đã có commit khởi tạo, spec, plan và catalog. Xem lịch sử bằng `git log dev`.
+Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9; `CLAUDE.md`; `docs/git-workflow.md`; `docs/architecture.md`.
 
-## 0. Nguyên tắc làm việc
+## 1. Hiện trạng (2026-11-15)
 
-- Mỗi phase kết thúc bằng một mốc release nhỏ, có tiêu chí đo được (DoD).
-- Mỗi tính năng là một nhánh `feature/<name>` từ `dev`, squash vào `dev`. `reviewer` chạy một lần cho mỗi nhánh, trước khi squash.
-- Thay đổi logic (parser, dedup, pairing, balance) phải chạy `testDebugUnitTest` qua `gradle-run` và đọc bản tóm tắt.
-- Tiền luôn là `Long` VND. Không dùng `Double` cho số tiền.
-- Mọi thay đổi số dư nằm trong một `@Transaction`, gồm cả `AccountBalanceSnapshot`.
-- Xóa mềm bằng `deletedAt`. Chỉ WorkManager dọn thùng rác mới được xóa cứng.
-- Không log nội dung thông báo, số dư, số tài khoản. Log rule id hoặc trạng thái thay thế.
-- Fixture test: thay tên, số tiền, số tài khoản bằng giá trị giả. Không commit dữ liệu thật.
-- Instrumented test chỉ chạy khi user yêu cầu. Vì vậy test Room dùng Robolectric để chạy trong `testDebugUnitTest`.
-- Thư viện native của SQLCipher không chạy trên JVM. Test Room dùng DB không mã hóa qua driver khác (dự kiến `BundledSQLiteDriver`). Mã hóa được kiểm riêng ở `feature/db-encryption`.
+- Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2c (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
+- Không có nhánh nào đang mở. Bước tiếp theo: bước 2 ở mục 5.
+- Chưa từng chạy trên máy thật: toàn bộ P2. Bộ mẫu thông báo là mẫu tổng hợp (D4).
+- DB version 7, vẫn dùng `fallbackToDestructiveMigration`: đổi schema là mất dữ liệu.
+- Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: sửa giao dịch, tạo và sửa tài khoản, quản lý danh mục, dashboard.
 
-## 1. Mốc phát hành
+## 2. Nguyên tắc làm việc
 
-| Mốc | Phase | Nội dung chính | Ghi chú |
+- Mỗi tính năng là một nhánh từ `dev`, squash vào `dev`. `reviewer` chạy một lần cho mỗi nhánh, trước khi squash.
+- Thay đổi logic (parser, dedup, pairing, balance) phải chạy `testDebugUnitTest` qua `gradle-run`.
+- Tiền là `Long` VND. Mọi thay đổi số dư và `AccountBalanceSnapshot` nằm trong một transaction.
+- Xóa mềm bằng `deletedAt`. Chỉ WorkManager dọn thùng rác mới xóa cứng.
+- Không log nội dung thông báo, số dư, số tài khoản. Fixture test dùng dữ liệu giả.
+- Instrumented test chỉ chạy khi user yêu cầu. Test Room chạy trong `testDebugUnitTest`.
+- **Mới:** thứ tự nhánh theo ba ưu tiên: (1) đúng tiền, (2) nền móng dùng chung làm trước tính năng dùng nó, (3) Must-Have trước Should-Have.
+- **Mới:** mỗi nhánh tính năng ghi rõ nó dùng nền móng nào ở mục 4. Nếu phải sửa nền móng thì sửa ở nhánh riêng trước, không vá trong nhánh tính năng.
+
+## 3. Mốc phát hành
+
+| Mốc | Nội dung | Điều kiện |
+|---|---|---|
+| v0.2 | Tự động bắt giao dịch, đã thử trên máy thật | Hết bước 12 ở mục 5, DoD spec mục 6 |
+| v0.3 | Đủ Must-Have về UI: tài khoản, danh mục, dashboard; ngân sách, tìm kiếm | Hết bước 21 |
+| v0.4 | Hoàn tiền, thẻ tín dụng, định kỳ, import/export, thùng rác | Hết bước 27 |
+| v1.0 | Khóa app, hiệu năng, onboarding quyền, đạt spec mục 5–9 | Hết bước 33 |
+| v1.x | Could-Have | Sau v1.0 |
+
+Mỗi mốc: `release/x.y.z` từ `dev` → `main` (`--no-ff`) → tag → `dev` (`--no-ff`). v0.1 không phát hành riêng.
+
+## 4. Phân tích kiến trúc: nền móng dùng chung
+
+Rà code ngày 2026-11-15. Mỗi dòng là một chỗ mà nhiều tính năng sau cùng dựa vào. Làm sai thứ tự thì tính năng sau phải viết lại tính năng trước.
+
+| # | Nền móng | Hiện tại | Tính năng cần nó | Làm ở |
+|---|---|---|---|---|
+| N1 | **Một đường ghi sổ** | 3 đường ghi riêng: `AddTransactionUseCase` (có `TransactionRules`), `NotificationSettlementRepositoryImpl.book` (tự dựng `TransactionEntity`, không qua rule), `writeAdjustment` | Ghép chuyển khoản, failed-inbox, định kỳ, import, hoàn tiền, tự gán danh mục, FTS | Bước 2 |
+| N2 | **Form giao dịch dùng chung** | Sheet nhập tiền mặt chỉ tạo mới Chi và Thu | Chuyển, sửa giao dịch, failed-inbox (điền sẵn từ log), hoàn tiền, nhãn, tách giao dịch | Bước 3, 4 |
+| N3 | **Bộ so khớp** (matcher) | `SettlementPlanner` gắn cứng một kiểu ghép: ngân hàng + ví, cùng chiều, 30 giây | Ghép chuyển khoản; so "ứng viên với sổ" cho bóc lại log, failed-inbox, định kỳ, import | Bước 5 (tách vị từ), bước 11 (ứng viên với sổ) |
+| N4 | **Migration thật** | Đổi schema là xóa DB | Mọi nhánh thêm bảng hoặc cột sau khi có dữ liệu thật | Bước 6 |
+| N5 | **Định danh tài khoản** | Một khóa `(bankPackageName, accountNumberMask)` trên `Account`; gộp tài khoản nối qua `mergedIntoId` | Thẻ ghi nợ, MoMo nguồn ngân hàng, màn tài khoản (liên kết 4 số cuối), thẻ tín dụng, thêm ngân hàng | Bước 10 |
+| N6 | **Lõi báo cáo** (`domain/report`) | Chưa có. Tổng thu chi trong snapshot gồm cả điều chỉnh, phí, hoàn tiền; không biết `excludeFromAnalytics` | Dashboard, ngân sách, hoàn tiền, merchant, tách giao dịch | Bước 17 |
+| N7 | **Thông báo của app** (kênh, quyền `POST_NOTIFICATIONS`) | Chưa có | Cảnh báo ngân sách, nhắc hóa đơn định kỳ, nhắc đòi tiền chi hộ | Bước 18 |
+| N8 | **Ghi theo lô** | Mỗi lần ghi tính lại toàn bộ tài khoản, O(số giao dịch) | Import (nghìn dòng), định kỳ, hiệu năng 50.000 giao dịch | Bước 25 (lô), bước 30 (tính lại từ tháng sửa) |
+
+Quy ước rút ra:
+- **Snapshot chỉ phục vụ số dư và tài sản ròng.** Thu chi cho báo cáo đọc từ giao dịch qua N6. Không thêm cột báo cáo vào snapshot.
+- **Bộ đọc snapshot phải tự kéo số dư tháng trước** cho tháng thiếu dòng (snapshot chỉ ghi khi có giao dịch).
+- **Nơi duy nhất ẩn số dư là `MoneyText`.** Khóa app (bước 28) không phải sửa từng màn.
+- **Export làm cuối P4**, khi schema đã ổn định; sao lưu Drive (P6) dùng lại định dạng export.
+
+## 5. Lộ trình
+
+Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều kiện.
+
+### Đoạn A — Chốt v0.2 (Automation Core)
+
+| # | Nhánh | Loại | Dùng | Trạng thái |
+|---|---|---|---|---|
+| 1 | `chore/ui-components` | Dọn dẹp 5 (A12–A15) | | ✅ `c635487` |
+| 2 | `chore/ledger-write-path` | Nền móng N1 | | ⬜ |
+| 3 | `feature/cash-transfer` | Việc tồn P1 | N1, N2 | ⬜ |
+| 4 | `feature/transaction-edit` | Must-Have (CRUD giao dịch) | N1, N2 | ⬜ |
+| 5 | `feature/transfer-pairing` (P2d) | Must-Have | N1, N3 | ⬜ |
+| 6 | `chore/db-migrations` | Nền móng N4 | | ⬜ |
+| 7 | `chore/release-readiness` | Dọn dẹp 7 (A4, A17) | | ⬜ |
+| 8 | `feature/debug-log-screen` | Công cụ (chỉ bản debug) | | ⬜ |
+| 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | ⏸ sau bước 8 |
+| 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ⏸ cần mẫu thật |
+| 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1 | ⏸ cần mẫu thật |
+| 12 | `release/0.2.0` | | | ⬜ |
+
+**2. `chore/ledger-write-path`** — một cửa ghi cho mọi nguồn (tay, thông báo, điều chỉnh).
+- `book` của settlement dựng `Transaction` domain và đi qua cùng rule và cùng hàm ghi với nhập tay. Không tự dựng `TransactionEntity`.
+- Model cấm `toAccountId` ở giao dịch không phải `TRANSFER`. SQL "chạm tài khoản" kiểm `type = 'TRANSFER'` cho vế `toAccountId`, khớp `Transaction.touches`.
+- Không đổi hành vi. Test hiện có phải xanh nguyên.
+- Lý do làm trước: bước 3, 4, 5 đều thêm người ghi mới.
+
+**3. `feature/cash-transfer`** — thêm Chuyển vào sheet (tài khoản đích, phí).
+- Sheet trở thành form giao dịch dùng chung (N2): Chi, Thu, Chuyển.
+- Lý do: rút ATM là cách tiền vào ví tiền mặt; ví tiền mặt không có thông báo nên P2d không ghép được.
+
+**4. `feature/transaction-edit`** — mở một giao dịch, sửa số tiền, ngày, tài khoản, danh mục, ghi chú; xóa mềm.
+- Dùng lại form của bước 3 ở chế độ sửa. `UpdateTransactionUseCase` đã có.
+- Giữ nguyên `postBalance`, `source`, `notificationLogId` khi sửa.
+- Lý do đặt trước dogfood: không sửa được thì không chữa được giao dịch tự bắt sai.
+
+**5. `feature/transfer-pairing` (P2d, Module 7)** — quy trình: `superpowers:brainstorming` → `writing-plans`.
+- Một trừ ở tài khoản A và một cộng ở tài khoản B, cùng số tiền, trong 1–2 phút → một `TRANSFER`, log `PAIRED_TRANSFER`.
+- Thông báo thứ hai đến muộn: log giữ `PENDING` tới hết cửa sổ, không ghi hai giao dịch rồi sửa.
+- Tách `SettlementPlanner` thành các vị từ so khớp riêng (trùng ngân hàng + ví; ghép chuyển khoản), mỗi vị từ một cửa sổ thời gian (N3).
+- Thêm cột số dư bên nhận (`toPostBalance`). Mốc số dư, số dư đầu tự động và báo lệch đọc được cả hai bên.
+- Kiểm `isUsable` trên cả hai tài khoản khi ghi.
+- Cần chốt trong thiết kế (D12): phí chuyển làm hai số tiền lệch nhau; cửa sổ chờ nới từ 30 giây làm mọi giao dịch hiện chậm hơn.
+- Đã có sẵn: mốc số dư chỉ lấy dòng có `accountId` bằng tài khoản (`findBalanceAnchor`).
+- Test: ghép đúng; không ghép khi khác số tiền; hết giờ thì giữ hai giao dịch riêng; MoMo nạp từ ngân hàng thành một `TRANSFER`.
+
+**6. `chore/db-migrations`** — bỏ `fallbackToDestructiveMigration`.
+- Schema sau bước 5 là mốc gốc. Từ đây mỗi thay đổi có migration và test migration.
+- Đặt ngay trước dogfood để dữ liệu thật không mất.
+
+**7. `chore/release-readiness`** (A4, A17) — `assembleRelease` trong gate, keep rule cho Room, serialization, SQLCipher JNI; loại `app_setup.xml` khỏi backup.
+
+**8. `feature/debug-log-screen`** — màn chỉ có ở bản debug, xem `notification_logs` (trạng thái, lý do lỗi, rule khớp). Nội dung vẫn không ra Logcat.
+
+**9. Dogfood** — cài bản release lên máy thật, dùng 1 tuần. Việc phải làm:
+- Gom mẫu thật (đã ẩn danh) của VCB, MB, MoMo, Techcombank vào corpus.
+- Xác nhận hoặc bác L1, L2 (mục 6) bằng mẫu thẻ ghi nợ VCB và MoMo nguồn ngân hàng.
+- Lấy mẫu thông báo cập nhật thêm dòng (A5) và nợ N-06.
+- Lưu ý: bản cài ngoài Play trên Android 13+ cần "Allow restricted settings" mới cấp được quyền đọc thông báo.
+
+**10. `fix/account-identity`** (L1, L2, nợ N-01, N-02, N-05, N-06, N-08; N5).
+- Một tài khoản có nhiều định danh: số tài khoản, số thẻ, số ví. Đề xuất bảng định danh riêng thay cho một cặp cột trên `Account`; gộp tài khoản thành chuyển định danh (D13).
+- Rule nói rõ 4 số cuối là của ai: tài khoản, thẻ, hay nguồn tiền của ví.
+- Thiết kế chốt sau khi có mẫu thật. Màn tài khoản (bước 14) và thẻ tín dụng (bước 23) xây trên mô hình này.
+
+**11. `fix/double-booking`** (L3, L4; thay cho `fix/notification-text-lines`).
+- Nhận thông báo đăng lại theo khóa thông báo, không đòi nội dung giống hệt.
+- So "ứng viên với sổ" (N3): trước khi ghi một log cũ, kiểm đã có dòng điều chỉnh bù cho nó chưa. Bóc lại log, failed-inbox, định kỳ và import dùng chung hàm này.
+
+### Đoạn B — v0.3 (đủ Must-Have, báo cáo)
+
+| # | Nhánh | Loại | Dùng | Trạng thái |
+|---|---|---|---|---|
+| 13 | `feature/failed-inbox` | Should-Have | N1, N2, N3 | ⬜ |
+| 14 | `feature/account-manage` | Must-Have | N5 | ⬜ |
+| 15 | `feature/category-ui` | Must-Have | | ⬜ |
+| 16 | `feature/merchant-normalize` | Should-Have | N1 | ⬜ |
+| 17 | `feature/dashboard` | **Must-Have** (bản cũ ghi nhầm Should-Have) | N6 | ⬜ |
+| 18 | `feature/budget` | Should-Have | N6, N7 | ⬜ |
+| 19 | `feature/net-worth` | Should-Have | | ⬜ |
+| 20 | `feature/tags`, `feature/fts-search` | Should-Have | N2 | ⬜ |
+| 21 | `release/0.3.0` | | | ⬜ |
+
+- **13. `failed-inbox`**: liệt kê log `FAILED`, bấm để mở form điền sẵn (N2) thành giao dịch tay. Kèm bộ dạy mẫu: bôi đen số tiền, số dư, 4 số cuối; app sinh regex `isUserCustom = true` rồi gọi `ReparseFailedLogsUseCase`. Gộp `feature/regex-sandbox` của bản cũ vào đây. Còn phải bàn: ngân hàng chưa có rule bị `NotTracked` nên không có dòng `FAILED` để dạy.
+- **14. `account-manage`**: tạo, sửa tài khoản; liên kết app ngân hàng + 4 số cuối (N5); `setInitialBalance` (đặt `isInitialized = true` và tính lại); gắn sao tài khoản chính (`isPrimary`); gợi ý gộp khi tài khoản tự tạo giống tài khoản cũ.
+- **15. `category-ui`**: quản lý cây 2 cấp, biểu tượng, màu.
+- **16. `merchant-normalize`**: bảng `CategoryKeywordRule`; tự gán danh mục và chuẩn hóa tên cửa hàng ngay trên đường ghi sổ (N1). Đặt trước dashboard, vì giao dịch từ thông báo hiện không có danh mục thì biểu đồ theo danh mục vô nghĩa.
+- **17. `dashboard`**: dựng `domain/report` (N6) rồi mới vẽ. Luật thu chi: bỏ `TRANSFER`, `ADJUSTMENT`, dòng `excludeFromAnalytics`; phí tính là chi; để sẵn chỗ cho hoàn tiền giảm chi. Biểu đồ: Vico + Compose Canvas.
+- **18. `budget`**: bảng `Budget`; chi theo danh mục lấy từ N6; kết chuyển `carryOverAmount`; cảnh báo tại ngưỡng và 100%, dùng `lastAlertSentThreshold`. Dựng N7 ở đây.
+- **19. `net-worth`**: đọc `AccountBalanceSnapshot`, tự kéo số dư cho tháng thiếu dòng; loại `excludeFromNetWorth`, tài khoản bỏ qua.
+- **20. `tags`, `fts-search`**: gắn nhãn trong form (N2); `TransactionFts` trên `merchantName`, `note` (D1).
+
+DoD (spec mục 8): tìm kiếm dưới 50 ms và biểu đồ tài sản ròng dưới 16 ms với 50.000 giao dịch, đo trên máy thật (D7).
+
+### Đoạn C — v0.4 (nghiệp vụ nâng cao, dữ liệu)
+
+| # | Nhánh | Dùng | Ghi chú |
 |---|---|---|---|
-| v0.1 | P0, P1 | Nhập tay, DB mã hóa, số dư đúng | Chưa tự động |
-| v0.2 | P2 | Tự động bắt giao dịch từ thông báo | Phần khác biệt của sản phẩm |
-| v0.3 | P3 | Dashboard, ngân sách, tìm kiếm, tài sản ròng | |
-| v0.4 | P4 | Hoàn tiền, thẻ tín dụng, định kỳ, import/export, thùng rác | |
-| v1.0 | P5 | Bảo mật UI, hiệu năng, onboarding quyền, đạt mục 5–9 | Phát hành production |
-| v1.x | P6 | Could-Have còn lại | Sau v1.0 |
+| 22 | `feature/refund` | N1, N2, N6 | `REFUND`, `refundForTransactionId`; giảm chi của danh mục gốc, không cộng vào thu |
+| 23 | `feature/credit-card` | N5, bước 5 | `creditLimit`, `statementDay`, `dueDay`; trả nợ thẻ là một `TRANSFER`; chốt cách dùng "hạn mức còn lại" làm mốc |
+| 24 | `feature/recurring-plan` | N1, N3, N7 | Chốt D11 trước; giao dịch tự sinh phải so với giao dịch từ thông báo để không trùng |
+| 25 | `feature/import-csv` → `import-xlsx` | N1, N3, N8 | Ghi theo lô, tính lại số dư một lần; so ứng viên với sổ |
+| 26 | `feature/trash-purge` | | WorkManager xóa cứng mục `deletedAt` quá 30 ngày; kèm màn thùng rác và khôi phục |
+| 27 | `feature/export` → `release/0.4.0` | | `.json` mã hóa và `.xlsx`; làm cuối để schema đã ổn định |
 
-Mỗi mốc: `release/x.y.z` từ `dev` → `main` (`--no-ff`) → tag `vX.Y.Z` → `dev` (`--no-ff`). `versionCode` tăng mỗi lần.
+### Đoạn D — v1.0 (production)
 
-## 2. Phase 0 — Nền tảng (không có tính năng)
+| # | Nhánh | Ghi chú |
+|---|---|---|
+| 28 | `feature/app-lock` | Must-Have. `BiometricPrompt`, ẩn số dư qua `MoneyText`, `FLAG_SECURE`, làm mờ ở Recent Apps |
+| 29 | `feature/onboarding-permission` | Hướng dẫn Android 13+ và tắt tối ưu pin; thêm bước vào màn setup có sẵn; sửa nợ N-13 |
+| 30 | `feature/perf` | Tính lại số dư từ tháng bị sửa (N8); báo lệch bằng truy vấn DAO; cold start dưới 1,2 giây; nhập tiền mặt dưới 0,5 giây; sửa nợ N-09, N-14 |
+| 31 | Chính sách quyền riêng tư | Bắt buộc trước khi lên Google Play |
+| 32 | `chore/audit` | Test đối soát: công thức số dư khớp mọi tài khoản, mọi thời điểm; chặn xóa DB khi mất khóa sau v1.0; sửa nợ N-12, N-15 |
+| 33 | `release/1.0.0` | Đạt toàn bộ spec mục 5–9 |
 
-Mục tiêu: build chạy, khung kiến trúc sẵn sàng cho mọi phase sau.
+### Đoạn E — sau v1.0 (Could-Have)
 
-Việc (thứ tự theo `docs/superpowers/specs/2026-11-02-architecture-foundation-design.md` mục 6):
-1. `chore/gradle-catalog`: **đã xong.** Gộp cả `chore/build-plugins`. Catalog có Compose BOM, Hilt, KSP, detekt, Spotless, Konsist. Kotlin dùng built-in của AGP, không thêm `kotlin-android`.
-2. `chore/quality-gate`: **đã xong.** `./gradlew.bat qualityGate`, git hook, GitHub Actions, luật Konsist. Chi tiết: `docs/architecture.md`.
-3. `feature/app-shell`: `MainActivity` (Single Activity, `AppCompatActivity` vì đa ngôn ngữ, xem D9), Compose theme Material 3, Dynamic Color, `NavDisplay` của Navigation3. Back stack bắt đầu bằng key `Home` (màn trống), vì `NavDisplay` không nhận back stack rỗng. Nav host nằm ở `ui/navigation`, không ở `ui/common`, vì nó import màn của các feature.
-   - Đa ngôn ngữ (per-app language): giữ `appcompat`, theme `Theme.AppCompat.DayNight.NoActionBar`, `generateLocaleConfig = true`, `res/resources.properties`, `AppLocalesMetadataHolderService` với `autoStoreLocales` cho API 32 trở xuống. Mọi chuỗi UI nằm trong `strings.xml`.
-   - ViewModel theo từng màn: khi có ViewModel đầu tiên, thêm `androidx.lifecycle:lifecycle-viewmodel-navigation3` và `androidx.hilt:hilt-lifecycle-viewmodel-compose` (cho `hiltViewModel()`).
-4. `feature/mvi-base`: `ui/common/BaseViewModel<S, I, E>` (state là `StateFlow`, effect là `Channel(BUFFERED)`, một cửa vào `onIntent`) và `ui/common/ObserveEffects` (nhận effect khi STARTED, trên `Dispatchers.Main.immediate`). Không có interface đánh dấu `UiState`/`UiIntent`/`UiEffect`: generic đã đủ, và luật một public class mỗi file sẽ tạo 3 file rỗng.
+- Sao lưu Google Drive (dùng định dạng export).
+- Thêm rule cho ACB, VPBank, TPBank, BIDV, VietinBank, ZaloPay, ShopeePay.
+- Tách giao dịch (`isSplitParent`, `parentTransactionId`) và ngoại tệ (`originalAmount`, `exchangeRate`). Cả hai đổi công thức ở N6 và bộ tính số dư.
+- Đính kèm ảnh hóa đơn.
 
-Cấu trúc package (spec mục 3, chi tiết ở `docs/architecture.md`): tầng là package, trong tầng chia theo feature.
-- `domain/<feature>/`: model, repository interface, use case, logic thuần (parser, dedup, pairing, số dư).
-- `data/<feature>/`: Room entity, DAO, mapper, repository impl.
-- `ui/<feature>/`, `ui/common/`: Screen, Contract, ViewModel; theme và component dùng chung.
-- `automation/` (listener, mỏng), `work/` (Worker, mỏng), `di/` (Hilt module).
-- Feature ban đầu: `transaction`, `account`, `category`, `notification`.
+Won't-Have trong MVP: OCR hóa đơn, sổ nợ và chia tiền nhóm, đồng bộ đa thiết bị, chứng khoán, vàng, crypto.
 
-Thêm vào catalog trên nhánh dùng chúng, không thêm trước:
-- Room 3 (`androidx.room3:room3-runtime`, `room3-compiler` qua KSP), SQLCipher (`net.zetetic:sqlcipher-android`, từ 4.18 trở lên vì cần driver cho Room 3).
-- WorkManager, Hilt-work.
-- Robolectric, Turbine. (`junit` đã có trong catalog. `kotlinx-coroutines-test` thêm khi test đầu tiên cần.)
-- Chỉ thêm version qua catalog. Không hardcode version trong `build.gradle.kts`.
+## 6. Sổ nợ
 
-DoD:
-- `./gradlew.bat qualityGate` pass.
-- `./gradlew.bat testDebugUnitTest` pass, có ít nhất một test.
-- App mở được màn hình trống.
+Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa dòng.
 
-Quyết định đã chọn: Hilt (không dùng Koin). Lý do: `CLAUDE.md` ghi Hilt.
+### Lỗi có thể sai tiền (rà ngày 2026-11-15)
 
-## 3. Phase 1 — Lõi dữ liệu và nhập tay (v0.1)
-
-Mục tiêu: user nhập tay được, số dư luôn đúng, DB đã mã hóa.
-
-Spec đã bổ sung ngày 2026-11-02 (các đoạn `[Bổ sung 2026-11-02]` trong mục 3, 4, 7): chiều của ADJUSTMENT (`adjustmentDirection`), phí trừ vào `accountId`, dấu số dư của thẻ tín dụng, giao dịch tách và xóa mềm không tính vào số dư, nội dung cột snapshot và ràng buộc liên tháng, `monthYear` theo múi giờ máy, luật xóa tài khoản và danh mục, `nameKey` cho danh mục hệ thống, làm tròn phép chia, D2.
-
-Bảng Room tạo trong phase này (spec mục 3):
-- `Account` (3.1), `Category` (3.2, phần cây 2 cấp), `Transaction` (3.3, bảng chính), `Tag` và `TransactionTagCrossRef` (3.4), `AccountBalanceSnapshot` (3.9).
-- Lý do: mục 7 yêu cầu mọi thay đổi giao dịch cập nhật snapshot trong cùng transaction.
-- Bảng còn lại tạo ở phase sau, qua migration.
-
-Việc:
-1. `feature/db-schema`: entity, DAO, `FinoteDatabase`, `exportSchema = true`.
-   - DoD thêm: chạy luật `@Suppress` của Konsist với code KSP của Hilt và Room trong `build/generated/ksp/`, xác nhận không báo nhầm (spec mục 7).
-   - Kiểm lại test DAO có cần Robolectric không. Room 3 dùng driver API, có thể chạy trên JVM thuần.
-   - Trước v1.0 có thể tăng version và tạo lại DB. Sau v1.0 mọi thay đổi phải có migration và test migration.
-2. `feature/db-encryption`: SQLCipher.
-   - Sinh khóa 32 byte ngẫu nhiên.
-   - Bọc khóa bằng Android Keystore (AES-GCM). Lưu bản đã bọc trong SharedPreferences.
-   - Mở DB bằng driver SQLCipher cho Room 3 (`RoomDatabase.Builder.setDriver(...)`). Room 3 không còn `SupportOpenHelperFactory`.
-   - D2 và D8 đã chốt (xem mục 9). Loại DB và file chứa khóa bọc khỏi Auto Backup (`backup_rules.xml`, `data_extraction_rules.xml`).
-   - Máy dev đã có file DB không mã hóa từ `db-schema`. `fallbackToDestructiveMigration` không cứu được: nó chỉ chạy khi lệch version, còn file thường mở bằng khóa sẽ báo `file is not a database`. Cách xử lý: trước khi build DB, nếu file tồn tại và 16 byte đầu là `SQLite format 3\0` (header file không mã hóa) thì gọi `context.deleteDatabase(name)` (xóa cả `-wal`, `-shm`). Chỉ an toàn trước v1.0 vì chưa có dữ liệu người dùng thật. Có test cho nhánh này.
-   - Nghiên cứu (2026-11-03), nguồn: [README](https://github.com/sqlcipher/sqlcipher-android), [`SQLCipherDriver.java`](https://github.com/sqlcipher/sqlcipher-android/blob/master/sqlcipher/src/main/java/net/zetetic/database/sqlcipher/driver/SQLCipherDriver.java):
-     - Dependency: `net.zetetic:sqlcipher-android:4.20.0@aar`, cần `androidx.sqlite` 2.7.0 trở lên (catalog đang 2.7.1). Tối thiểu 4.19.1: bản 4.18–4.19.0 trả sai kiểu cột NULL ([#93](https://github.com/sqlcipher/sqlcipher-android/issues/93)).
-     - Driver: `net.zetetic.database.sqlcipher.driver.SQLCipherDriver(passphrase: ByteArray, hook, errorHandler)`. Gọi `System.loadLibrary("sqlcipher")` một lần trước khi mở DB.
-     - Khóa 32 byte ngẫu nhiên: truyền dạng raw key `"x'<64 hex>'"` để bỏ bước PBKDF2 (256k vòng) mỗi lần mở kết nối. Pool mở nhiều kết nối nên tiết kiệm đáng kể. Kiểm bằng test trên máy thật.
-     - Log: thư viện mặc định ghi Logcat. Gọi `Logger.setTarget(NoopTarget())` ở mọi bản build, kể cả debug (luật Privacy).
-     - Khóa sai không xóa DB: `DefaultDatabaseErrorHandler` bỏ qua xóa khi build có codec. Truyền `errorHandler = null` là được.
-     - Lỗi đã biết, chưa sửa: ở WAL, đọc và transaction chỉ-đọc chiếm kết nối chính, chặn ghi ([#99](https://github.com/sqlcipher/sqlcipher-android/issues/99)). Ảnh hưởng nhỏ với Finote nếu truy vấn ngắn. Truy vấn danh sách lớn dùng phân trang.
-     - Test: Robolectric không chạy được native SQLCipher, cũng không có provider `AndroidKeyStore`. Unit test (JVM): kiểm header file thường, logic sinh/bọc/mở khóa qua `Cipher` giả. Instrumented test: header file trên đĩa khác `SQLite format 3`, mở lại đúng khóa đọc được dữ liệu, khóa sai báo lỗi.
-     - Backup: loại `finote.db`, `finote.db-wal`, `finote.db-shm` và file prefs chứa khóa bọc ở cả `<cloud-backup>` và `<device-transfer>`, và trong `backup_rules.xml` (API < 31). Khóa Keystore không đi theo backup, nên DB khôi phục sẽ không mở được.
-     - D10 đã chốt: mất khóa Keystore thì xóa DB và khóa bọc cũ, sinh khóa mới, tạo DB rỗng. Có test cho các nhánh này.
-       - Xóa ngay: không có alias Keystore, `AEADBadTagException`, `KeyPermanentlyInvalidatedException`, Base64 hỏng, khóa giải ra sai kích thước, blob ngắn hơn IV + tag, hoặc có file DB mà không có khóa bọc.
-       - `UnrecoverableKeyException`: xóa sau 3 lần khởi động liên tiếp đều lỗi. Bộ đếm `unwrap_failures` nằm trong prefs `db_key`. Một lần mở khóa thành công đặt lại về 0.
-       - Lỗi khác (Keystore bận hoặc đang khóa): app dừng, lần khởi động sau thử lại. Không xóa, không đếm.
-3. `feature/balance-engine`: hàm thuần trong domain tính lại số dư:
-   `currentBalance = initialBalance + thu − chi − phí + hoàn ± chuyển nội bộ + điều chỉnh`.
-   - Dùng để kiểm tra chéo khi ghi DB.
-   - Test: mọi loại giao dịch, ADJUSTMENT IN/OUT, phí của TRANSFER, thẻ tín dụng âm, bỏ qua `deletedAt` và `isSplitParent`, số dư đầu bằng 0.
-   - Thêm hàm thuần dựng lại snapshot theo tháng. Kiểm ràng buộc `closing = opening + income − expense + transferIn − transferOut` và nối tháng.
-4. `feature/transaction-crud`: thêm/sửa/xóa mềm giao dịch. Mỗi thao tác là một `@Transaction` cập nhật `currentBalance` và `AccountBalanceSnapshot`.
-   - Sửa/xóa giao dịch ở tháng cũ, kể cả đổi timestamp sang tháng khác, phải tính lại snapshot của tháng đó và mọi tháng sau trong cùng `@Transaction`.
-   - Test với Robolectric: thêm, sửa đổi số tiền, đổi tháng, xóa mềm, rollback khi lỗi giữa chừng.
-   - Giới hạn trên cho vòng lặp tháng của `BalanceCalculator.monthlySnapshots`: nó chạy từ tháng giao dịch đầu tới `max(untilMonth, tháng cuối)`, nên một `timestamp` hỏng (ví dụ năm 1970 hay 9999) sinh hàng chục nghìn snapshot. Chặn `timestamp` ngoài khoảng hợp lệ khi ghi giao dịch, và đặt trần số tháng trong vòng lặp. Có test.
-5. `feature/account-crud`: tạo, sửa, lưu trữ (`isArchived`). Đặt `initialBalance` và `isInitialized`.
-   - Xóa mềm tài khoản có giao dịch sẽ chặn bằng validation, chỉ cho lưu trữ. Chỉ VND.
-6. `feature/category-seed`: seed cây danh mục chuẩn quốc tế (`isSystemDefault = true`). `parentId` `onDelete = RESTRICT`. Danh mục hệ thống lưu `nameKey` để hiện theo 4 ngôn ngữ (D9). Tối đa 2 cấp, con cùng type với cha, chặn xóa mềm cha còn con, danh mục hệ thống chỉ ẩn.
-   - UI quản lý cây 2 cấp: nhánh riêng `feature/category-ui` (Must-Have, mục 4).
-7. `feature/design-system` (xong): token, `FinoteTheme`, `MoneyFormat`, bộ component dùng chung, luật Konsist, screenshot test trong `qualityGate`. Chi tiết ở `docs/design-system.md`.
-8. `feature/cash-entry`: màn nhập tiền mặt có bàn phím số, phép tính `+ − × ÷`, chọn tài khoản và danh mục. Phép chia làm tròn nửa lên về đồng; số tiền cuối > 0.
-   - `TileService` và `ShortcutManagerCompat` mở thẳng màn này (Must-Have).
-   - Chốt 2026-11-04: sheet chỉ có Chi và Thu. Chuyển (`TRANSFER`) để sau.
-   - Việc sau: thêm Chuyển vào sheet (tài khoản đích, phí). Lý do: rút ATM là cách tiền mặt vào ví chủ yếu. Ngân hàng chỉ báo trừ, ví tiền mặt không có thông báo, nên P2d không ghép được. Không có Chuyển thì user phải ghi Thu, làm lệch báo cáo thu chi. Nên làm cùng hoặc ngay trước P2d.
-   - Việc sau: gắn sao tài khoản chính (`isPrimary`, kiểu Cashew). Làm cùng nhánh màn quản lý tài khoản. Thêm vào đầu chuỗi chọn tài khoản mặc định của sheet: gắn sao → dùng lần trước → "Tiền mặt" seed → đầu tiên theo `sortOrder`.
-9. `feature/reconciliation` (xong): điều chỉnh số dư thực tế. Tạo giao dịch `ADJUSTMENT` với `adjustmentDirection` IN hoặc OUT theo chênh lệch.
-10. `feature/reimbursement-flag` (xong): cờ `excludeFromAnalytics` và `reimbursementStatus` (Must-Have, mục 4). Chỉ lưu và lọc. Logic hoàn tiền (REFUND) ở P4.
-11. `feature/transaction-list` (xong): danh sách giao dịch cơ bản, lọc theo tài khoản, sắp xếp theo `timestamp DESC`. Kèm thanh 4 tab. Thiết kế: `docs/superpowers/specs/2026-11-04-transaction-list-design.md`.
-
-DoD:
-- Test công thức số dư pass cho mọi loại giao dịch.
-- Test rollback chứng minh `@Transaction` nguyên tử.
-- Giao dịch có `deletedAt` không ảnh hưởng số dư và báo cáo.
-- Nhập tiền mặt mở dưới 0,5 giây trên máy thật (kiểm ở P5, theo dõi từ đây).
-
-Trạng thái (2026-11-04): P1 xong. Ba mục DoD đầu có test và pass trên `dev`. Mục đo 0,5 giây chưa đo, chờ P5. Còn mở: hai "việc sau" của mục 8 (Chuyển trong sheet, gắn sao tài khoản chính); `isSplitParent` chưa có trong model (P4).
-
-## 4. Phase 2 — Automation Core (v0.2)
-
-Mục tiêu: bắt giao dịch từ thông báo ngân hàng và ví mà không cần user nhập tay.
-
-Đây là phần rủi ro lớn nhất. Chia thành 4 nhánh theo module của spec mục 2.2:
-
-### P2a — `feature/notif-capture` (Module 1, 2, 3)
-- `NotificationListenerService`.
-- Lọc sớm theo `channelIdAllowlist` và `ignoreKeywords` (OTP, SmartOTP, khuyến mãi, cảnh báo đăng nhập, chúc mừng).
-- Lấy `EXTRA_TITLE`, `EXTRA_TEXT`, `EXTRA_BIG_TEXT`, `EXTRA_TEXT_LINES`.
-- Bảng `NotificationLog` (3.7). `contentHash` SHA-256 của `packageName + postTime + content`, unique index.
-- `onListenerConnected()` gọi `getActiveNotifications()`, bỏ qua hash đã có.
-- Màn setup đầu tiên, một bước: xin quyền Notification Listener (đầy đủ ở P5). Banner nhắc trên danh sách giao dịch khi thiếu quyền.
-- Tạo bảng `ParserRule` (3.8) ngay ở đây, chỉ cột lọc (`packageName`, `channelIdAllowlist`, `ignoreKeywords`). P2b thêm cột regex.
-- Chỉ lưu `PENDING`, chưa bóc tách. Thông báo bị chặn lưu `IGNORED_SPAM`. Chỉ dòng chứa bí mật (`SECRET_KEYWORDS`: OTP, SmartOTP, mã xác thực) bị xóa nội dung; dòng quảng cáo và cảnh báo giữ nội dung để chặn nhầm còn lấy lại được.
-- Test: lọc OTP và quảng cáo, không tạo bản ghi lỗi giả. Test quét lại không tạo trùng.
-- Thiết kế: `docs/superpowers/specs/2026-11-07-notif-capture-design.md`.
-
-Trạng thái (2026-11-08): code xong, squash vào `dev` (`1f03be2`). Chưa thử trên máy thật: để sau khi đủ chức năng P2, cần thêm màn debug (chỉ bản debug) xem `notification_logs`.
-
-Nợ kỹ thuật từ review P2a (Minor, chưa sửa):
-
-| # | Vấn đề | Chỗ | Sửa ở |
+| Mã | Vấn đề | Chỗ | Sửa ở |
 |---|---|---|---|
-| 1 | Seeder đọc rule đang lưu trước `BEGIN IMMEDIATE`. Một ghi xen giữa có thể làm ghi đè rule vừa thành `isUserCustom`. Sửa: mở transaction trước rồi mới đọc | `data/notification/ParserRuleSeeder.kt` | P2b-1 (đã sửa) |
-| 2 | JSON rule hỏng làm mapper ném lỗi, listener nuốt lỗi, mọi thông báo của package đó mất mà không báo. Sửa: `runCatching` trong mapper, rơi về `null` hoặc rỗng | `data/notification/ParserRuleMapper.kt` | P2b-1 (đã sửa) |
-| 3 | Thông báo được đăng lại (cùng `sbn.key`, `postTime` mới) đổi hash, tạo thêm một dòng `PENDING` | `automation/FinoteNotificationListener.kt` | P2c (dedup phải tính trường hợp này) |
-| 4 | Hash của dòng bí mật có thể dò ngược ra OTP 6 số (khoảng 10^6 lần thử). DB đã mã hóa và OTP hết hạn nên rủi ro thấp. Sửa: HMAC với khóa riêng mỗi máy | `domain/notification/NotificationText.kt` (`contentHash`) | P5 (bảo mật) |
-| 5 | `SetupEffect.Finished` là tên sự kiện, không phải lệnh (`docs/architecture.md`). Đổi thành kiểu `CloseSetup` | `ui/setup/SetupContract.kt` | Khi sửa màn setup ở P5 |
-| 6 | `MainActivity` inject thẳng `SetupRepository`, không qua use case, và đọc SharedPreferences trên main thread lúc khởi động. Sửa: `IsSetupDoneUseCase` | `MainActivity.kt` | P5 (`feature/perf`, đo cold start) |
-| 7 | Tên ngân hàng viết cứng trong `setup_point_banks` ở 4 file strings, dễ lệch khi thêm rule. Spec 5.1 muốn lấy từ rule seed | `res/values*/strings.xml` | P6 (thêm ngân hàng mới) |
-| 8 | `vcb_card` đọc "Số dư khả dụng" thành `postBalance`; nếu thẻ tín dụng VCB dùng cụm này cho hạn mức còn lại thì lưu nhầm hạn mức. Chưa kiểm được vì corpus chỉ có thẻ ghi nợ | `data/notification/SystemParserRule.kt` | Dogfooding P2b (cần mẫu thật) |
-| 9 | Parse regex chạy trên `Dispatchers.Main` trong listener. Rule OTA hoặc rule tự sửa có backtracking thảm họa sẽ gây ANR | `automation/FinoteNotificationListener.kt` | P2b-3 (đã sửa: parse chạy trên dispatcher nền; regex ICU trên máy vẫn không ngắt được, ghi `shortcut:`, chặn bằng test an toàn trước khi ký feed) |
+| L1 | Thẻ ghi nợ VCB: rule `vcb_card` kiểu ngân hàng, lấy 4 số cuối của thẻ và đọc "Số dư khả dụng" → tạo tài khoản thứ hai có số dư đầu bằng số dư tài khoản chính; tài sản tính hai lần. Suy từ regex, cần mẫu thật | `SystemParserRule.kt`, `AccountResolver.kt` | Bước 10 |
+| L2 | MoMo trả bằng nguồn ngân hàng: 4 số cuối là của nguồn tiền → tạo ví MoMo thừa. Thông báo ngân hàng trễ quá 30 giây hoặc ngân hàng chưa có rule thì khoản chi ghi hai lần hoặc vào ví sai, không có cảnh báo. Có hai tài khoản MoMo thì thông báo nhận tiền (không có 4 số cuối) bị `ambiguous_account`. Cần mẫu thật | `SystemParserRule.kt` (`MOMO_PAY_SOURCE`), `AccountResolver.kt` | Bước 10 |
+| L3 | A5: nhận thông báo đăng lại đòi nội dung giống hệt. Thông báo thêm dòng, hoặc không có số dư và đăng lại sau 3 giây, bị ghi hai lần | `SettlementPlanner.kt` (`sameText`, `findReposts`) | Bước 11 |
+| L4 | Bóc lại log `FAILED` sau khi user đã bấm Điều chỉnh: khoản tiền tính hai lần; báo lệch im vì có dòng điều chỉnh sau mốc | `ReparseFailedLogsUseCase.kt`, `BalanceDriftDetector.kt` | Bước 11 |
 
-Thêm một điểm yếu đã biết: cả 4 ngân hàng dùng chung danh sách `IGNORE_KEYWORDS` trong `data/notification/SystemParserRule.kt`. Bảng đã hỗ trợ từ khóa riêng từng ngân hàng; tách khi viết regex từng ngân hàng ở P2b. Đã sửa ở P2b-1.
+### Nợ thiết kế (phải chốt trước nhánh dùng nó)
 
-### P2b — `feature/parser-engine` (Module 4, Failed Inbox)
-- Parser nằm ở `domain/notification`, không phụ thuộc `android.*`.
-- Bảng `ParserRule` (3.8) và seed rule cho Vietcombank, MB Bank, MoMo.
-- Named groups: `sign`, `amount`, `mask`, `balance`, `merchant`, `note`, `time`.
-- Chuẩn hóa số tiền: bỏ dấu `.` hoặc `,` hàng nghìn.
-- Chạy rule theo `priority`. Không khớp rule nào thì `status = FAILED`, lưu `failureReason`.
-- Failed Inbox: màn hình liệt kê `FAILED`, user bấm chuyển thành giao dịch thủ công.
-- OTA: WorkManager tải JSON rule từ GitHub/CDN. Không ghi đè rule có `isUserCustom = true`.
-- Corpus test: ~60+ mẫu tổng hợp (mục D4), có cả dạng thu gọn (`EXTRA_TEXT`) và mở rộng (`EXTRA_BIG_TEXT`). Đạt 98% bóc tách đúng (mục 6).
-- Sửa nợ P2a #1, #2, và tách `IGNORE_KEYWORDS` theo ngân hàng (xem bảng ở P2a).
+| Mã | Vấn đề | Sửa ở |
+|---|---|---|
+| T1 | `TRANSFER` chỉ có một `postBalance`: bên nhận mất mốc | Bước 5 |
+| T2 | Giao dịch ngày tương lai (tới 366 ngày) tính ngay vào số dư hiện tại | D11, trước bước 24 |
+| T3 | Tổng thu chi trong snapshot gồm điều chỉnh, phí, hoàn tiền | Bước 17 (báo cáo không đọc snapshot) |
+| T4 | Không có khóa chống trùng giữa import, định kỳ và thông báo | Bước 11 dựng hàm, bước 24, 25 dùng |
+| T5 | Cửa sổ khử trùng ngân hàng + ví chỉ 30 giây, thông báo đẩy hay trễ hơn | Bước 5 (chốt cùng cửa sổ ghép) |
 
-Chốt 2026-11-08: chia P2b thành 3 nhánh, làm theo thứ tự (nhánh 3 làm sau P2c, xem ghi chú dưới):
-1. `feature/parser-engine`: rule regex (VCB, MB, MoMo, Techcombank), parser, cổng corpus, nợ #1 #2. Bóc được thì điền `parsed*` và giữ `PENDING` (P2c tạo giao dịch); không khớp thì `FAILED`. Thiết kế: `docs/superpowers/specs/2026-11-08-parser-engine-design.md`.
-2. `feature/rule-ota` (đổi thứ tự 2026-11-08, Must-Have và sửa nợ #9): OTA rule bằng WorkManager, bóc lại các dòng `FAILED` sau khi có rule mới. Mặc định tắt, user tự bật; file JSON có chữ ký ECDSA. Thiết kế: `docs/superpowers/specs/2026-11-08-rule-ota-design.md`.
-3. `feature/failed-inbox`: màn Failed Inbox, kèm bộ dạy mẫu cục bộ (Regex Sandbox cho người phổ thông): user mở một dòng `FAILED`, bôi đen số tiền, số dư, 4 số cuối, nội dung; app sinh regex `isUserCustom = true` rồi gọi `ReparseFailedLogsUseCase`. Cho user không muốn bật mạng. Cần bàn thêm: ngân hàng chưa có rule bị `NotTracked` nên không có dòng `FAILED` để dạy.
+### Nợ nhỏ
 
-Trạng thái (2026-11-08): `parser-engine` xong, đã ở `dev` (`29a94e2`). 12 rule regex. Corpus: VCB, MB, MoMo đúng 100%; Techcombank bóc 8/8.
+| Mã | Vấn đề | Sửa ở |
+|---|---|---|
+| N-01 | `parseMoney` bỏ dấu âm của số dư (thấu chi); đọc "100.50 USD" thành 100 đồng | Bước 10 |
+| N-02 | Gộp hai tài khoản đều không có mốc thì bỏ số dư đầu của nguồn | Bước 10 |
+| N-03 | Hai thông báo đến sai thứ tự gây báo lệch giả (sổ xếp theo `postTime`) | Bước 9 xem có xảy ra không |
+| N-04 | Nhiều banner lệch số dư đẩy danh sách xuống trên màn nhỏ; luồng báo lệch dừng hẳn nếu một tài khoản ném lỗi | Bước 4 |
+| N-05 | Một log có 4 số cuối và một log không có, cùng app, tạo hai tài khoản | Bước 10 |
+| N-06 | `vcb_card` có thể đọc hạn mức thẻ tín dụng thành số dư (nợ #8 cũ) | Bước 10 |
+| N-07 | Rule `isActive = false` vẫn lọc và vẫn tính để quyết định `NotTracked` | Bước 13 |
+| N-08 | Rule hệ thống vẫn `version = 1`; rule cũ chưa nhận `accountType` khi có migration thật | Bước 10 |
+| N-09 | `HttpParserRuleFeed` đọc chặn trên dispatcher của worker | Bước 30 |
+| N-10 | Màn Tài khoản gom mọi lỗi thành một snackbar; sheet không tự cập nhật khi danh sách đổi | Bước 14 |
+| N-11 | Fake `FakeRuleUpdateSettingsRepository` mặc định bật tự cập nhật (thật: tắt); `CategoryDao.observeCategories` thiếu tie-break `id`; Konsist lách được bằng tên đầy đủ và hàm top-level trong `di` | Bước 15 (DAO), còn lại khi chạm tới |
+| N-12 | Konsist chưa bắt `useWriterConnection { withTransaction }` và `::StorageException`; `return` trong `immediateTransaction` bỏ qua COMMIT | Bước 32 |
+| N-13 | `SetupEffect.Finished` là tên sự kiện; tên ngân hàng viết cứng trong 4 file strings (nợ #5, #7 cũ) | Bước 29 |
+| N-14 | `MainActivity` inject thẳng `SetupRepository`, đọc prefs trên main thread; `settleNow()` chạy mỗi `onCreate` (nợ #6 cũ) | Bước 30 |
+| N-15 | Hash dòng bí mật dò ngược được OTP 6 số (nợ #4 cũ); OTA một khóa ghim, chưa xoay khóa | Bước 32 |
+| N-16 | Chuỗi `ja`, `zh-rCN` do máy viết, cần người bản ngữ xem | Trước bước 33 |
+| N-17 | Mục nhỏ của audit 2026-11-10: UI không dùng (`FinoteDatePicker`, `BalanceHeroCard`), test mẫu, `toString()` của log in nội dung, dependency thừa, test dùng đồng hồ thật | Bước 7 |
 
-Trạng thái (2026-11-08): `rule-ota` xong, đã ở `dev` (`2956fae`).
+## 7. Quyết định
 
-Đổi thứ tự 2026-11-08: làm P2c trước `failed-inbox`. Lý do: bóc lại sau khi dạy mẫu chỉ ra dòng `PENDING`; không có P2c (tạo giao dịch, đối ánh tài khoản) thì user không thấy kết quả, và `failed-inbox` phải tự viết lại phần đó.
-- Feed `rules/v1/feed.json` sinh từ `SystemParserRules`, ký ECDSA P-256. Khóa riêng ở `~/.finote/finote-rules.pem` (ngoài repo, user tự sao lưu). Ký lại: `testDebugUnitTest --tests '*RuleFeedSigningTool*' -PsignRuleFeed=true`.
-- Feed phải lên `main` cùng hoặc trước bản phát hành đầu có OTA; trước đó "Kiểm tra ngay" báo "không có mạng" (404).
-- Nợ mới (follow-up):
-  - Rule `isActive = false` vẫn lọc và vẫn tính để quyết định `NotTracked` (hành vi có từ P2b-1; OTA giờ chạm tới được).
-  - `HttpParserRuleFeed` đọc chặn trên dispatcher của worker; nên dùng IO dispatcher.
-  - Kiểm `UnstyledSwitch` với `onCheckedChange = null` không đọc trạng thái hai lần trên TalkBack (thử trên máy).
+### Đã chốt
 
-### P2c — `feature/account-dedup-balance` (Module 5, 6, 8)
-- Dedup nằm ở `domain/notification`, không phụ thuộc `android.*`.
-- Đối ánh tài khoản theo `bankPackageName` + `accountNumberMask` (4 số cuối).
-- Khử trùng: cùng số tiền, cùng chiều, cùng merchant rút gọn, trong 30 giây. Dùng cho ví có liên kết ngân hàng.
-- Cold-start: tài khoản `isInitialized = false` và có `postBalance` thì tính ngược `initialBalance` và gợi ý user xác nhận.
-- Test: ví và ngân hàng cùng gửi một biến động, chỉ tạo một giao dịch.
-- Xử lý nợ P2a #3: thông báo đăng lại tạo dòng `PENDING` trùng.
-- Thiết kế: `docs/superpowers/specs/2026-11-08-account-dedup-balance-design.md`. Chốt 2026-11-08: tự tạo tài khoản khi không khớp, chờ cửa sổ 30 giây rồi mới ghi, tự đặt số dư đầu, banner lệch số dư kèm nút Điều chỉnh.
-- Ngay sau P2c: `feature/account-merge-ignore` (gộp tài khoản, bỏ qua tài khoản), để user sửa khi app tự gán sai. Thiết kế: `docs/superpowers/specs/2026-11-09-account-merge-ignore-design.md`. Chốt 2026-11-09: chỉ gộp cùng app ngân hàng, gộp không hoàn tác, bỏ qua thì bật lại được.
-- Tương lai (sau `account-merge-ignore`):
-  - Gợi ý gộp: banner trên màn giao dịch khi tài khoản tự tạo trông giống tài khoản cũ cùng ngân hàng. Chờ dữ liệu thật trên máy.
-  - Màn sửa tài khoản cần `setInitialBalance(id, value)`: đặt `isInitialized = true` và rebuild.
-  - Màn thêm tài khoản tay (kiểu Cashew): có ô tuỳ chọn "liên kết app ngân hàng + 4 số cuối", và cho gộp vào tài khoản tay chưa gắn ngân hàng. Không có thì thông báo sẽ tạo tài khoản trùng.
+| Mã | Nội dung |
+|---|---|
+| D2 | Khóa SQLCipher: 32 byte ngẫu nhiên, bọc bằng Android Keystore (AES-GCM), không bắt sinh trắc học. DB và khóa bọc loại khỏi Auto Backup |
+| D3 | `targetSdk` 37 (spec ghi 35) |
+| D4 | Corpus tổng hợp ~60 mẫu làm baseline; chỉ tiêu 98% thật đo trên mẫu dogfood, chỉ tính VCB, MB, MoMo |
+| D6 | Hilt |
+| D8 | Room 3, Navigation3 |
+| D9 | Ngôn ngữ: `vi` (mặc định), `en`, `zh-rCN`, `ja`. Màn chọn ngôn ngữ trong app chưa làm |
+| D10 | Mất khóa Keystore: xóa DB và khóa bọc, tạo DB rỗng. Chi tiết từng loại lỗi ở `roadmap-history.md` |
 
-Trạng thái (2026-11-08): code xong trên `feature/account-dedup-balance`, review từng task và review cả nhánh đã chạy. Nợ P2a #3 đã sửa (ngưỡng đăng lại 10 phút khi có số dư, 3 giây khi không). Chưa thử trên máy thật.
+### Còn mở
 
-Nợ còn lại (Minor, chưa sửa):
-- `MainActivity` gọi `settleNow()` mỗi lần `onCreate`, kể cả xoay màn hình. Vô hại vì REPLACE và settle chạy lại an toàn.
-- Luồng drift trong `TransactionListViewModel` dừng hẳn nếu một tài khoản ném lỗi (`.catch` một lần); `adjust()` chưa bắt `ArithmeticException`.
-- Nhiều banner lệch số dư đẩy danh sách xuống trên màn nhỏ.
-- Chuỗi ja và zh-rCN do máy viết, cần người bản ngữ xem trước khi phát hành.
-- Rule hệ thống vẫn `version = 1`: khi có migration thật (sau v1.0), tăng version để rule cũ nhận `accountType`.
-- Một `New` có mask và một `New` mask null cùng gói trong một lần chạy tạo hai tài khoản. Hiếm; từ `account-merge-ignore` user gộp được bằng tay (Cài đặt → Tài khoản).
-
-Trạng thái (2026-11-09): `account-merge-ignore` code xong, review từng task và review cả nhánh đã chạy, `qualityGate` xanh. Chưa thử trên máy thật (sheet và dialog mới chỉ thấy trong screenshot).
-- DAO chia theo nghiệp vụ: gắn nhãn chuyển sang `TagDao`, query gộp ở `AccountMergeDao`.
-- Nợ cho P2d: khi tính số dư đầu (gộp và cold start), chuyển khoản mà tài khoản chỉ là bên nhận có thể bị lấy làm mốc `postBalance` (số dư của bên kia). Chưa có dòng nào như vậy trước P2d. Sửa cả hai chỗ: chỉ lấy dòng có `accountId` = tài khoản.
-- Nợ nhỏ: màn Tài khoản bắt mọi lỗi thành snackbar "không thành công" mà không ghi nguyên nhân; sheet không tự cập nhật nếu danh sách đổi khi đang mở.
-
-### Dọn dẹp trước P2d
-Audit toàn dự án ngày 2026-11-10. Chi tiết từng mục (A1–A20): `docs/superpowers/handoff/2026-11-10-cleanup-before-p2d.md`. Làm theo thứ tự:
-1. `fix/balance-adjust` (A1, A3): nút Điều chỉnh tính lại độ lệch trong transaction ghi; dòng điều chỉnh có `source = ADJUSTMENT`.
-2. `fix/settle-stuck-logs` (A2, A7): chặn số tiền quá lớn, log PENDING lỗi mãi thì chuyển FAILED; settle dùng `KEEP`.
-3. `chore/domain-account-rules` (A8, A9, A11, A20): một hàm tính mốc số dư đầu, `Account.isUsable`, `Transaction.touches`. Phải xong trước P2d.
-4. `chore/ui-overlay-api` (A10, A6, A16): **đã xong** (2026-11-14). `FinoteDialog` tự vẽ nút, overlay giữ nội dung khi đóng (`rememberLastNonNull`), sheet có `onDismissComplete`, sheet nhập tiền mặt đóng theo state, screenshot vẽ overlay thật. Thiết kế: `docs/superpowers/specs/2026-11-14-ui-overlay-api-design.md`. Chưa thử trên máy thật.
-5. `chore/ui-components` (A12, A13, A14, A15): **đã xong** (2026-11-15). `FinoteSwitchRow`, `FinoteSection`, `ReportListenerAccess` và `openListenerSettings` dùng chung, token `motion` và `mutedAlpha` thay số cứng, một formatter ngày theo locale trong `ui/common/format/DateFormat.kt` (Konsist chặn `DateTimeFormatter` ngoài đó), sửa accessibility (nhãn selector, icon check, thông báo quyền). Chưa thử trên máy thật.
-6. `chore/test-hygiene` (A18, A19): fake đúng hợp đồng, builder test dùng chung, siết Konsist.
-7. `chore/release-readiness` (A4, A17): build release/R8 trong gate, loại cờ setup khỏi backup.
-8. `fix/notification-text-lines` (A5): chờ mẫu thông báo thật từ máy.
-
-### P2d — `feature/transfer-pairing` (Module 7)
-- Pairing nằm ở `domain/notification`, không phụ thuộc `android.*`.
-- Hai biến động cùng số tiền, một trừ (tài khoản A) và một cộng (tài khoản B), trong 1–2 phút → gộp thành `TRANSFER`, `status = PAIRED_TRANSFER`.
-- Cần thiết kế: biến động thứ hai đến muộn. Lưu trạng thái chờ ghép, không tự tạo hai giao dịch lệch.
-- Test: ghép đúng, không ghép khi số tiền khác, timeout thì giữ hai giao dịch riêng.
-
-DoD (spec mục 6):
-- Bóc tách đúng trên 98% mẫu của Vietcombank, MB và MoMo.
-- Chặn 100% OTP, cảnh báo đăng nhập, quảng cáo trong bộ test.
-- Quét `getActiveNotifications()` khi service kết nối lại.
-- Đối ánh 4 số cuối và dedup 30 giây đạt 100% trong bộ test.
-- Ghép chuyển khoản trong 1–2 phút.
-
-## 5. Phase 3 — Báo cáo và tìm kiếm (v0.3)
-
-- `feature/dashboard`: thu, chi, số dư ròng theo tháng. Biểu đồ phân bổ theo danh mục và merchant (Vico + Compose Canvas). Should-Have.
-- `feature/merchant-normalize`: bảng `CategoryKeywordRule` (3.8). Tự gán danh mục và chuẩn hóa tên cửa hàng (Grab, Shopee, Highlands). Should-Have.
-- `feature/fts-search`: bảng `TransactionFts` (3.3) với bộ tách unicode61 trên `merchantName` và `note`. Lọc kết hợp: khoảng thời gian, tài khoản, danh mục, nhãn. Should-Have.
-- `feature/net-worth`: biểu đồ tài sản ròng từ `AccountBalanceSnapshot`. Loại trừ `excludeFromNetWorth`. Should-Have.
-- `feature/budget`: bảng `Budget` (3.5). Hạn mức theo danh mục hoặc tổng. Kết chuyển `carryOverAmount` khi `isRollover`. Cảnh báo tại `alertThreshold` và 100%, dùng `lastAlertSentThreshold` để không lặp. Should-Have.
-- `feature/tags`: UI gắn nhãn và lọc theo nhãn. Should-Have.
-
-DoD (spec mục 8):
-- Tìm kiếm dưới 50 ms với 50.000 giao dịch.
-- Biểu đồ tài sản ròng dưới 16 ms với 50.000 giao dịch.
-- Lưu ý: hai chỉ số này cần đo trên máy thật, nên cần instrumented test hoặc benchmark do user chạy (mục D7).
-
-## 6. Phase 4 — Nghiệp vụ nâng cao và dữ liệu (v0.4)
-
-- `feature/refund`: giao dịch `REFUND`, `refundForTransactionId`. Giảm trừ vào tổng chi của danh mục gốc, không cộng vào thu nhập (mục 7). Should-Have.
-- `feature/credit-card`: `creditLimit`, `statementDay`, `dueDay`, luồng chuyển khoản tất toán dư nợ. Should-Have.
-- `feature/recurring-plan`: bảng `RecurringPlan` (3.6). WorkManager sinh giao dịch khi `autoCreate`, hoặc gửi nhắc khi không. Should-Have.
-- `feature/import-csv`: bảng `ImportProfile` (3.10). Import CSV trước. Các cột: ngày, số tiền, loại, danh mục, ghi chú, số tài khoản. Should-Have.
-- `feature/import-xlsx`: thêm XLSX sau khi CSV ổn định (mục D5).
-- `feature/export`: xuất `.json` mã hóa và `.xlsx`. Should-Have.
-- `feature/trash-purge`: WorkManager xóa cứng mục có `deletedAt` cũ hơn 30 ngày. Đây là nơi duy nhất được xóa cứng. Should-Have.
-- `feature/regex-sandbox`: màn thử regex trên máy để user tự sửa rule (`isUserCustom = true`). Should-Have.
-
-## 7. Phase 5 — Hoàn thiện production (v1.0)
-
-- `feature/app-lock`: `BiometricPrompt`, nút ẩn số dư (`***`), `FLAG_SECURE`, làm mờ khi vào Recent Apps (mục 9). Must-Have.
-- `feature/perf`: đo cold start dưới 1,2 giây bằng Macrobenchmark. Đo mở nhập tiền mặt dưới 0,5 giây từ Tile và Shortcut.
-- `feature/onboarding-permission`: hướng dẫn Android 13+ (Allow Restricted Settings) và tắt tối ưu pin trên ROM tùy biến. Could-Have, nhưng cần để P2 dùng được trên máy thật. Thêm bước vào màn setup có sẵn từ P2a, không làm màn mới.
-- Trang chính sách quyền riêng tư và link trong màn setup. Bắt buộc trước khi lên Google Play (prominent disclosure).
-- Sửa nợ P2a #4 (HMAC cho hash), #5 (tên effect của setup), #6 (`IsSetupDoneUseCase`, đọc prefs ngoài main thread). Xem bảng ở P2a.
-- `chore/audit`: test đối soát đầy đủ. Công thức số dư khớp mọi tài khoản, mọi thời điểm (mục 7).
-- `release/1.0.0`: theo release flow.
-
-DoD: đạt toàn bộ mục 5–9 của spec.
-
-## 8. Phase 6 — Sau v1.0 (Could-Have)
-
-- Sao lưu Google Drive cá nhân, file mã hóa trong thư mục ẩn AppData (Cao). Cần thiết kế riêng vì liên quan quyền truy cập Drive.
-- Thêm mẫu regex cho Techcombank, ACB, VPBank, TPBank, BIDV, VietinBank, ZaloPay, ShopeePay.
-- Tách giao dịch (`isSplitParent`) và ngoại tệ (`originalAmount`, `exchangeRate`).
-- Đính kèm ảnh hóa đơn, nén và lưu cục bộ.
-
-Won't-Have (không làm trong MVP): OCR hóa đơn bằng ML Kit (v1.2), sổ nợ và chia tiền nhóm, đồng bộ đa thiết bị, quản lý chứng khoán, vàng, crypto.
-
-## 9. Quyết định cần user chốt
-
-| Mã | Câu hỏi | Đề xuất | Cần chốt trước |
+| Mã | Câu hỏi | Đề xuất | Chốt trước |
 |---|---|---|---|
-| D1 | FTS4 hay FTS5? Room annotation chỉ hỗ trợ FTS4. FTS5 cần SQL thô trong migration. Chưa kiểm Room 3 còn `@Fts4` không. | FTS4 (đơn giản, đủ cho mục tiêu 50 ms) | P3 |
-| D2 | Khóa SQLCipher lưu ở đâu? | **Đã chốt (2026-11-02):** 32 byte ngẫu nhiên, bọc bằng Android Keystore (AES-GCM), không bắt sinh trắc học (listener ghi DB khi máy khóa). DB và khóa bọc bị loại khỏi Auto Backup | P1 |
-| D3 | `targetSdk`: spec ghi 35, build đang 37. `CLAUDE.md` ghi 37 là có chủ đích. | **Đã chốt:** giữ 37. Ghi chú này là lý do, spec không sửa | P0 |
-| D4 | Mẫu thông báo thật để đạt 98%? Không có mẫu thì không đo được. | **Đã chốt (2026-11-06):** Dùng Synthetic Corpus (~60 mẫu tổng hợp của VCB, MB, MoMo, Techcombank + OTP/Spam) làm baseline. Người dùng bổ sung mẫu thực tế qua Failed Inbox khi dogfooding. 98% trên corpus tổng hợp chỉ là baseline; chỉ tiêu thật đo trên mẫu dogfooding. Techcombank là phần thêm, chỉ tiêu 98% chỉ tính VCB, MB, MoMo (spec L407) | P2b |
-| D5 | Import XLSX có cần ngay ở P4? | CSV trước, XLSX sau | P4 |
-| D6 | DI: Hilt hay Koin? | **Đã chốt:** Hilt (theo `CLAUDE.md`) | P0 |
-| D7 | Ai chạy benchmark và instrumented test trên máy thật? | User chạy khi tới P3 và P5, theo yêu cầu | P3 |
-| D8 | Room 2.x hay Room 3? `navigation-compose` hay Navigation3? | **Đã chốt (2026-11-02):** Room 3 (stable 3.0.x từ 07/2026, chỉ KSP, driver API) và Navigation3 (stable 1.2.0). Chưa có code dùng nên không tốn chi phí chuyển. Rủi ro: driver SQLCipher cho Room 3 mới có từ 08/2026 | P0 |
-| D9 | Đa ngôn ngữ: spec gốc không ghi, user bổ sung 2026-11-02. Hỗ trợ ngôn ngữ nào? | **Đã chốt (2026-11-02):** `vi` (mặc định, `values/`), `en` (`values-en`), tiếng Trung giản thể (`values-zh-rCN`), tiếng Nhật (`values-ja`). Màn chọn ngôn ngữ trong app: chưa làm | Trước màn đầu tiên có chữ |
-| D10 | Mất khóa Keystore (xóa dữ liệu bảo mật, khôi phục backup sang máy khác) thì DB SQLCipher không giải mã được. Xóa và tạo DB mới, hay báo lỗi và giữ file? | **Đã chốt (2026-11-03):** xóa DB (cả `-wal`, `-shm`) và khóa bọc cũ, sinh khóa mới, tạo DB rỗng. Mất rõ ràng (không có alias, `AEADBadTagException`, `KeyPermanentlyInvalidatedException`, Base64 hỏng, sai kích thước, blob ngắn) thì xóa ngay. `UnrecoverableKeyException` thì xóa sau 3 lần khởi động liên tiếp lỗi. Lỗi khác thì app dừng, thử lại lần sau, không xóa. Không ghi nội dung DB hay khóa vào Logcat | Trước `db-encryption` |
+| D1 | FTS4 hay FTS5? | FTS4, đủ cho 50 ms | Bước 20 |
+| D5 | XLSX cùng lúc với CSV? | CSV trước | Bước 25 |
+| D7 | Ai chạy benchmark trên máy thật? | User, khi tới bước 20 và 30 | Bước 20 |
+| D11 | Giao dịch ngày tương lai có tính vào số dư hiện tại không? | Không: số dư hiện tại chỉ tính tới bây giờ | Bước 24 |
+| D12 | P2d: cửa sổ chờ bao lâu, và xử lý phí chuyển thế nào? | 2 phút; phí ghi tay sau khi ghép | Bước 5 |
+| D13 | Định danh tài khoản: bảng riêng hay thêm cột? | Bảng riêng | Bước 10, sau mẫu thật |
+| D14 | Failed-inbox đưa vào v0.2 hay v0.3? | v0.3, để v0.2 chỉ gồm Must-Have | Bước 12 |
 
-## 10. Thứ tự làm việc ngay
+## 8. Đã xong
 
-1. D3, D6, D8 đã chốt.
-2. P0: `chore/gradle-catalog`, `chore/quality-gate`, `feature/app-shell`, `feature/mvi-base` đã xong.
-3. D2 đã chốt. Spec P1 đã bổ sung ngày 2026-11-02.
-4. P1 đã xong (2026-11-04): `db-schema` → `db-encryption` → `balance-engine` → `transaction-crud` → `account-crud` → `category-seed` → `design-system` → `cash-entry` → `reconciliation` → `transaction-list` → `reimbursement-flag`.
-5. D4 đã chốt (2026-11-06). P1 đã xong. Bắt đầu P2: `notif-capture` (P2a) → `parser-engine`, `rule-ota` (P2b-1, P2b-2) → `account-dedup-balance` (P2c) → `failed-inbox` (P2b-3) → `transfer-pairing` (P2d).
+Chi tiết từng nhánh: `docs/roadmap-history.md` và `git log dev`.
+
+| Phase | Nhánh | Commit trên `dev` |
+|---|---|---|
+| P0 | `gradle-catalog`, `quality-gate`, `app-shell`, `mvi-base` | xong 2026-11-02 |
+| P1 | `db-schema`, `db-encryption`, `balance-engine`, `transaction-crud` | xong 2026-11-04 |
+| P1 | `account-crud` | `443a03a` |
+| P1 | `category-seed` | `2b2fa6f` |
+| P1 | `design-system` | xong 2026-11-03 |
+| P1 | `cash-entry` (Chi, Thu, Tile, Shortcut) | `7ee3df0` |
+| P1 | `reconciliation` | `0629eb5` |
+| P1 | `transaction-list` | `7d66551` |
+| P1 | `reimbursement-flag` | `58dcfbd` |
+| P2a | `notif-capture` | `1f03be2` |
+| P2b-1 | `parser-engine` (12 rule; corpus VCB, MB, MoMo 100%) | `29a94e2` |
+| P2b-2 | `rule-ota` (ký ECDSA, mặc định tắt) | `2956fae` |
+| P2c | `account-dedup-balance` | `c5ea2b5` |
+| P2c | `account-merge-ignore` | `0e68c87` |
+| Dọn dẹp 1 | `fix/balance-adjust` (A1, A3) | `991301c` |
+| Dọn dẹp 2 | `fix/settle-stuck-logs` (A2, A7) | `92cf798` |
+| Dọn dẹp 3 | `chore/domain-account-rules` (A8, A9, A11, A20) | `03b3f1b` |
+| Dọn dẹp 6 | `chore/test-hygiene` (A18, A19) | `7eb1b2e` |
+| R1 | Thư mục theo vai trò cho domain và data | `f53ef23` |
+| R2 | `TransactionRunner`, `StorageException` | `8396d68` |
+| R3–R6 | Lỗi có kiểu (`Outcome`) cho danh mục, tài khoản, giao dịch, thông báo | `c8b3f06`, `2431e59`, `fb12678`, `8a6c77e` |
+| | Test rollback khi tràn số cho mọi đường ghi | `57e9fa4` |
+| Dọn dẹp 4 | `chore/ui-overlay-api` (A10, A6, A16) | `97278c5` |
+| Dọn dẹp 5 | `chore/ui-components` (A12–A15) | `c635487` |
+
+Ghi chú vận hành còn hiệu lực:
+- Feed rule `rules/v1/feed.json` ký ECDSA P-256; khóa riêng ở `~/.finote/finote-rules.pem` (ngoài repo). Ký lại: `testDebugUnitTest --tests '*RuleFeedSigningTool*' -PsignRuleFeed=true`. Feed phải lên `main` cùng hoặc trước bản phát hành đầu có OTA.
+- Test Room dùng DB không mã hóa; mã hóa kiểm bằng instrumented test.
+- Nhánh local chờ user xóa (nếu còn): `chore/ui-components`, `chore/ui-overlay-api`, `chore/test-hygiene`, `chore/errors-transaction` (kiểm đã vào `dev` trước khi xóa).

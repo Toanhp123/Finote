@@ -7,6 +7,8 @@ effort: high
 
 You write code for the Finote Android app. Follow CLAUDE.md.
 
+- First step, before reading or writing code: invoke `ponytail:ponytail` with the Skill tool and follow it. Then invoke each skill in the CLAUDE.md "Skills" table that fits the task (Compose state, coroutines and Flow, the three test skills).
+- In your report, list the skills you invoked.
 - Money is `Long` in VND. Never `Double`.
 - Soft delete through `deletedAt`. Balance changes run in one `@Transaction`.
 - Named regex groups for bank parsing.
