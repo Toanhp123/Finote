@@ -13,6 +13,9 @@ object AccountRules {
             else -> null
         }
 
+    /** Currency is not editable, so only the name is checked. */
+    fun checkUpdate(account: Account): AccountError? = if (account.name.isBlank()) AccountError.BlankName else null
+
     /** [liveTransactions]: live rows where the account is source or transfer destination. */
     fun checkDelete(liveTransactions: Int): AccountError? =
         if (liveTransactions > 0) AccountError.HasTransactions else null

@@ -62,4 +62,58 @@ class TransactionUseCaseTransactionTest {
             assertEquals(before, accounts.getById("acc-1"))
             assertEquals(emptyList<Any>(), snapshots.getByAccount("acc-1"))
         }
+
+    @Test
+    fun `overflowing update returns AmountOverflow and leaves the row, balance and snapshots unchanged`() =
+        runTest {
+            accounts.insert(account(id = "acc-1", currentBalance = Long.MAX_VALUE - 100L))
+            val income = domainTx(type = TransactionType.INCOME, amount = 50L, at = "2026-11-02T00:00:00Z")
+            assertEquals(Outcome.Ok(Unit), AddTransactionUseCase(repo, runner, clock)(income))
+            val accountBefore = checkNotNull(accounts.getById("acc-1"))
+            val rowBefore = checkNotNull(transactions.getById("tx-1"))
+            val snapshotsBefore = snapshots.getByAccount("acc-1")
+
+            val result = UpdateTransactionUseCase(repo, runner, clock)(income.copy(amount = 1_000L))
+
+            assertEquals(Outcome.Err(TransactionError.AmountOverflow), result)
+            assertEquals(rowBefore, transactions.getById("tx-1"))
+            assertEquals(accountBefore, accounts.getById("acc-1"))
+            assertEquals(snapshotsBefore, snapshots.getByAccount("acc-1"))
+        }
+
+    @Test
+    fun `overflowing delete returns AmountOverflow and leaves the row, balance and snapshots unchanged`() =
+        runTest {
+            accounts.insert(account(id = "acc-1", currentBalance = Long.MIN_VALUE + 1_000L))
+            val add = AddTransactionUseCase(repo, runner, clock)
+            val at = "2026-11-02T00:00:00Z"
+            val income = domainTx(id = "tx-1", type = TransactionType.INCOME, amount = 1_500L, at = at)
+            val expense = domainTx(id = "tx-2", type = TransactionType.EXPENSE, amount = 2_000L, at = at)
+            assertEquals(Outcome.Ok(Unit), add(income))
+            assertEquals(Outcome.Ok(Unit), add(expense))
+            val accountBefore = checkNotNull(accounts.getById("acc-1"))
+            val rowBefore = checkNotNull(transactions.getById("tx-1"))
+            val snapshotsBefore = snapshots.getByAccount("acc-1")
+
+            val result = DeleteTransactionUseCase(repo, runner, clock)("tx-1")
+
+            assertEquals(Outcome.Err(TransactionError.AmountOverflow), result)
+            assertEquals(rowBefore, transactions.getById("tx-1"))
+            assertEquals(accountBefore, accounts.getById("acc-1"))
+            assertEquals(snapshotsBefore, snapshots.getByAccount("acc-1"))
+        }
+
+    @Test
+    fun `overflowing reconcile returns AmountOverflow and writes no adjustment`() =
+        runTest {
+            accounts.insert(account(id = "acc-1", currentBalance = 1_000_000L))
+            val accountBefore = checkNotNull(accounts.getById("acc-1"))
+
+            val result = ReconcileBalanceUseCase(repo, runner, clock)("acc-1", Long.MIN_VALUE)
+
+            assertEquals(Outcome.Err(TransactionError.AmountOverflow), result)
+            assertEquals(accountBefore, accounts.getById("acc-1"))
+            assertEquals(emptyList<Any>(), transactions.getActiveByAccount("acc-1"))
+            assertEquals(emptyList<Any>(), snapshots.getByAccount("acc-1"))
+        }
 }

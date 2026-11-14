@@ -37,6 +37,14 @@ class AccountRulesTest {
     fun `new blank name wins over a bad currency`() =
         assertEquals(AccountError.BlankName, AccountRules.checkNew(testAccount(name = " ", currency = "USD")))
 
+    // checkUpdate
+
+    @Test
+    fun `update with a blank name is BlankName, a normal name is allowed`() {
+        assertEquals(AccountError.BlankName, AccountRules.checkUpdate(testAccount(name = "  ")))
+        assertNull(AccountRules.checkUpdate(testAccount()))
+    }
+
     // checkDelete
 
     @Test

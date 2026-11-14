@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.domain.account.usecase
 import io.github.toanhp123.finote.domain.account.error.AccountError
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
+import io.github.toanhp123.finote.domain.account.service.AccountRules
 import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.common.TransactionRunner
 import java.time.Clock
@@ -23,19 +24,13 @@ class UpdateAccountUseCase
             val updated = account.copy(updatedAt = clock.millis())
             return tx.write {
                 val old = repository.getAccount(updated.id)
-                when {
-                    old == null || old.deletedAt != null -> {
-                        Outcome.Err(AccountError.NotFound)
-                    }
-
-                    updated.name.isBlank() -> {
-                        Outcome.Err(AccountError.BlankName)
-                    }
-
-                    else -> {
-                        repository.update(updated)
-                        Outcome.Ok(Unit)
-                    }
+                val gone = old == null || old.deletedAt != null
+                val error = if (gone) AccountError.NotFound else AccountRules.checkUpdate(updated)
+                if (error != null) {
+                    Outcome.Err(error)
+                } else {
+                    repository.update(updated)
+                    Outcome.Ok(Unit)
                 }
             }
         }
