@@ -1,7 +1,6 @@
 package io.github.toanhp123.finote.ui.settings.accounts
 
 import app.cash.turbine.test
-import io.github.toanhp123.finote.domain.account.error.AccountMergeRejectedException
 import io.github.toanhp123.finote.domain.account.error.MergeRejection
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
@@ -12,6 +11,8 @@ import io.github.toanhp123.finote.domain.account.usecase.FakeAccountRepository
 import io.github.toanhp123.finote.domain.account.usecase.MergeAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.SetAccountIgnoredUseCase
+import io.github.toanhp123.finote.domain.common.FakeTransactionRunner
+import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -34,7 +35,6 @@ class AccountsSettingsViewModelTest {
 
     private class RejectingRepository(
         fake: FakeAccountRepository,
-        private val reason: MergeRejection? = null,
         private val failure: Exception? = null,
     ) : AccountRepository by fake {
         override suspend fun merge(
@@ -42,7 +42,6 @@ class AccountsSettingsViewModelTest {
             targetId: String,
             now: Long,
         ) {
-            reason?.let { throw AccountMergeRejectedException(it) }
             failure?.let { throw it }
         }
     }
@@ -64,8 +63,8 @@ class AccountsSettingsViewModelTest {
             ObserveAccountsUseCase(repo),
             CountMergeMovesUseCase(repo),
             CountTrashableTransactionsUseCase(repo),
-            MergeAccountsUseCase(repo, clock),
-            SetAccountIgnoredUseCase(repo, clock),
+            MergeAccountsUseCase(repo, FakeTransactionRunner(), clock),
+            SetAccountIgnoredUseCase(repo, FakeTransactionRunner(), clock),
             isDebuggable = true,
         )
     }
@@ -200,7 +199,7 @@ class AccountsSettingsViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
 
-            val broken = mergeDialogViewModel(failure = IllegalStateException("db"))
+            val broken = mergeDialogViewModel(failure = StorageException(IllegalStateException()))
             broken.effects.test {
                 broken.onIntent(AccountsSettingsIntent.MergeConfirmed)
                 runCurrent()
@@ -211,9 +210,9 @@ class AccountsSettingsViewModelTest {
         }
 
     @Test
-    fun `unexpected exception emits ActionFailed`() =
+    fun `storage failure emits ActionFailed`() =
         runTest(mainRule.dispatcher) {
-            val vm = mergeDialogViewModel(failure = ArithmeticException())
+            val vm = mergeDialogViewModel(failure = StorageException(ArithmeticException()))
 
             vm.effects.test {
                 vm.onIntent(AccountsSettingsIntent.MergeConfirmed)
@@ -298,18 +297,26 @@ class AccountsSettingsViewModelTest {
             assertEquals(false, vm.state.value.isIgnoreDialogOpen)
         }
 
-    /** A view model whose merge dialog is open on src -> dst; the repository decides how the merge ends. */
+    /**
+     * A view model whose merge dialog is open on src -> dst. The rules or the repository decide how the merge ends:
+     * [reason] sets up the stored state that makes the use case reject, [failure] makes the repository throw.
+     */
     private fun TestScope.mergeDialogViewModel(
         reason: MergeRejection? = null,
         failure: Exception? = null,
     ): AccountsSettingsViewModel {
         val fake = FakeAccountRepository()
-        val repo = RejectingRepository(fake, reason, failure)
+        val repo = RejectingRepository(fake, failure)
         val vm = viewModel(repo, bank("src"), bank("dst"), seed = fake)
         runCurrent()
         vm.onIntent(AccountsSettingsIntent.AccountClicked("src"))
         vm.onIntent(AccountsSettingsIntent.MergeTargetPicked("dst"))
         runCurrent()
+        when (reason) {
+            MergeRejection.HAS_TRANSFER -> fake.transferCounts[setOf("src", "dst")] = 1
+            MergeRejection.ACCOUNT_GONE -> fake.stored["dst"] = bank("dst").copy(deletedAt = 1L)
+            else -> Unit
+        }
         return vm
     }
 

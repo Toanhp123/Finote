@@ -2,7 +2,7 @@ package io.github.toanhp123.finote.ui.settings.accounts
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.toanhp123.finote.domain.account.error.AccountMergeRejectedException
+import io.github.toanhp123.finote.domain.account.error.AccountError
 import io.github.toanhp123.finote.domain.account.error.MergeRejection
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.usecase.CountMergeMovesUseCase
@@ -11,9 +11,8 @@ import io.github.toanhp123.finote.domain.account.usecase.MergeAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.SetAccountIgnoredUseCase
 import io.github.toanhp123.finote.domain.common.IsDebuggable
+import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.ui.common.BaseViewModel
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -34,7 +33,7 @@ class AccountsSettingsViewModel
         init {
             viewModelScope.launch {
                 observeAccounts()
-                    .catch {
+                    .catchStorage {
                         // The list keeps its last state. Nothing is logged: accounts and balances are private.
                     }.collect { list ->
                         setState { copy(accounts = list.sortedWith(compareBy({ it.isIgnored }, { it.sortOrder }))) }
@@ -94,12 +93,10 @@ class AccountsSettingsViewModel
         private fun askMerge(targetId: String) {
             val source = state.value.selected ?: return
             val target = state.value.mergeTargets.firstOrNull { it.id == targetId } ?: return
-            viewModelScope.launch {
-                var count = 0
-                val failure = failureOf { count = countMergeMoves(source.id) }
-                if (failure != null) return@launch sendEffect(failure)
+            launchCatching(onStorageError = ::sendActionFailed) {
+                val count = countMergeMoves(source.id)
                 // The sheet may have closed while the count loaded.
-                if (state.value.selected?.id != source.id) return@launch
+                if (state.value.selected?.id != source.id) return@launchCatching
                 setState { copy(pendingMerge = source to target, mergeCount = count) }
             }
         }
@@ -111,11 +108,9 @@ class AccountsSettingsViewModel
 
         private fun askIgnore() {
             val account = state.value.selected ?: return
-            viewModelScope.launch {
-                var count = 0
-                val failure = failureOf { count = countTrashable(account.id) }
-                if (failure != null) return@launch sendEffect(failure)
-                if (state.value.selected?.id != account.id) return@launch
+            launchCatching(onStorageError = ::sendActionFailed) {
+                val count = countTrashable(account.id)
+                if (state.value.selected?.id != account.id) return@launchCatching
                 setState { copy(isIgnoreDialogOpen = true, trashableCount = count) }
             }
         }
@@ -138,26 +133,27 @@ class AccountsSettingsViewModel
          */
         private fun finishAction(
             success: AccountsSettingsEffect,
-            block: suspend () -> Unit,
+            block: suspend () -> Outcome<Unit, AccountError>,
         ) {
             setState { copy(selected = null, mergeTargets = emptyList()).withoutDialogs() }
-            viewModelScope.launch { sendEffect(failureOf(block) ?: success) }
+            launchCatching(onStorageError = ::sendActionFailed) { sendEffect(effectOf(block(), success)) }
         }
 
-        /** Null when [block] works. Any failure but cancellation becomes an effect, so a bad write never crashes. */
-        private suspend fun failureOf(block: suspend () -> Unit): AccountsSettingsEffect? =
-            try {
-                block()
-                null
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: AccountMergeRejectedException) {
-                if (e.reason == MergeRejection.HAS_TRANSFER) {
-                    AccountsSettingsEffect.MergeBlockedByTransfer
-                } else {
-                    AccountsSettingsEffect.ActionFailed
-                }
-            } catch (_: Exception) {
+        private fun sendActionFailed() = sendEffect(AccountsSettingsEffect.ActionFailed)
+
+        private fun effectOf(
+            outcome: Outcome<Unit, AccountError>,
+            success: AccountsSettingsEffect,
+        ): AccountsSettingsEffect =
+            when (outcome) {
+                is Outcome.Ok -> success
+                is Outcome.Err -> blockOrFail(outcome.error)
+            }
+
+        private fun blockOrFail(error: AccountError): AccountsSettingsEffect =
+            if (error == AccountError.MergeRejected(MergeRejection.HAS_TRANSFER)) {
+                AccountsSettingsEffect.MergeBlockedByTransfer
+            } else {
                 AccountsSettingsEffect.ActionFailed
             }
 

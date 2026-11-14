@@ -8,8 +8,6 @@ import io.github.toanhp123.finote.data.database.mapStorageErrors
 import io.github.toanhp123.finote.data.database.storage
 import io.github.toanhp123.finote.data.database.storageWrite
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
-import io.github.toanhp123.finote.domain.account.error.AccountMergeRejectedException
-import io.github.toanhp123.finote.domain.account.error.MergeRejection
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.account.service.BalanceCalculator
@@ -43,7 +41,7 @@ class AccountRepositoryImpl
 
         override suspend fun update(account: Account) {
             db.storageWrite {
-                val old = requireLive(account.id)
+                val old = accounts.getById(account.id) ?: return@storageWrite
                 accounts.update(
                     old.copy(
                         name = account.name,
@@ -64,7 +62,8 @@ class AccountRepositoryImpl
             updatedAt: Long,
         ) {
             db.storageWrite {
-                accounts.update(requireLive(id).copy(isArchived = archived, updatedAt = updatedAt))
+                val old = accounts.getById(id) ?: return@storageWrite
+                accounts.update(old.copy(isArchived = archived, updatedAt = updatedAt))
             }
         }
 
@@ -73,9 +72,8 @@ class AccountRepositoryImpl
             deletedAt: Long,
         ) {
             db.storageWrite {
-                val old = requireNotNull(accounts.getById(id)) { "account does not exist" }
+                val old = accounts.getById(id) ?: return@storageWrite
                 if (old.deletedAt != null) return@storageWrite
-                require(transactions.countActiveByAccount(id) == 0) { "account still has transactions" }
                 accounts.update(old.copy(deletedAt = deletedAt, updatedAt = deletedAt))
             }
         }
@@ -86,7 +84,8 @@ class AccountRepositoryImpl
             now: Long,
         ) {
             db.storageWrite {
-                val (source, target) = requireMergeable(sourceId, targetId)
+                val source = accounts.getById(sourceId) ?: return@storageWrite
+                val target = accounts.getById(targetId) ?: return@storageWrite
                 merges.moveSource(sourceId, targetId, now)
                 merges.moveDestination(sourceId, targetId, now)
                 accounts.update(withMergedStart(source, target).copy(updatedAt = now))
@@ -100,6 +99,11 @@ class AccountRepositoryImpl
         override suspend fun getLiveTransactionCount(id: String): Int =
             storage { transactions.countActiveByAccount(id) }
 
+        override suspend fun countTransfersBetween(
+            sourceId: String,
+            targetId: String,
+        ): Int = storage { merges.countTransfersBetween(sourceId, targetId) }
+
         override suspend fun setIgnored(
             id: String,
             ignored: Boolean,
@@ -107,7 +111,8 @@ class AccountRepositoryImpl
             now: Long,
         ) {
             db.storageWrite {
-                accounts.update(requireLive(id).copy(isIgnored = ignored, updatedAt = now))
+                val old = accounts.getById(id) ?: return@storageWrite
+                accounts.update(old.copy(isIgnored = ignored, updatedAt = now))
                 if (ignored && shouldTrashOldTransactions) {
                     transactions.trashNonTransfers(id, now)
                     rebuilder.rebuild(setOf(id))
@@ -117,22 +122,6 @@ class AccountRepositoryImpl
 
         override suspend fun getTrashableTransactionCount(id: String): Int =
             storage { transactions.countNonTransfers(id) }
-
-        private suspend fun requireMergeable(
-            sourceId: String,
-            targetId: String,
-        ): Pair<AccountEntity, AccountEntity> {
-            fun reject(reason: MergeRejection): Nothing = throw AccountMergeRejectedException(reason)
-            if (sourceId == targetId) reject(MergeRejection.SAME_ACCOUNT)
-            val source = accounts.getById(sourceId)?.takeIf { it.deletedAt == null }
-            val target = accounts.getById(targetId)?.takeIf { it.deletedAt == null }
-            if (source == null || target == null) reject(MergeRejection.ACCOUNT_GONE)
-            if (source.bankPackageName == null || source.bankPackageName != target.bankPackageName) {
-                reject(MergeRejection.DIFFERENT_BANK)
-            }
-            if (merges.countTransfersBetween(sourceId, targetId) > 0) reject(MergeRejection.HAS_TRANSFER)
-            return source to target
-        }
 
         /**
          * Both rows are one real bank account, so its balance already includes the source's transactions. Re-anchor the
@@ -158,11 +147,5 @@ class AccountRepositoryImpl
                     target
                 }
             }
-        }
-
-        private suspend fun requireLive(id: String): AccountEntity {
-            val old = requireNotNull(accounts.getById(id)) { "account does not exist" }
-            require(old.deletedAt == null) { "account is deleted" }
-            return old
         }
     }

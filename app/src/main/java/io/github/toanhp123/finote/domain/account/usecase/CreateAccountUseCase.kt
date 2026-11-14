@@ -1,7 +1,11 @@
 package io.github.toanhp123.finote.domain.account.usecase
 
+import io.github.toanhp123.finote.domain.account.error.AccountError
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
+import io.github.toanhp123.finote.domain.account.service.AccountRules
+import io.github.toanhp123.finote.domain.common.Outcome
+import io.github.toanhp123.finote.domain.common.TransactionRunner
 import java.time.Clock
 import javax.inject.Inject
 
@@ -9,11 +13,14 @@ class CreateAccountUseCase
     @Inject
     constructor(
         private val repository: AccountRepository,
-        private val validate: ValidateAccountUseCase,
+        private val tx: TransactionRunner,
         private val clock: Clock,
     ) {
-        /** Stamps both timestamps from the clock, clears `deletedAt`, marks it initialized, balance = initial. */
-        suspend operator fun invoke(account: Account) {
+        /**
+         * Stamps both timestamps from the clock, clears `deletedAt`, marks it initialized, balance = initial.
+         * Returns the id, or the rule that refused the account.
+         */
+        suspend operator fun invoke(account: Account): Outcome<String, AccountError> {
             val now = clock.millis()
             val fresh =
                 account.copy(
@@ -23,7 +30,14 @@ class CreateAccountUseCase
                     updatedAt = now,
                     deletedAt = null,
                 )
-            validate(fresh)
-            repository.add(fresh)
+            return tx.write {
+                val error = AccountRules.checkNew(fresh)
+                if (error != null) {
+                    Outcome.Err(error)
+                } else {
+                    repository.add(fresh)
+                    Outcome.Ok(fresh.id)
+                }
+            }
         }
     }

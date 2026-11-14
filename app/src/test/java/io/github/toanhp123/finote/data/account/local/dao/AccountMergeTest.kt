@@ -11,8 +11,6 @@ import io.github.toanhp123.finote.data.database.transaction
 import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntity
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.repository.TransactionRepositoryImpl
-import io.github.toanhp123.finote.domain.account.error.AccountMergeRejectedException
-import io.github.toanhp123.finote.domain.account.error.MergeRejection
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.service.detectBalanceDrift
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
@@ -100,23 +98,6 @@ class AccountMergeTest {
             .accountBalanceSnapshotDao()
             .getByAccount(id)
             .map { it.monthYear }
-
-    private suspend fun assertRejected(
-        reason: MergeRejection,
-        sourceId: String,
-        targetId: String,
-        txIds: List<String> = emptyList(),
-    ) {
-        suspend fun state() =
-            listOf(sourceId, targetId).map { dbRule.db.accountDao().getById(it) } + txIds.map { txOf(it) }
-        val before = state()
-
-        val failure = runCatching { repo.merge(sourceId, targetId, NOW) }.exceptionOrNull()
-
-        assertTrue(failure.toString(), failure is AccountMergeRejectedException)
-        assertEquals(reason, (failure as AccountMergeRejectedException).reason)
-        assertEquals(before, state())
-    }
 
     @Test
     fun `merge moves source and destination columns, deleted rows too`() =
@@ -351,59 +332,21 @@ class AccountMergeTest {
         }
 
     @Test
-    fun `same id is rejected`() =
-        runTest {
-            bank("acc-a")
-
-            assertRejected(MergeRejection.SAME_ACCOUNT, "acc-a", "acc-a")
-        }
-
-    @Test
-    fun `deleted or unknown account is rejected`() =
-        runTest {
-            bank("acc-a", deletedAt = 5L)
-            bank("acc-b")
-
-            assertRejected(MergeRejection.ACCOUNT_GONE, "acc-a", "acc-b")
-            assertRejected(MergeRejection.ACCOUNT_GONE, "acc-b", "acc-a")
-            assertRejected(MergeRejection.ACCOUNT_GONE, "acc-b", "ghost")
-            assertRejected(MergeRejection.ACCOUNT_GONE, "ghost", "acc-b")
-        }
-
-    @Test
-    fun `other or null package is rejected`() =
-        runTest {
-            bank("acc-a")
-            bank("acc-b", pkg = "other")
-            bank("acc-c", pkg = null)
-            bank("acc-d", pkg = null)
-
-            assertRejected(MergeRejection.DIFFERENT_BANK, "acc-a", "acc-b")
-            assertRejected(MergeRejection.DIFFERENT_BANK, "acc-a", "acc-c")
-            assertRejected(MergeRejection.DIFFERENT_BANK, "acc-c", "acc-a")
-            assertRejected(MergeRejection.DIFFERENT_BANK, "acc-c", "acc-d")
-        }
-
-    @Test
-    fun `live transfer between the two is rejected`() =
+    fun `countTransfersBetween counts live and deleted transfers in either direction`() =
         runTest {
             bank("acc-a")
             bank("acc-b")
+            bank("acc-c")
+            tx("none", "acc-a", "11-01T00:00:00Z")
+            assertEquals(0, repo.countTransfersBetween("acc-a", "acc-b"))
+
             tx("t1", "acc-b", "11-01T00:00:00Z", type = TransactionType.TRANSFER, toAccountId = "acc-a")
-            tx("e1", "acc-a", "11-02T00:00:00Z")
+            tx("t2", "acc-a", "11-02T00:00:00Z", type = TransactionType.TRANSFER, toAccountId = "acc-b", deletedAt = 3L)
+            tx("t3", "acc-a", "11-03T00:00:00Z", type = TransactionType.TRANSFER, toAccountId = "acc-c")
 
-            assertRejected(MergeRejection.HAS_TRANSFER, "acc-a", "acc-b", listOf("t1", "e1"))
-            assertRejected(MergeRejection.HAS_TRANSFER, "acc-b", "acc-a", listOf("t1", "e1"))
-        }
-
-    @Test
-    fun `deleted transfer between the two is rejected`() =
-        runTest {
-            bank("acc-a")
-            bank("acc-b")
-            tx("t1", "acc-a", "11-01T00:00:00Z", type = TransactionType.TRANSFER, toAccountId = "acc-b", deletedAt = 3L)
-
-            assertRejected(MergeRejection.HAS_TRANSFER, "acc-a", "acc-b", listOf("t1"))
+            assertEquals(2, repo.countTransfersBetween("acc-a", "acc-b"))
+            assertEquals(2, repo.countTransfersBetween("acc-b", "acc-a"))
+            assertEquals(1, repo.countTransfersBetween("acc-a", "acc-c"))
         }
 
     @Test

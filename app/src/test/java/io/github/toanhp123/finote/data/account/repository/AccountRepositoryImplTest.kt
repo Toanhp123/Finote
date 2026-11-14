@@ -72,8 +72,6 @@ class AccountRepositoryImplTest {
 
     private suspend fun snapshotsOf(id: String) = dbRule.db.accountBalanceSnapshotDao().getByAccount(id)
 
-    private suspend fun failureOf(block: suspend () -> Unit) = runCatching { block() }.exceptionOrNull()
-
     @Test
     fun `add then get returns the account with currentBalance equal to initialBalance`() =
         runTest {
@@ -180,17 +178,15 @@ class AccountRepositoryImplTest {
         }
 
     @Test
-    fun `update of a soft-deleted account fails and changes nothing`() =
+    fun `update of a missing account is a silent no-op`() =
         runTest {
             repo.add(domainAccount())
-            repo.softDelete("acc-1", deletedAt = 5L)
             val before = rowOf("acc-1")
 
-            val failure = failureOf { repo.update(domainAccount(initialBalance = 2_000_000L).copy(name = "Renamed")) }
+            repo.update(domainAccount(id = "ghost").copy(name = "Renamed"))
 
-            assertTrue(failure.toString(), failure is IllegalArgumentException)
             assertEquals(before, rowOf("acc-1"))
-            assertTrue(failureOf { repo.update(domainAccount(id = "ghost")) } is IllegalArgumentException)
+            assertNull(rowOf("ghost"))
         }
 
     @Test
@@ -224,40 +220,15 @@ class AccountRepositoryImplTest {
         }
 
     @Test
-    fun `setArchived on a missing or deleted account fails`() =
+    fun `setArchived on a missing account is a silent no-op`() =
         runTest {
             repo.add(domainAccount())
-            repo.softDelete("acc-1", deletedAt = 5L)
             val before = rowOf("acc-1")
 
-            val onDeleted = failureOf { repo.setArchived("acc-1", archived = true, updatedAt = 50L) }
-            val onMissing = failureOf { repo.setArchived("ghost", archived = true, updatedAt = 50L) }
+            repo.setArchived("ghost", archived = true, updatedAt = 50L)
 
-            assertTrue(onDeleted.toString(), onDeleted is IllegalArgumentException)
-            assertTrue(onMissing.toString(), onMissing is IllegalArgumentException)
             assertEquals(before, rowOf("acc-1"))
-        }
-
-    @Test
-    fun `softDelete with a live source or transfer destination transaction fails and writes nothing`() =
-        runTest {
-            repo.add(domainAccount("acc-1"))
-            repo.add(domainAccount("acc-2"))
-            repo.add(domainAccount("acc-3"))
-            transactions.add(domainTx(id = "tx-src", accountId = "acc-1"))
-            transactions.add(
-                domainTx(id = "tx-xfer", type = TransactionType.TRANSFER, accountId = "acc-3", toAccountId = "acc-2"),
-            )
-            val acc1 = rowOf("acc-1")
-            val acc2 = rowOf("acc-2")
-
-            val onSource = failureOf { repo.softDelete("acc-1", deletedAt = 5L) }
-            val onDestination = failureOf { repo.softDelete("acc-2", deletedAt = 5L) }
-
-            assertTrue(onSource.toString(), onSource is IllegalArgumentException)
-            assertTrue(onDestination.toString(), onDestination is IllegalArgumentException)
-            assertEquals(acc1, rowOf("acc-1"))
-            assertEquals(acc2, rowOf("acc-2"))
+            assertNull(rowOf("ghost"))
         }
 
     @Test
@@ -287,7 +258,14 @@ class AccountRepositoryImplTest {
 
             assertEquals(5L, rowOf("acc-1")?.deletedAt)
             assertEquals(5L, rowOf("acc-1")?.updatedAt)
-            assertTrue(failureOf { repo.softDelete("ghost", deletedAt = 9L) } is IllegalArgumentException)
+        }
+
+    @Test
+    fun `softDelete of a missing account is a silent no-op`() =
+        runTest {
+            repo.softDelete("ghost", deletedAt = 9L)
+
+            assertNull(rowOf("ghost"))
         }
 
     @Test
@@ -395,18 +373,15 @@ class AccountRepositoryImplTest {
         }
 
     @Test
-    fun `ignore a missing or deleted account is rejected`() =
+    fun `ignore a missing account is a silent no-op`() =
         runTest {
             repo.add(domainAccount())
-            repo.softDelete("acc-1", deletedAt = 5L)
             val before = rowOf("acc-1")
 
-            val onDeleted = failureOf { repo.setIgnored("acc-1", true, shouldTrashOldTransactions = true, now = 50L) }
-            val onMissing = failureOf { repo.setIgnored("ghost", true, shouldTrashOldTransactions = false, now = 50L) }
+            repo.setIgnored("ghost", true, shouldTrashOldTransactions = true, now = 50L)
 
-            assertTrue(onDeleted.toString(), onDeleted is IllegalArgumentException)
-            assertTrue(onMissing.toString(), onMissing is IllegalArgumentException)
             assertEquals(before, rowOf("acc-1"))
+            assertNull(rowOf("ghost"))
         }
 
     @Test
