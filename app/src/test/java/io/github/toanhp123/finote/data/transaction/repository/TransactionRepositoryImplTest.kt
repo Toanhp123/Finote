@@ -298,23 +298,6 @@ class TransactionRepositoryImplTest {
     }
 
     @Test
-    fun `update of a deleted transaction throws and changes nothing`() =
-        runTest {
-            repo.add(domainTx())
-            repo.softDelete("tx-1", deletedAt = 5_000L)
-            val snapshotsBefore = snapshotsOf("acc-1")
-
-            val failure = failureOf { repo.update(domainTx(amount = 900_000L)) }
-
-            assertTrue(failure.toString(), failure is IllegalArgumentException)
-            val row = dbRule.db.transactionDao().getById("tx-1")
-            assertEquals(5_000L, row?.deletedAt)
-            assertEquals(200_000L, row?.amount)
-            assertEquals(1_000_000L, balanceOf("acc-1"))
-            assertEquals(snapshotsBefore, snapshotsOf("acc-1"))
-        }
-
-    @Test
     fun `soft delete twice keeps the first deletedAt`() =
         runTest {
             repo.add(domainTx())
@@ -328,48 +311,6 @@ class TransactionRepositoryImplTest {
                     .getById("tx-1")
                     ?.deletedAt,
             )
-        }
-
-    @Test
-    fun `add to a deleted account throws and rolls back`() =
-        runTest {
-            dbRule.db.accountDao().insert(account(id = "acc-gone", deletedAt = 1L))
-
-            val onSource = failureOf { repo.add(domainTx(id = "tx-a", accountId = "acc-gone")) }
-            val onDestination =
-                failureOf {
-                    repo.add(transfer1to2().copy(id = "tx-b", toAccountId = "acc-gone"))
-                }
-
-            assertTrue(onSource.toString(), onSource is IllegalArgumentException)
-            assertTrue(onDestination.toString(), onDestination is IllegalArgumentException)
-            assertNull(dbRule.db.transactionDao().getById("tx-a"))
-            assertNull(dbRule.db.transactionDao().getById("tx-b"))
-            assertFlat("acc-1")
-            assertFlat("acc-gone")
-            assertEquals(emptyList<AccountBalanceSnapshotEntity>(), snapshotsOf("acc-1"))
-        }
-
-    @Test
-    fun `update to a deleted account throws and rolls back`() =
-        runTest {
-            dbRule.db.accountDao().insert(account(id = "acc-gone", deletedAt = 1L))
-            repo.add(domainTx())
-            val snapshotsBefore = snapshotsOf("acc-1")
-
-            val failure = failureOf { repo.update(domainTx(accountId = "acc-gone")) }
-
-            assertTrue(failure.toString(), failure is IllegalArgumentException)
-            assertEquals(
-                "acc-1",
-                dbRule.db
-                    .transactionDao()
-                    .getById("tx-1")
-                    ?.accountId,
-            )
-            assertEquals(800_000L, balanceOf("acc-1"))
-            assertEquals(snapshotsBefore, snapshotsOf("acc-1"))
-            assertFlat("acc-gone")
         }
 
     @Test
@@ -460,48 +401,6 @@ class TransactionRepositoryImplTest {
         val dao = dbRule.db.accountDao()
         dao.update(checkNotNull(dao.getById(accountId)).copy(isArchived = true))
     }
-
-    @Test
-    fun `adding to an archived account fails`() =
-        runTest {
-            archive("acc-1")
-            val failure = failureOf { repo.add(domainTx()) }
-            assertTrue(failure.toString(), failure is IllegalArgumentException)
-            assertEquals("account does not exist, is deleted, archived or ignored", failure?.message)
-            assertNull(dbRule.db.transactionDao().getById("tx-1"))
-            assertFlat("acc-1")
-        }
-
-    @Test
-    fun `a transfer into an archived account fails`() =
-        runTest {
-            archive("acc-2")
-            val failure = failureOf { repo.add(transfer1to2()) }
-            assertTrue(failure.toString(), failure is IllegalArgumentException)
-            assertNull(dbRule.db.transactionDao().getById("tx-1"))
-            assertFlat("acc-1")
-            assertFlat("acc-2")
-        }
-
-    @Test
-    fun `moving a transaction out of an archived account fails`() =
-        runTest {
-            repo.add(domainTx())
-            archive("acc-1")
-
-            val failure = failureOf { repo.update(domainTx(accountId = "acc-2")) }
-
-            assertTrue(failure.toString(), failure is IllegalArgumentException)
-            assertEquals(
-                "acc-1",
-                dbRule.db
-                    .transactionDao()
-                    .getById("tx-1")
-                    ?.accountId,
-            )
-            assertEquals(800_000L, balanceOf("acc-1"))
-            assertFlat("acc-2")
-        }
 
     @Test
     fun `deleting a transaction of an archived account works`() =
@@ -645,25 +544,6 @@ class TransactionRepositoryImplTest {
             assertEquals(AdjustmentDirection.IN, tx?.adjustmentDirection)
             assertEquals(200_000L, tx?.amount)
             assertEquals(1_000_000L, balanceOf("acc-1"))
-        }
-
-    @Test
-    fun `reconcile rejects archived, deleted and missing accounts`() =
-        runTest {
-            dbRule.db.accountDao().insert(account(id = "arch"))
-            archive("arch")
-            dbRule.db.accountDao().insert(account(id = "gone", deletedAt = 5L))
-
-            listOf("arch", "gone", "missing").forEach { id ->
-                val failure = failureOf { repo.reconcile("adj-$id", id, 1L, clock.millis()) }
-                assertTrue(failure.toString(), failure is IllegalArgumentException)
-                assertEquals("account does not exist, is deleted, archived or ignored", failure?.message)
-            }
-            assertEquals(0, liveTxCount())
-            listOf("arch", "gone").forEach { id ->
-                assertEquals(1_000_000L, balanceOf(id))
-                assertEquals(emptyList<AccountBalanceSnapshotEntity>(), snapshotsOf(id))
-            }
         }
 
     @Test

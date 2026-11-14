@@ -8,7 +8,7 @@ import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveBalanceDriftUseCase
 import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
 import io.github.toanhp123.finote.domain.common.IsDebuggable
-import io.github.toanhp123.finote.domain.common.StorageException
+import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
@@ -20,7 +20,6 @@ import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
 import io.github.toanhp123.finote.ui.transactions.component.applyTo
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -62,7 +61,7 @@ class TransactionListViewModel
                     .flatMapLatest { (id, isPending) ->
                         observeList(id, isPending)
                             .map<List<TransactionDay>, Listing> { Listing(id, isPending, it) }
-                            .catch { emit(Listing(id, isPending, null)) }
+                            .catchStorage { emit(Listing(id, isPending, null)) }
                     }
             viewModelScope.launch {
                 combine(
@@ -71,7 +70,7 @@ class TransactionListViewModel
                     observeCategories(),
                 ) { l, a, c ->
                     Triple(l, a, c)
-                }.catch {
+                }.catchStorage {
                     // Not retried: a DB-level failure, and the list flow shares the same DB.
                     // No message or cause is logged: the content is financial data.
                     setState { copy(isLoading = false, hasError = true, editingId = null, hasSaveError = false) }
@@ -109,7 +108,7 @@ class TransactionListViewModel
             // A failed drift flow only hides the banner; the list has its own error state.
             viewModelScope.launch {
                 observeDrifts()
-                    .catch { emit(emptyList()) }
+                    .catchStorage { emit(emptyList()) }
                     .collect { setState { copy(drifts = it) } }
             }
         }
@@ -173,34 +172,24 @@ class TransactionListViewModel
 
         // The drift flow re-emits once the adjustment lands, which removes the banner.
         private fun adjust(accountId: String) {
-            viewModelScope.launch {
-                try {
-                    adjustBalanceDrift(accountId)
-                } catch (_: IllegalArgumentException) {
-                    // The banner stays, so the user can tap again.
-                } catch (_: ArithmeticException) {
-                    // A drift too large to book (Long overflow); the banner stays.
-                } catch (_: StorageException) {
-                    // Same: no message is logged because the content is financial data.
-                }
-            }
+            // An Err (account no longer usable, or a drift too large to book) or a storage failure leaves the banner,
+            // so the user can tap again. Nothing is logged: the content is financial data.
+            launchCatching(onStorageError = {}) { adjustBalanceDrift(accountId) }
         }
 
         private fun write(updated: Transaction) {
             // Cleared first, so a repeated failure changes the flag again and is announced again.
             setState { copy(hasSaveError = false) }
             pickJob =
-                viewModelScope.launch {
-                    try {
-                        updateTransaction(updated)
-                        setState { copy(editingId = null, hasSaveError = false) }
-                    } catch (_: IllegalArgumentException) {
-                        setState { copy(hasSaveError = true) }
-                    } catch (_: StorageException) {
-                        setState { copy(hasSaveError = true) }
+                launchCatching(onStorageError = ::showSaveError) {
+                    when (updateTransaction(updated)) {
+                        is Outcome.Ok -> setState { copy(editingId = null, hasSaveError = false) }
+                        is Outcome.Err -> showSaveError()
                     }
                 }
         }
+
+        private fun showSaveError() = setState { copy(hasSaveError = true) }
 
         private fun List<TransactionDay>.containsTransaction(id: String?): Boolean =
             id != null && any { day -> day.transactions.any { it.id == id } }

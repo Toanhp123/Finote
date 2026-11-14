@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * Every write keeps `currentBalance` and the monthly snapshots of each touched account in step,
- * all in one atomic unit. A failure leaves nothing behind.
+ * all in one atomic unit. A failure leaves nothing behind. Business rules are not checked here: the use case runs
+ * `TransactionRules` inside `tx.write` before it writes.
  */
 interface TransactionRepository {
     suspend fun getTransaction(id: String): Transaction?

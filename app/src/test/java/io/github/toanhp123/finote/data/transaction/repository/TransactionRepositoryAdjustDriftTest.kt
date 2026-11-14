@@ -165,21 +165,6 @@ class TransactionRepositoryAdjustDriftTest {
         }
 
     @Test
-    fun `rejects archived, deleted and missing accounts`() =
-        runTest {
-            dbRule.db.accountDao().insert(account(id = "arch"))
-            dbRule.db.accountDao().update(checkNotNull(dbRule.db.accountDao().getById("arch")).copy(isArchived = true))
-            dbRule.db.accountDao().insert(account(id = "gone", deletedAt = 5L))
-
-            listOf("arch", "gone", "missing").forEach { id ->
-                val failure = runCatching { repo.adjustDrift("adj-$id", id, clock.millis()) }.exceptionOrNull()
-                assertTrue(failure.toString(), failure is IllegalArgumentException)
-                assertEquals("account does not exist, is deleted, archived or ignored", failure?.message)
-            }
-            assertEquals(0, liveTxCount())
-        }
-
-    @Test
     fun `overflow in subtraction writes nothing`() =
         runTest {
             repo.add(bankRow(balance = Long.MIN_VALUE)) // MIN - 800_000 overflows

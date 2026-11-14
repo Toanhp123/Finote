@@ -8,13 +8,12 @@ import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
 import io.github.toanhp123.finote.domain.common.IsDebuggable
-import io.github.toanhp123.finote.domain.common.StorageException
+import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.transaction.model.ManualChoices
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.usecase.AddManualTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.GetLastManualChoicesUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
@@ -48,7 +47,7 @@ class CashEntryViewModel
                     observeUsableAccounts(),
                     observeCategories(),
                 ) { choices, a, c -> Triple(choices, a, c) }
-                    .catch {
+                    .catchStorage {
                         // Save stays disabled with no accounts. Nothing is logged: accounts and notes are private.
                     }.collect { (choices, a, c) -> onLists(choices, a, c) }
             }
@@ -154,8 +153,8 @@ class CashEntryViewModel
             val accountId = s.selectedAccountId
             if (!s.isSaveEnabled || amount == null || accountId == null) return
             setState { copy(isSaving = true, hasSaveError = false) }
-            viewModelScope.launch {
-                try {
+            launchCatching(onStorageError = ::showSaveError) {
+                val result =
                     addManualTransaction(
                         amount = amount,
                         type = s.type,
@@ -164,14 +163,14 @@ class CashEntryViewModel
                         date = s.date,
                         note = s.note,
                     )
-                    sendEffect(CashEntryEffect.Close)
-                } catch (_: IllegalArgumentException) {
-                    setState { copy(isSaving = false, hasSaveError = true) }
-                } catch (_: StorageException) {
-                    setState { copy(isSaving = false, hasSaveError = true) }
+                when (result) {
+                    is Outcome.Ok -> sendEffect(CashEntryEffect.Close)
+                    is Outcome.Err -> showSaveError()
                 }
             }
         }
+
+        private fun showSaveError() = setState { copy(isSaving = false, hasSaveError = true) }
 
         private fun TransactionType.toCategoryType() =
             if (this == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE

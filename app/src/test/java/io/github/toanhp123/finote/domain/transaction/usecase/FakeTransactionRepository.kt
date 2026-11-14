@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.map
 
 /**
  * Copies from the real repository: `observeTransactions` hides deleted rows, filters by `touches`, sorts newest first.
- * Does not copy: business `require` checks and balance writes (R4/R5 of a later plan move them into the domain).
+ * Does not copy: balance writes. Business rules live in the domain, not in the repository.
+ * [failWrite] makes every write throw, for example an `ArithmeticException` from the balance math.
  * Accounts in [activeAccounts] count as existing and live.
  */
 class FakeTransactionRepository(
@@ -34,6 +35,7 @@ class FakeTransactionRepository(
     var failObserve: Throwable? = null
     var failLastChoice: Throwable? = null
     var failUpdate: Throwable? = null
+    var failWrite: Throwable? = null
 
     data class ReconcileCall(
         val id: String,
@@ -78,6 +80,7 @@ class FakeTransactionRepository(
     }
 
     override suspend fun add(transaction: Transaction) {
+        failWrite?.let { throw it }
         writes++
         stored[transaction.id] = transaction
     }
@@ -88,6 +91,7 @@ class FakeTransactionRepository(
         actualBalance: Long,
         now: Long,
     ): Transaction? {
+        failWrite?.let { throw it }
         reconcileCalls += ReconcileCall(id, accountId, actualBalance, now)
         return reconcileResult
     }
@@ -97,12 +101,14 @@ class FakeTransactionRepository(
         accountId: String,
         now: Long,
     ): Transaction? {
+        failWrite?.let { throw it }
         adjustCalls += AdjustCall(id, accountId, now)
         return adjustResult
     }
 
     override suspend fun update(transaction: Transaction) {
         failUpdate?.let { throw it }
+        failWrite?.let { throw it }
         writes++
         stored[transaction.id] = transaction
     }
@@ -111,6 +117,7 @@ class FakeTransactionRepository(
         id: String,
         deletedAt: Long,
     ) {
+        failWrite?.let { throw it }
         writes++
         stored[id] = checkNotNull(stored[id]).copy(deletedAt = deletedAt)
     }

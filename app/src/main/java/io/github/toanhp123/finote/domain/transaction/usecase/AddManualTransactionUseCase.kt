@@ -1,5 +1,7 @@
 package io.github.toanhp123.finote.domain.transaction.usecase
 
+import io.github.toanhp123.finote.domain.common.Outcome
+import io.github.toanhp123.finote.domain.transaction.error.TransactionError
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
@@ -14,7 +16,10 @@ class AddManualTransactionUseCase
         private val add: AddTransactionUseCase,
         private val clock: Clock,
     ) {
-        /** Today keeps the current time of day; another day is noon in the clock's zone. A blank note stays empty. */
+        /**
+         * Delegates to [AddTransactionUseCase], which opens the write transaction.
+         * Today keeps the current time of day; another day is noon in the clock's zone. A blank note stays empty.
+         */
         suspend operator fun invoke(
             amount: Long,
             type: TransactionType,
@@ -22,7 +27,7 @@ class AddManualTransactionUseCase
             categoryId: String?,
             date: LocalDate,
             note: String,
-        ) {
+        ): Outcome<Unit, TransactionError> =
             add(
                 Transaction(
                     id = UUID.randomUUID().toString(),
@@ -41,7 +46,6 @@ class AddManualTransactionUseCase
                     source = TransactionSource.MANUAL,
                 ),
             )
-        }
 
         private fun timestampOf(date: LocalDate): Long =
             if (date == LocalDate.now(clock)) {

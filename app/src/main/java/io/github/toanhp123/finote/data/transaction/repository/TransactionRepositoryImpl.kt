@@ -1,6 +1,5 @@
 package io.github.toanhp123.finote.data.transaction.repository
 
-import io.github.toanhp123.finote.data.account.local.entity.AccountEntity
 import io.github.toanhp123.finote.data.account.mapper.toDomain
 import io.github.toanhp123.finote.data.account.repository.AccountBalanceRebuilder
 import io.github.toanhp123.finote.data.database.FinoteDatabase
@@ -59,7 +58,6 @@ class TransactionRepositoryImpl
         override suspend fun add(transaction: Transaction) {
             db.storageWrite {
                 val entity = transaction.toEntity()
-                requireUsableAccounts(entity.accountIds())
                 transactions.insert(entity)
                 rebuilder.rebuild(entity.accountIds())
             }
@@ -72,7 +70,7 @@ class TransactionRepositoryImpl
             now: Long,
         ): Transaction? =
             db.storageWrite {
-                val account = requireUsableAccount(accountId)
+                val account = checkNotNull(db.accountDao().getById(accountId))
                 writeAdjustment(id, accountId, Math.subtractExact(actualBalance, account.currentBalance), now)
             }
 
@@ -82,7 +80,7 @@ class TransactionRepositoryImpl
             now: Long,
         ): Transaction? =
             db.storageWrite {
-                val account = requireUsableAccount(accountId)
+                val account = checkNotNull(db.accountDao().getById(accountId))
                 val live = transactions.getActiveByAccount(accountId).map { it.toDomain() }
                 val drift = detectBalanceDrift(account.toDomain(), live) ?: return@storageWrite null
                 writeAdjustment(id, accountId, drift.difference, now)
@@ -90,10 +88,8 @@ class TransactionRepositoryImpl
 
         override suspend fun update(transaction: Transaction) {
             db.storageWrite {
-                val old = requireNotNull(transactions.getById(transaction.id)) { "transaction does not exist" }
-                require(old.deletedAt == null) { "transaction is deleted" }
+                val old = checkNotNull(transactions.getById(transaction.id))
                 val entity = transaction.toEntity()
-                requireUsableAccounts(old.accountIds() + entity.accountIds())
                 transactions.update(entity)
                 rebuilder.rebuild(old.accountIds() + entity.accountIds())
             }
@@ -104,22 +100,11 @@ class TransactionRepositoryImpl
             deletedAt: Long,
         ) {
             db.storageWrite {
-                val old = requireNotNull(transactions.getById(id)) { "transaction does not exist" }
+                val old = checkNotNull(transactions.getById(id))
                 if (old.deletedAt != null) return@storageWrite
                 transactions.update(old.copy(deletedAt = deletedAt, updatedAt = deletedAt))
                 rebuilder.rebuild(old.accountIds())
             }
-        }
-
-        /** Re-checks inside the write transaction: the use case's early check can be stale by now. */
-        private suspend fun requireUsableAccounts(wanted: Set<String>) {
-            require(getUsableAccountIds(wanted).containsAll(wanted)) { ACCOUNT_INACTIVE }
-        }
-
-        private suspend fun requireUsableAccount(accountId: String): AccountEntity {
-            val account = db.accountDao().getById(accountId)
-            require(account?.toDomain()?.isUsable == true) { ACCOUNT_INACTIVE }
-            return account
         }
 
         /** Inserts one ADJUSTMENT worth [delta] (signed) and rebuilds the account; null and no write when 0. */
@@ -151,8 +136,4 @@ class TransactionRepositoryImpl
         }
 
         private fun TransactionEntity.accountIds() = setOfNotNull(accountId, toAccountId)
-
-        private companion object {
-            const val ACCOUNT_INACTIVE = "account does not exist, is deleted, archived or ignored"
-        }
     }

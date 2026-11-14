@@ -9,6 +9,7 @@ import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.category.testCategory
 import io.github.toanhp123.finote.domain.category.usecase.FakeCategoryRepository
 import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
+import io.github.toanhp123.finote.domain.common.FakeTransactionRunner
 import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
@@ -18,7 +19,6 @@ import io.github.toanhp123.finote.domain.transaction.usecase.AddManualTransactio
 import io.github.toanhp123.finote.domain.transaction.usecase.AddTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
 import io.github.toanhp123.finote.domain.transaction.usecase.GetLastManualChoicesUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.ValidateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -60,7 +60,7 @@ class CashEntryViewModelTest {
     }
 
     private fun TestScope.open(repo: TransactionRepository = transactions): CashEntryViewModel {
-        val add = AddTransactionUseCase(repo, ValidateTransactionUseCase(repo, clock), clock)
+        val add = AddTransactionUseCase(repo, FakeTransactionRunner(), clock)
         return CashEntryViewModel(
             ObserveUsableAccountsUseCase(ObserveAccountsUseCase(accounts)),
             ObserveCategoriesUseCase(categories),

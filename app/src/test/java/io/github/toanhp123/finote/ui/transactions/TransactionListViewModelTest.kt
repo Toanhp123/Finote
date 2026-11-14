@@ -16,6 +16,7 @@ import io.github.toanhp123.finote.domain.account.usecase.ObserveUsableAccountsUs
 import io.github.toanhp123.finote.domain.category.testCategory
 import io.github.toanhp123.finote.domain.category.usecase.FakeCategoryRepository
 import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
+import io.github.toanhp123.finote.domain.common.FakeTransactionRunner
 import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
@@ -24,7 +25,6 @@ import io.github.toanhp123.finote.domain.transaction.usecase.AdjustBalanceDriftU
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.ValidateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -64,10 +64,10 @@ class TransactionListViewModelTest {
             observeList = ObserveTransactionListUseCase(fakeTx, clock),
             observeAccounts = ObserveAccountsUseCase(accounts),
             observeCategories = ObserveCategoriesUseCase(categories),
-            updateTransaction = UpdateTransactionUseCase(fakeTx, ValidateTransactionUseCase(fakeTx, clock), clock),
+            updateTransaction = UpdateTransactionUseCase(fakeTx, FakeTransactionRunner(), clock),
             observeDrifts =
                 ObserveBalanceDriftUseCase(ObserveUsableAccountsUseCase(ObserveAccountsUseCase(accounts)), fakeTx),
-            adjustBalanceDrift = AdjustBalanceDriftUseCase(fakeTx, clock),
+            adjustBalanceDrift = AdjustBalanceDriftUseCase(fakeTx, FakeTransactionRunner(), clock),
             clock = clock,
             isDebuggable = true,
         )
@@ -184,7 +184,7 @@ class TransactionListViewModelTest {
     fun `flow error sets hasError`() =
         runTest(mainRule.dispatcher) {
             seed()
-            fakeTx.failObserve = SQLiteException("disk")
+            fakeTx.failObserve = StorageException(SQLiteException("disk"))
 
             val state = open().state.value
 
@@ -197,7 +197,7 @@ class TransactionListViewModelTest {
         runTest(mainRule.dispatcher) {
             seed()
             accounts.stored[C] = testAccount(C)
-            fakeTx.failObserve = SQLiteException("disk")
+            fakeTx.failObserve = StorageException(SQLiteException("disk"))
             val vm = open()
             assertTrue(vm.state.value.hasError)
 
@@ -396,7 +396,7 @@ class TransactionListViewModelTest {
             val vm = open()
             vm.onIntent(TransactionListIntent.RowClicked("e"))
 
-            fakeTx.failObserve = SQLiteException("disk")
+            fakeTx.failObserve = StorageException(SQLiteException("disk"))
             vm.onIntent(TransactionListIntent.SelectAccount(C))
             runCurrent()
 
