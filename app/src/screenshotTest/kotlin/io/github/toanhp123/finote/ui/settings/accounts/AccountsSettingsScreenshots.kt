@@ -1,35 +1,16 @@
 package io.github.toanhp123.finote.ui.settings.accounts
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
-import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountType
-import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
-import io.github.toanhp123.finote.ui.common.component.control.FinoteButtonStyle
-import io.github.toanhp123.finote.ui.common.component.overlay.DialogCard
-import io.github.toanhp123.finote.ui.common.component.overlay.SheetSurface
+import io.github.toanhp123.finote.ui.ScreenPreviews
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
-
-private const val PHONE = "spec:width=360dp,height=640dp"
-private const val SCRIM_ALPHA = 0.6f
-
-@Preview(name = "Light", device = PHONE)
-@Preview(name = "Dark", device = PHONE, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Preview(name = "Large font", device = PHONE, fontScale = 2f)
-private annotation class ScreenPreviews
 
 private fun account(
     id: String,
@@ -69,93 +50,47 @@ private val listed = listOf(cash, vcb1, vcb2, mb)
 @PreviewTest
 @ScreenPreviews
 @Composable
-private fun AccountsListPreview() = Backdrop(alignment = null) {}
+private fun AccountsListPreview() = Screen(AccountsSettingsState(accounts = listed))
 
 @PreviewTest
 @ScreenPreviews
 @Composable
 private fun AccountsSheetPreview() =
-    SheetFrame(AccountsSettingsState(accounts = listed, selected = vcb1, mergeTargets = listOf(vcb2)))
+    Screen(AccountsSettingsState(accounts = listed, selected = vcb1, mergeTargets = listOf(vcb2)))
 
 @PreviewTest
 @ScreenPreviews
 @Composable
-private fun AccountsSheetNoTargetPreview() = SheetFrame(AccountsSettingsState(accounts = listed, selected = vcb2))
+private fun AccountsSheetNoTargetPreview() = Screen(AccountsSettingsState(accounts = listed, selected = vcb2))
 
 @PreviewTest
 @ScreenPreviews
 @Composable
 private fun AccountsSheetIgnoredPreview() =
-    SheetFrame(AccountsSettingsState(accounts = listed, selected = mb, mergeTargets = listOf(mb2)))
+    Screen(AccountsSettingsState(accounts = listed, selected = mb, mergeTargets = listOf(mb2)))
 
 @PreviewTest
 @ScreenPreviews
 @Composable
 private fun AccountsMergeDialogPreview() =
-    DialogFrame(
-        title = stringResource(R.string.accounts_merge_dialog_title, vcb1.name, vcb2.name),
-        text = pluralStringResource(R.plurals.accounts_merge_dialog_text, 12, 12),
-        confirm = stringResource(R.string.accounts_merge_confirm),
-    ) { MergeBalances(vcb1, vcb2) }
+    Screen(AccountsSettingsState(accounts = listed, dialog = AccountsDialog.Merge(vcb1, vcb2, count = 12)))
 
 @PreviewTest
 @ScreenPreviews
 @Composable
 private fun AccountsIgnoreDialogPreview() =
-    DialogFrame(
-        title = stringResource(R.string.accounts_ignore_dialog_title),
-        text = stringResource(R.string.accounts_ignore_dialog_text),
-        confirm = stringResource(R.string.accounts_ignore_confirm),
-    ) { TrashOption(count = 8, isChecked = true, onCheckedChange = {}) }
-
-/** layoutlib has no second window: the sheet is drawn as its content over the scrim. */
-@Composable
-private fun SheetFrame(state: AccountsSettingsState) {
-    Backdrop(Alignment.BottomCenter) {
-        SheetSurface(contentPadding = PaddingValues(FinoteTheme.spacing.lg)) {
-            AccountSheetContent(state, onIntent = {})
-        }
-    }
-}
-
-/** Same for the dialog: the card is drawn over the scrim, with the buttons the real dialog has. */
-@Composable
-private fun DialogFrame(
-    title: String,
-    text: String,
-    confirm: String,
-    content: @Composable () -> Unit,
-) {
-    Backdrop(Alignment.Center) {
-        DialogCard(
-            title = title,
-            text = text,
-            dismiss = {
-                FinoteButton(stringResource(R.string.action_cancel), onClick = {}, style = FinoteButtonStyle.Ghost)
-            },
-            confirm = { FinoteButton(confirm, onClick = {}, style = FinoteButtonStyle.Danger) },
-            modifier = Modifier.padding(FinoteTheme.spacing.xl),
-            content = { content() },
-        )
-    }
-}
+    Screen(
+        AccountsSettingsState(
+            accounts = listed,
+            dialog = AccountsDialog.Ignore(trashableCount = 8, shouldTrash = true),
+        ),
+    )
 
 @Composable
-private fun Backdrop(
-    alignment: Alignment?,
-    overlay: @Composable () -> Unit,
-) {
+private fun Screen(state: AccountsSettingsState) {
     FinoteTheme(dynamicColor = false) {
-        Box {
-            Box(Modifier.fillMaxSize().background(FinoteTheme.colors.background).statusBarsPadding()) {
-                AccountsSettingsScreen(state = AccountsSettingsState(accounts = listed), onIntent = {}, onBack = {})
-            }
-            if (alignment != null) {
-                Box(
-                    modifier = Modifier.fillMaxSize().background(FinoteTheme.scheme.scrim.copy(alpha = SCRIM_ALPHA)),
-                    contentAlignment = alignment,
-                ) { overlay() }
-            }
+        Box(Modifier.fillMaxSize().background(FinoteTheme.colors.background)) {
+            AccountsSettingsScreen(state = state, onIntent = {}, onBack = {}, modifier = Modifier.statusBarsPadding())
         }
     }
 }

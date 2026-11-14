@@ -230,7 +230,7 @@ Audit toàn dự án ngày 2026-11-10. Chi tiết từng mục (A1–A20): `docs
 1. `fix/balance-adjust` (A1, A3): nút Điều chỉnh tính lại độ lệch trong transaction ghi; dòng điều chỉnh có `source = ADJUSTMENT`.
 2. `fix/settle-stuck-logs` (A2, A7): chặn số tiền quá lớn, log PENDING lỗi mãi thì chuyển FAILED; settle dùng `KEEP`.
 3. `chore/domain-account-rules` (A8, A9, A11, A20): một hàm tính mốc số dư đầu, `Account.isUsable`, `Transaction.touches`. Phải xong trước P2d.
-4. `chore/ui-overlay-api` (A10, A6, A16): API `FinoteDialog`, overlay giữ nội dung khi đóng, đóng sheet nhập tiền mặt theo state.
+4. `chore/ui-overlay-api` (A10, A6, A16): **đã xong** (2026-11-14). `FinoteDialog` tự vẽ nút, overlay giữ nội dung khi đóng (`rememberLastNonNull`), sheet có `onDismissComplete`, sheet nhập tiền mặt đóng theo state, screenshot vẽ overlay thật. Thiết kế: `docs/superpowers/specs/2026-11-14-ui-overlay-api-design.md`. Chưa thử trên máy thật.
 5. `chore/ui-components` (A12, A13, A14, A15): component dùng chung, bỏ số cứng, định dạng ngày theo locale, accessibility.
 6. `chore/test-hygiene` (A18, A19): fake đúng hợp đồng, builder test dùng chung, siết Konsist.
 7. `chore/release-readiness` (A4, A17): build release/R8 trong gate, loại cờ setup khỏi backup.

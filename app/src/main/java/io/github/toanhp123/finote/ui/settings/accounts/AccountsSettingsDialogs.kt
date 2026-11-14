@@ -3,18 +3,12 @@ package io.github.toanhp123.finote.ui.settings.accounts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.domain.account.model.Account
-import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
-import io.github.toanhp123.finote.ui.common.component.control.FinoteButtonStyle
 import io.github.toanhp123.finote.ui.common.component.control.FinoteSwitch
 import io.github.toanhp123.finote.ui.common.component.display.FinoteListRow
 import io.github.toanhp123.finote.ui.common.component.finance.MoneyText
@@ -24,13 +18,13 @@ import io.github.toanhp123.finote.ui.common.format.displayName
 
 @Composable
 internal fun MergeDialog(
-    source: Account,
-    target: Account,
-    count: Int,
+    dialog: AccountsDialog.Merge,
+    isVisible: Boolean,
     onIntent: (AccountsSettingsIntent) -> Unit,
 ) {
+    val (source, target, count) = dialog
     FinoteDialog(
-        isVisible = true,
+        isVisible = isVisible,
         title =
             stringResource(
                 R.string.accounts_merge_dialog_title,
@@ -39,14 +33,9 @@ internal fun MergeDialog(
             ),
         text = pluralStringResource(R.plurals.accounts_merge_dialog_text, count, count),
         onDismiss = { onIntent(AccountsSettingsIntent.DialogDismissed) },
-        dismiss = { CancelButton { onIntent(AccountsSettingsIntent.DialogDismissed) } },
-        confirm = {
-            FinoteButton(
-                text = stringResource(R.string.accounts_merge_confirm),
-                onClick = { onIntent(AccountsSettingsIntent.MergeConfirmed) },
-                style = FinoteButtonStyle.Danger,
-            )
-        },
+        confirmText = stringResource(R.string.accounts_merge_confirm),
+        onConfirm = { onIntent(AccountsSettingsIntent.MergeConfirmed) },
+        isDestructive = true,
         content = { MergeBalances(source, target) },
     )
 }
@@ -69,27 +58,25 @@ internal fun MergeBalances(
 
 @Composable
 internal fun IgnoreDialog(
-    trashableCount: Int,
+    dialog: AccountsDialog.Ignore,
+    isVisible: Boolean,
     onIntent: (AccountsSettingsIntent) -> Unit,
 ) {
-    // Local to the dialog: it is composed only while open, so every opening starts unticked.
-    var shouldTrash by remember { mutableStateOf(false) }
     FinoteDialog(
-        isVisible = true,
+        isVisible = isVisible,
         title = stringResource(R.string.accounts_ignore_dialog_title),
         text = stringResource(R.string.accounts_ignore_dialog_text),
         onDismiss = { onIntent(AccountsSettingsIntent.DialogDismissed) },
-        dismiss = { CancelButton { onIntent(AccountsSettingsIntent.DialogDismissed) } },
-        confirm = {
-            FinoteButton(
-                text = stringResource(R.string.accounts_ignore_confirm),
-                onClick = { onIntent(AccountsSettingsIntent.IgnoreConfirmed(shouldTrash && trashableCount > 0)) },
-                style = FinoteButtonStyle.Danger,
-            )
-        },
+        confirmText = stringResource(R.string.accounts_ignore_confirm),
+        onConfirm = { onIntent(AccountsSettingsIntent.IgnoreConfirmed) },
+        isDestructive = true,
         content =
-            if (trashableCount > 0) {
-                { TrashOption(trashableCount, shouldTrash) { shouldTrash = it } }
+            if (dialog.trashableCount > 0) {
+                {
+                    TrashOption(dialog.trashableCount, dialog.shouldTrash) {
+                        onIntent(AccountsSettingsIntent.TrashToggled(it))
+                    }
+                }
             } else {
                 null
             },
@@ -108,9 +95,4 @@ internal fun TrashOption(
         modifier = Modifier.toggleable(value = isChecked, role = Role.Switch, onValueChange = onCheckedChange),
         trailing = { FinoteSwitch(checked = isChecked, onCheckedChange = null) },
     )
-}
-
-@Composable
-private fun CancelButton(onClick: () -> Unit) {
-    FinoteButton(text = stringResource(R.string.action_cancel), onClick = onClick, style = FinoteButtonStyle.Ghost)
 }

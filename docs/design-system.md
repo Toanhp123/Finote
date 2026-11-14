@@ -54,9 +54,9 @@ A component file sits directly in one group. No group has a sub-group. `DesignSy
 | `FinoteScaffold` | `(modifier, topBar, bottomBar?, snackbarState, content: (PaddingValues) -> Unit)` | Root of every screen. Owns the blur source. Content gets the padding that clears the floating bar, or only the system nav bar when `bottomBar` is null |
 | `FinoteTopBar` | `(title, modifier, onBack?, actions)` | Screen title, back button, right-side actions |
 | `FinoteNavBar` | `(items: List<FinoteNavItem>, selectedIndex, onSelect, modifier)` | Floating bottom navigation. Pass it as `bottomBar` |
-| `FinoteBottomSheet` | `(isVisible, onDismiss, modifier, content)` | Pick or edit something without leaving the screen |
-| `FinoteDialog` | `(isVisible, title, onDismiss, confirm, modifier, text?, dismiss?, content?)` | Confirm a destructive or irreversible action. `content` is one extra control between the text and the buttons, such as a checkbox row |
-| `FinoteDatePicker` | `(isVisible, selected: LocalDate, onConfirm: (LocalDate), onDismiss, modifier)` | Date input. Never expose `DatePickerState` |
+| `FinoteBottomSheet` | `(isVisible, onDismiss, modifier, onDismissComplete, content)` | Pick or edit something without leaving the screen. `onDismissComplete` runs each time the sheet has settled hidden while `isVisible` is false (also on a hidden first composition), never in previews |
+| `FinoteDialog` | `(isVisible, title, confirmText, onConfirm, onDismiss, modifier, text?, isDestructive, dismissText, content?)` | Confirm a destructive or irreversible action. It draws the Cancel and confirm buttons; `isDestructive` makes the confirm button red. `content` is one extra control between the text and the buttons, such as a checkbox row |
+| `FinoteDatePicker` | `(isVisible, selected: LocalDate, onConfirm: (LocalDate), onDismiss, modifier, onDismissComplete)` | Date input. Never expose `DatePickerState` |
 | `FinoteCalendar` | `(selected: LocalDate, onPick: (LocalDate), modifier)` | Bare calendar page without chrome |
 | `FinoteButton` | `(text, onClick, modifier, style, enabled, isLoading, leadingIcon?)` | Every button. `style`: `Primary`, `Secondary`, `Ghost`, `Danger` |
 | `FinoteIconButton` | `(iconRes, contentDescription, onClick, modifier, enabled)` | Icon-only action. 48dp touch target |
@@ -149,7 +149,7 @@ Run both through the `gradle-run` skill.
 
 - The design must look right without blur. Check the no-blur look first.
 - The nav bar blurs on API 31+ and draws the opaque `solidFill` on 26-30. `FinoteBottomSheet`, `FinoteDatePicker`, and `FinoteDialog` run in their own window and never blur: sheets and the date picker take the opaque `solidFill` path, the dialog is an opaque card. Nothing shows through them.
-- layoutlib cannot open a second window. Screenshots of sheets, dialogs, and the date picker draw the internal surface over a scrim, not the real window.
+- layoutlib cannot open a second window. In preview mode (`LocalInspectionMode`) overlays draw inline over a scrim; screenshots render real screens. Call overlays at the screen root, after the body, in one `Box`.
 - `LocalBlurEnabled` (internal) lets a preview switch blur off.
 
 ## Money display

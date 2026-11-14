@@ -1,29 +1,21 @@
 package io.github.toanhp123.finote.ui.settings.capture
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
+import io.github.toanhp123.finote.ui.ScreenPreviews
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.settings.BankSummary
 import java.time.ZoneOffset
 
-private const val PHONE = "spec:width=360dp,height=640dp"
-
 // 2026-11-10 08:30 UTC. Every preview passes ZoneOffset.UTC, so the text does not depend on the recording machine.
 private const val CHECKED_AT = 1_794_299_400_000L
-
-@Preview(name = "Light", device = PHONE)
-@Preview(name = "Dark", device = PHONE, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Preview(name = "Large font", device = PHONE, fontScale = 2f)
-private annotation class ScreenPreviews
 
 private val banks =
     listOf(

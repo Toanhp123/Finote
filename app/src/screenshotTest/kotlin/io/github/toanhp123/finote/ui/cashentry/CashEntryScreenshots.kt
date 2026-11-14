@@ -2,10 +2,8 @@ package io.github.toanhp123.finote.ui.cashentry
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
@@ -14,13 +12,11 @@ import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
-import io.github.toanhp123.finote.ui.common.component.overlay.SheetSurface
+import io.github.toanhp123.finote.ui.common.component.overlay.FinoteBottomSheet
 import io.github.toanhp123.finote.ui.common.component.preview.PreviewGreenArgb
 import io.github.toanhp123.finote.ui.common.component.preview.PreviewRedArgb
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import java.time.LocalDate
-
-private const val SCRIM_ALPHA = 0.6f
 
 @PreviewTest
 @CashEntryPreviews
@@ -43,7 +39,7 @@ private fun CashEntryDatePreview() = SheetOverScrim(keypadState().copy(page = Ca
 private fun CashEntryNotePreview() = SheetOverScrim(keypadState().copy(page = CashEntryPage.NOTE, note = "Lunch"))
 
 @PreviewTest
-@Preview(name = "Light", device = PHONE)
+@Preview(name = "Light", device = TALL_PHONE)
 @Composable
 private fun CashEntryNotPositivePreview() =
     SheetOverScrim(
@@ -51,7 +47,7 @@ private fun CashEntryNotPositivePreview() =
     )
 
 @PreviewTest
-@Preview(name = "Light", device = PHONE)
+@Preview(name = "Light", device = TALL_PHONE)
 @Composable
 private fun CashEntryDivideByZeroPreview() =
     SheetOverScrim(
@@ -62,16 +58,11 @@ private fun CashEntryDivideByZeroPreview() =
         ),
     )
 
-/** layoutlib has no second window: the sheet is drawn as its content over a scrim, like the other overlays. */
 @Composable
 private fun SheetOverScrim(state: CashEntryState) {
     FinoteTheme(dynamicColor = false) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(FinoteTheme.scheme.scrim.copy(alpha = SCRIM_ALPHA)),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            val spacing = FinoteTheme.spacing
-            SheetSurface(contentPadding = PaddingValues(start = spacing.lg, end = spacing.lg, bottom = spacing.lg)) {
+        Box(Modifier.fillMaxSize().background(FinoteTheme.colors.background)) {
+            FinoteBottomSheet(isVisible = true, onDismiss = {}) {
                 CashEntrySheet(state = state, onIntent = {}, onPageClose = {})
             }
         }

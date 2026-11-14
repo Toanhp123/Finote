@@ -24,6 +24,8 @@ data class CashEntryState(
     val page: CashEntryPage = CashEntryPage.KEYPAD,
     val isSaving: Boolean = false,
     val hasSaveError: Boolean = false,
+    /** False once the sheet should leave, after a save or a dismiss; the screen closes when the exit ends. */
+    val isVisible: Boolean = true,
 ) {
     val isSaveEnabled: Boolean get() = result is AmountResult.Ok && selectedAccountId != null && !isSaving
 }
@@ -65,9 +67,8 @@ sealed interface CashEntryIntent {
     data object Dismissed : CashEntryIntent
 }
 
-sealed interface CashEntryEffect {
-    data object Close : CashEntryEffect
-}
+/** This screen sends no one-time command; the type exists for the contract rule and [BaseViewModel]. */
+sealed interface CashEntryEffect
 
 /** The content the cash-entry sheet shows. Only [KEYPAD] shows the calculator keypad. */
 enum class CashEntryPage { KEYPAD, ACCOUNT, CATEGORY, DATE, NOTE }

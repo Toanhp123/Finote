@@ -90,7 +90,7 @@ class CashEntryViewModel
                 }
 
                 CashEntryIntent.Dismissed -> {
-                    sendEffect(CashEntryEffect.Close)
+                    setState { copy(isVisible = false) }
                 }
             }
         }
@@ -164,7 +164,9 @@ class CashEntryViewModel
                         note = s.note,
                     )
                 when (result) {
-                    is Outcome.Ok -> sendEffect(CashEntryEffect.Close)
+                    // isSaving stays true so a second save cannot run while the sheet leaves.
+                    is Outcome.Ok -> setState { copy(isVisible = false) }
+
                     is Outcome.Err -> showSaveError()
                 }
             }

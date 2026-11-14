@@ -15,12 +15,20 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.res.stringResource
 import com.composeunstyled.DialogPanel
 import com.composeunstyled.Scrim
 import com.composeunstyled.UnstyledDialog
+import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButtonStyle
 import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviewSurface
@@ -28,23 +36,47 @@ import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviews
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 /**
- * A centered card over a scrim. A tap outside or Back calls [onDismiss]. [confirm] and [dismiss] are the buttons
- * at the bottom end, usually [FinoteButton]s. [content] sits between [text] and the buttons, for one more control
- * such as a checkbox row.
+ * A centered card over a scrim. A tap outside or Back calls [onDismiss]. The dialog owns its buttons: a ghost
+ * [dismissText] button and a [confirmText] button, which is red when [isDestructive]. [content] sits between [text]
+ * and the buttons, for one more control such as a checkbox row.
  */
 @Composable
 fun FinoteDialog(
     isVisible: Boolean,
     title: String,
+    confirmText: String,
+    onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    confirm: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     text: String? = null,
-    dismiss: (@Composable () -> Unit)? = null,
+    isDestructive: Boolean = false,
+    dismissText: String = stringResource(R.string.action_cancel),
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
+    if (LocalInspectionMode.current) {
+        if (isVisible) {
+            InlineOverlay(Alignment.Center) {
+                Box(modifier = modifier.safeDrawingPadding().padding(FinoteTheme.spacing.xl)) {
+                    DialogCard(
+                        title = title,
+                        confirmText = confirmText,
+                        onConfirm = onConfirm,
+                        onDismiss = onDismiss,
+                        text = text,
+                        isDestructive = isDestructive,
+                        dismissText = dismissText,
+                        content = content,
+                    )
+                }
+            }
+        }
+        return
+    }
+    // UnstyledDialog seeds its state from the first `visible`: start hidden so a first open runs the enter animation.
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(isVisible) { shown = isVisible }
     UnstyledDialog(
-        visible = isVisible,
+        visible = shown,
         onDismissRequest = onDismiss,
         overlay = { Scrim(enter = fadeIn(), exit = fadeOut()) },
     ) {
@@ -53,7 +85,16 @@ fun FinoteDialog(
             contentAlignment = Alignment.Center,
         ) {
             DialogPanel {
-                DialogCard(title = title, text = text, confirm = confirm, dismiss = dismiss, content = content)
+                DialogCard(
+                    title = title,
+                    confirmText = confirmText,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss,
+                    text = text,
+                    isDestructive = isDestructive,
+                    dismissText = dismissText,
+                    content = content,
+                )
             }
         }
     }
@@ -62,10 +103,13 @@ fun FinoteDialog(
 @Composable
 internal fun DialogCard(
     title: String,
-    confirm: @Composable () -> Unit,
+    confirmText: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     text: String? = null,
-    dismiss: (@Composable () -> Unit)? = null,
+    isDestructive: Boolean = false,
+    dismissText: String = stringResource(R.string.action_cancel),
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     Column(
@@ -92,8 +136,12 @@ internal fun DialogCard(
             horizontalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm, Alignment.End),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            dismiss?.invoke()
-            confirm()
+            FinoteButton(text = dismissText, onClick = onDismiss, style = FinoteButtonStyle.Ghost)
+            FinoteButton(
+                text = confirmText,
+                onClick = onConfirm,
+                style = if (isDestructive) FinoteButtonStyle.Danger else FinoteButtonStyle.Primary,
+            )
         }
     }
 }
@@ -106,9 +154,10 @@ private fun FinoteDialogPreview() {
             isVisible = true,
             title = "Delete transaction?",
             text = "It moves to the trash and can be restored for 30 days.",
+            confirmText = "Delete",
+            onConfirm = {},
             onDismiss = {},
-            dismiss = { FinoteButton(text = "Cancel", onClick = {}, style = FinoteButtonStyle.Ghost) },
-            confirm = { FinoteButton(text = "Delete", onClick = {}, style = FinoteButtonStyle.Danger) },
+            isDestructive = true,
         )
     }
 }
@@ -120,8 +169,10 @@ private fun FinoteDialogWithContentPreview() {
         DialogCard(
             title = "Ignore account?",
             text = "No new transactions will be recorded for this account.",
-            dismiss = { FinoteButton(text = "Cancel", onClick = {}, style = FinoteButtonStyle.Ghost) },
-            confirm = { FinoteButton(text = "Ignore", onClick = {}, style = FinoteButtonStyle.Danger) },
+            confirmText = "Ignore",
+            onConfirm = {},
+            onDismiss = {},
+            isDestructive = true,
             content = { Text(text = "Extra control goes here", color = FinoteTheme.scheme.onSurface) },
         )
     }

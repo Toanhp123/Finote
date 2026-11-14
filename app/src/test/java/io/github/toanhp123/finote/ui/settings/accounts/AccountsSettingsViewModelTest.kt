@@ -129,6 +129,40 @@ class AccountsSettingsViewModelTest {
         }
 
     @Test
+    fun `sheet dismissed keeps merge targets until another account opens`() =
+        runTest(mainRule.dispatcher) {
+            val vm =
+                viewModel(
+                    FakeAccountRepository(),
+                    bank("src"),
+                    bank("same"),
+                    bank("mb1", pkg = "mb"),
+                    bank("mb2", pkg = "mb"),
+                )
+            runCurrent()
+            vm.onIntent(AccountsSettingsIntent.AccountClicked("src"))
+            runCurrent()
+
+            vm.onIntent(AccountsSettingsIntent.SheetDismissed)
+
+            assertNull(vm.state.value.selected)
+            assertEquals(
+                listOf("same"),
+                vm.state.value.mergeTargets
+                    .map { it.id },
+            )
+
+            vm.onIntent(AccountsSettingsIntent.AccountClicked("mb1"))
+            runCurrent()
+
+            assertEquals(
+                listOf("mb2"),
+                vm.state.value.mergeTargets
+                    .map { it.id },
+            )
+        }
+
+    @Test
     fun `pick target loads the move count, dismiss clears it`() =
         runTest(mainRule.dispatcher) {
             val repo = FakeAccountRepository().apply { liveCounts["src"] = 7 }
@@ -140,15 +174,12 @@ class AccountsSettingsViewModelTest {
             vm.onIntent(AccountsSettingsIntent.MergeTargetPicked("dst"))
             runCurrent()
 
-            assertEquals(
-                "src" to "dst",
-                vm.state.value.pendingMerge
-                    ?.let { it.first.id to it.second.id },
-            )
-            assertEquals(7, vm.state.value.mergeCount)
+            val dialog = vm.state.value.dialog as AccountsDialog.Merge
+            assertEquals("src" to "dst", dialog.source.id to dialog.target.id)
+            assertEquals(7, dialog.count)
 
             vm.onIntent(AccountsSettingsIntent.DialogDismissed)
-            assertNull(vm.state.value.pendingMerge)
+            assertNull(vm.state.value.dialog)
         }
 
     @Test
@@ -170,7 +201,7 @@ class AccountsSettingsViewModelTest {
             }
             assertEquals(listOf(Triple("src", "dst", 5_000L)), repo.merges)
             assertNull(vm.state.value.selected)
-            assertNull(vm.state.value.pendingMerge)
+            assertNull(vm.state.value.dialog)
         }
 
     @Test
@@ -256,8 +287,8 @@ class AccountsSettingsViewModelTest {
             runCurrent()
 
             vm.effects.test {
-                vm.onIntent(AccountsSettingsIntent.IgnoreConfirmed(shouldTrash = false))
-                vm.onIntent(AccountsSettingsIntent.IgnoreConfirmed(shouldTrash = false))
+                vm.onIntent(AccountsSettingsIntent.IgnoreConfirmed)
+                vm.onIntent(AccountsSettingsIntent.IgnoreConfirmed)
                 runCurrent()
 
                 assertEquals(AccountsSettingsEffect.Ignored, awaitItem())
@@ -279,7 +310,7 @@ class AccountsSettingsViewModelTest {
             vm.onIntent(AccountsSettingsIntent.SheetDismissed)
             runCurrent()
 
-            assertNull(vm.state.value.pendingMerge)
+            assertNull(vm.state.value.dialog)
         }
 
     @Test
@@ -294,7 +325,7 @@ class AccountsSettingsViewModelTest {
             vm.onIntent(AccountsSettingsIntent.SheetDismissed)
             runCurrent()
 
-            assertEquals(false, vm.state.value.isIgnoreDialogOpen)
+            assertNull(vm.state.value.dialog)
         }
 
     /**
@@ -332,12 +363,51 @@ class AccountsSettingsViewModelTest {
             vm.onIntent(AccountsSettingsIntent.IgnoreClicked)
             runCurrent()
 
-            assertEquals(true, vm.state.value.isIgnoreDialogOpen)
-            assertEquals(3, vm.state.value.trashableCount)
+            assertEquals(AccountsDialog.Ignore(trashableCount = 3), vm.state.value.dialog)
         }
 
     @Test
-    fun `confirm ignore passes shouldTrash and emits Ignored`() =
+    fun `ticked trash with rows trashes and emits Ignored`() =
+        runTest(mainRule.dispatcher) {
+            val repo = FakeAccountRepository().apply { trashableCounts["src"] = 3 }
+            val vm = viewModel(repo, bank("src"))
+            runCurrent()
+            vm.onIntent(AccountsSettingsIntent.AccountClicked("src"))
+            vm.onIntent(AccountsSettingsIntent.IgnoreClicked)
+            runCurrent()
+
+            vm.effects.test {
+                vm.onIntent(AccountsSettingsIntent.TrashToggled(isChecked = true))
+                vm.onIntent(AccountsSettingsIntent.IgnoreConfirmed)
+                runCurrent()
+
+                assertEquals(AccountsSettingsEffect.Ignored, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertEquals(listOf(FakeAccountRepository.IgnoreCall("src", true, true, 5_000L)), repo.ignores)
+            assertNull(vm.state.value.selected)
+        }
+
+    @Test
+    fun `ignore dialog reopens unticked`() =
+        runTest(mainRule.dispatcher) {
+            val repo = FakeAccountRepository().apply { trashableCounts["src"] = 3 }
+            val vm = viewModel(repo, bank("src"))
+            runCurrent()
+            vm.onIntent(AccountsSettingsIntent.AccountClicked("src"))
+            vm.onIntent(AccountsSettingsIntent.IgnoreClicked)
+            runCurrent()
+
+            vm.onIntent(AccountsSettingsIntent.TrashToggled(isChecked = true))
+            vm.onIntent(AccountsSettingsIntent.DialogDismissed)
+            vm.onIntent(AccountsSettingsIntent.IgnoreClicked)
+            runCurrent()
+
+            assertEquals(false, (vm.state.value.dialog as AccountsDialog.Ignore).shouldTrash)
+        }
+
+    @Test
+    fun `no trashable rows never trashes`() =
         runTest(mainRule.dispatcher) {
             val repo = FakeAccountRepository()
             val vm = viewModel(repo, bank("src"))
@@ -346,15 +416,11 @@ class AccountsSettingsViewModelTest {
             vm.onIntent(AccountsSettingsIntent.IgnoreClicked)
             runCurrent()
 
-            vm.effects.test {
-                vm.onIntent(AccountsSettingsIntent.IgnoreConfirmed(shouldTrash = true))
-                runCurrent()
+            vm.onIntent(AccountsSettingsIntent.TrashToggled(isChecked = true))
+            vm.onIntent(AccountsSettingsIntent.IgnoreConfirmed)
+            runCurrent()
 
-                assertEquals(AccountsSettingsEffect.Ignored, awaitItem())
-                cancelAndIgnoreRemainingEvents()
-            }
-            assertEquals(listOf(FakeAccountRepository.IgnoreCall("src", true, true, 5_000L)), repo.ignores)
-            assertNull(vm.state.value.selected)
+            assertEquals(false, repo.ignores.single().trash)
         }
 
     @Test

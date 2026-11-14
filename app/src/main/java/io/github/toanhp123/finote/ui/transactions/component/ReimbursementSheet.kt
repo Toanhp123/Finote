@@ -6,11 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -20,6 +15,7 @@ import androidx.compose.ui.semantics.semantics
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.component.control.FinoteSegmented
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteBottomSheet
+import io.github.toanhp123.finote.ui.common.rememberLastNonNull
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 /** [selected] is null while no row is open; the sheet then keeps the last choice it showed while it slides out. */
@@ -31,10 +27,9 @@ fun ReimbursementSheet(
     onPick: (ReimbursementChoice) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var lastShown by remember { mutableStateOf(ReimbursementChoice.NORMAL) }
-    LaunchedEffect(selected) { selected?.let { lastShown = it } }
+    val shown = rememberLastNonNull(selected) ?: ReimbursementChoice.NORMAL
     FinoteBottomSheet(isVisible = isVisible, onDismiss = onDismiss) {
-        ReimbursementSheetContent(selected = selected ?: lastShown, hasSaveError = hasSaveError, onPick = onPick)
+        ReimbursementSheetContent(selected = shown, hasSaveError = hasSaveError, onPick = onPick)
     }
 }
 

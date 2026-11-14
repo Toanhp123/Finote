@@ -1,6 +1,5 @@
 package io.github.toanhp123.finote.ui.cashentry
 
-import app.cash.turbine.test
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.account.usecase.FakeAccountRepository
 import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
@@ -243,10 +242,34 @@ class CashEntryViewModelTest {
             assertEquals("lunch", saved.note)
             assertEquals(TransactionSource.MANUAL, saved.source)
             assertEquals(clock.millis(), saved.timestamp)
-            viewModel.effects.test {
-                assertEquals(CashEntryEffect.Close, awaitItem())
-                cancelAndIgnoreRemainingEvents()
-            }
+            assertFalse(viewModel.current.isVisible)
+        }
+
+    @Test
+    fun `dismiss hides the sheet`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val viewModel = open()
+            assertTrue(viewModel.current.isVisible)
+
+            viewModel.onIntent(CashEntryIntent.Dismissed)
+
+            assertFalse(viewModel.current.isVisible)
+        }
+
+    @Test
+    fun `save after a successful save does nothing`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val viewModel = open()
+            viewModel.press(CalcKey.D5)
+            viewModel.onIntent(CashEntryIntent.SaveClicked)
+            runCurrent()
+
+            viewModel.onIntent(CashEntryIntent.SaveClicked)
+            runCurrent()
+
+            assertEquals(1, transactions.stored.size)
         }
 
     @Test
@@ -311,10 +334,7 @@ class CashEntryViewModelTest {
             assertFalse(viewModel.current.isSaving)
             assertEquals("70", viewModel.current.expression)
             assertTrue(noActiveAccount.stored.isEmpty())
-            viewModel.effects.test {
-                expectNoEvents()
-                cancelAndIgnoreRemainingEvents()
-            }
+            assertTrue(viewModel.current.isVisible)
         }
 
     @Test
@@ -332,10 +352,7 @@ class CashEntryViewModelTest {
             assertTrue(viewModel.current.hasSaveError)
             assertFalse(viewModel.current.isSaving)
             assertEquals("70", viewModel.current.expression)
-            viewModel.effects.test {
-                expectNoEvents()
-                cancelAndIgnoreRemainingEvents()
-            }
+            assertTrue(viewModel.current.isVisible)
         }
 
     @Test

@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.ui.settings.accounts
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +29,7 @@ import io.github.toanhp123.finote.ui.common.component.overlay.FinoteBottomSheet
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteSnackbarState
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import io.github.toanhp123.finote.ui.common.format.displayName
+import io.github.toanhp123.finote.ui.common.rememberLastNonNull
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import kotlinx.coroutines.launch
 
@@ -69,23 +71,25 @@ fun AccountsSettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
-        FinoteTopBar(title = stringResource(R.string.settings_accounts_title), onBack = onBack)
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = FinoteTheme.spacing.lg),
-        ) {
-            FinoteCard(modifier = Modifier.fillMaxWidth()) {
-                state.accounts.forEach { account -> AccountRow(account, onIntent) }
+    // The overlays are drawn after the body in the same Box, so an inline overlay (preview mode) covers the top bar.
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            FinoteTopBar(title = stringResource(R.string.settings_accounts_title), onBack = onBack)
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = FinoteTheme.spacing.lg),
+            ) {
+                FinoteCard(modifier = Modifier.fillMaxWidth()) {
+                    state.accounts.forEach { account -> AccountRow(account, onIntent) }
+                }
             }
         }
+        AccountSheet(state, onIntent)
+        AccountsDialogs(state.dialog, onIntent)
     }
-    AccountSheet(state, onIntent)
-    state.pendingMerge?.let { (source, target) -> MergeDialog(source, target, state.mergeCount, onIntent) }
-    if (state.isIgnoreDialogOpen) IgnoreDialog(state.trashableCount, onIntent)
 }
 
 @Composable
@@ -110,27 +114,43 @@ private fun AccountSheet(
     state: AccountsSettingsState,
     onIntent: (AccountsSettingsIntent) -> Unit,
 ) {
+    // The sheet keeps its content while it slides out.
+    val shownAccount = rememberLastNonNull(state.selected)
     FinoteBottomSheet(
         isVisible = state.selected != null,
         onDismiss = { onIntent(AccountsSettingsIntent.SheetDismissed) },
     ) {
-        AccountSheetContent(state, onIntent)
+        shownAccount?.let { AccountSheetContent(it, state.mergeTargets, onIntent) }
+    }
+}
+
+/** Keeps the last dialog while it fades out, so the text does not blank. */
+@Composable
+private fun AccountsDialogs(
+    dialog: AccountsDialog?,
+    onIntent: (AccountsSettingsIntent) -> Unit,
+) {
+    val isVisible = dialog != null
+    when (val shown = rememberLastNonNull(dialog)) {
+        is AccountsDialog.Merge -> MergeDialog(shown, isVisible, onIntent)
+        is AccountsDialog.Ignore -> IgnoreDialog(shown, isVisible, onIntent)
+        null -> Unit
     }
 }
 
 @Composable
 internal fun ColumnScope.AccountSheetContent(
-    state: AccountsSettingsState,
+    account: Account,
+    mergeTargets: List<Account>,
     onIntent: (AccountsSettingsIntent) -> Unit,
 ) {
-    val account = state.selected ?: return
     Text(
         text = displayName(account.name, account.nameKey),
         modifier = Modifier.padding(bottom = FinoteTheme.spacing.sm).semantics { heading() },
         color = FinoteTheme.scheme.onSurface,
         style = FinoteTheme.typography.material.titleLarge,
     )
-    MergeTargets(state.mergeTargets, onIntent)
+    MergeTargets(mergeTargets, onIntent)
     if (account.isIgnored) {
         FinoteListRow(
             title = stringResource(R.string.accounts_follow_again),

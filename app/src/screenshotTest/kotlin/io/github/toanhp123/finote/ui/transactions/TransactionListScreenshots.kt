@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
@@ -20,24 +19,15 @@ import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.model.groupByDay
-import io.github.toanhp123.finote.ui.common.component.overlay.SheetSurface
+import io.github.toanhp123.finote.ui.PHONE
+import io.github.toanhp123.finote.ui.ScreenPreviews
 import io.github.toanhp123.finote.ui.common.component.preview.PreviewGreenArgb
 import io.github.toanhp123.finote.ui.common.component.preview.PreviewRedArgb
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
-import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
-import io.github.toanhp123.finote.ui.transactions.component.ReimbursementSheetContent
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
-
-private const val PHONE = "spec:width=360dp,height=640dp"
-private const val SCRIM_ALPHA = 0.6f
-
-@Preview(name = "Light", device = PHONE)
-@Preview(name = "Dark", device = PHONE, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Preview(name = "Large font", device = PHONE, fontScale = 2f)
-private annotation class ScreenPreviews
 
 @PreviewTest
 @ScreenPreviews
@@ -81,48 +71,28 @@ private fun TransactionListPendingPreview() = Frame(pendingMode(populated(withRe
 private fun TransactionListPendingEmptyPreview() =
     Frame(pendingMode(populated(withReimbursement = true)).copy(days = emptyList()))
 
+// t2 is pending, t6 is a plain expense: the sheet opens on the choice of the edited row.
 @PreviewTest
 @Preview(name = "Light", device = PHONE)
 @Preview(name = "Dark", device = PHONE, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun ReimbursementSheetPreview() = SheetOverList(ReimbursementChoice.PENDING, hasSaveError = false)
+private fun ReimbursementSheetPreview() = Frame(populated(withReimbursement = true).copy(editingId = "t2"))
 
 @PreviewTest
 @Preview(name = "Light", device = PHONE)
 @Composable
-private fun ReimbursementSheetErrorPreview() = SheetOverList(ReimbursementChoice.NORMAL, hasSaveError = true)
-
-/** layoutlib has no second window: the sheet is drawn as its content over a scrim, like the other overlays. */
-@Composable
-private fun SheetOverList(
-    selected: ReimbursementChoice,
-    hasSaveError: Boolean,
-) {
-    Box {
-        Frame(populated(withReimbursement = true))
-        FinoteTheme(dynamicColor = false) {
-            Box(
-                modifier = Modifier.fillMaxSize().background(FinoteTheme.scheme.scrim.copy(alpha = SCRIM_ALPHA)),
-                contentAlignment = Alignment.BottomCenter,
-            ) {
-                val spacing = FinoteTheme.spacing
-                SheetSurface(
-                    contentPadding = PaddingValues(start = spacing.lg, end = spacing.lg, bottom = spacing.lg),
-                ) {
-                    ReimbursementSheetContent(selected = selected, hasSaveError = hasSaveError, onPick = {})
-                }
-            }
-        }
-    }
-}
+private fun ReimbursementSheetErrorPreview() =
+    Frame(populated(withReimbursement = true).copy(editingId = "t6", hasSaveError = true))
 
 @Composable
 private fun Frame(state: TransactionListState) {
     FinoteTheme(dynamicColor = false) {
-        Box(Modifier.fillMaxSize().background(FinoteTheme.colors.background).statusBarsPadding()) {
+        // The padding goes on the screen, not the Box: the open sheet then covers the status bar area too.
+        Box(Modifier.fillMaxSize().background(FinoteTheme.colors.background)) {
             TransactionListScreen(
                 state = state,
                 onIntent = {},
+                modifier = Modifier.statusBarsPadding(),
                 contentPadding = PaddingValues(bottom = FinoteTheme.spacing.xxl),
             )
         }

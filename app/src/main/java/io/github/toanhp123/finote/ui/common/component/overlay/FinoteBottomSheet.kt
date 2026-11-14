@@ -20,9 +20,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalInspectionMode
 import com.composeunstyled.Scrim
 import com.composeunstyled.Sheet
 import com.composeunstyled.SheetDetent
@@ -33,10 +35,16 @@ import io.github.toanhp123.finote.ui.common.component.glass.finoteGlass
 import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviewSurface
 import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviews
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.first
 
 /**
  * An opaque sheet that slides up over a scrim. It closes on a swipe down, a tap outside or Back, and each of them
  * calls [onDismiss]; the caller then sets [isVisible] to false. A hide the caller starts does not call [onDismiss].
+ * [onDismissComplete] runs each time the sheet has settled hidden while [isVisible] is false, whoever started the hide,
+ * including the first composition with [isVisible] false. It never runs in previews.
  * [content] scrolls when it is taller than the screen.
  */
 @Composable
@@ -44,12 +52,14 @@ fun FinoteBottomSheet(
     isVisible: Boolean,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    onDismissComplete: () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val spacing = FinoteTheme.spacing
     ModalSheet(
         isVisible = isVisible,
         onDismiss = onDismiss,
+        onDismissComplete = onDismissComplete,
         modifier = modifier,
         contentPadding = PaddingValues(start = spacing.lg, end = spacing.lg, bottom = spacing.lg),
         content = content,
@@ -62,16 +72,40 @@ internal fun ModalSheet(
     isVisible: Boolean,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    onDismissComplete: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    if (LocalInspectionMode.current) {
+        if (isVisible) {
+            CompositionLocalProvider(LocalHazeState provides null) {
+                InlineOverlay(Alignment.BottomCenter) {
+                    SheetSurface(modifier = modifier, contentPadding = contentPadding, content = content)
+                }
+            }
+        }
+        return
+    }
     val state =
         rememberModalBottomSheetState(
             initialDetent = if (isVisible) SheetDetent.FullyExpanded else SheetDetent.Hidden,
             animationSpec = FinoteTheme.motion.standard,
         )
+    val currentOnDismissComplete by rememberUpdatedState(onDismissComplete)
     LaunchedEffect(isVisible) {
-        state.animateTo(if (isVisible) SheetDetent.FullyExpanded else SheetDetent.Hidden)
+        if (isVisible) {
+            state.animateTo(SheetDetent.FullyExpanded)
+            return@LaunchedEffect
+        }
+        try {
+            state.animateTo(SheetDetent.Hidden)
+        } catch (_: CancellationException) {
+            // The library's own dismiss or a drag interrupted our animation and finishes the hide itself. Only a
+            // cancelled effect (shown again, or left the composition) is a real cancel.
+            currentCoroutineContext().ensureActive()
+        }
+        snapshotFlow { state.currentDetent == SheetDetent.Hidden && state.isIdle }.first { it }
+        currentOnDismissComplete()
     }
     // The library also calls onDismiss when the caller hides the sheet; only a user dismiss may reach the caller.
     val visible by rememberUpdatedState(isVisible)

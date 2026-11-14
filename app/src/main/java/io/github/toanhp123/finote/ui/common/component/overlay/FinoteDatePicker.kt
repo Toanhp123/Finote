@@ -32,7 +32,8 @@ import java.time.LocalDate
 
 /**
  * Picks one day in a bottom sheet. The picker starts on [selected] each time it opens, and [onConfirm]
- * gets the chosen day; [onDismiss] covers Cancel, a swipe down, a tap outside and Back.
+ * gets the chosen day; [onDismiss] covers Cancel, a swipe down, a tap outside and Back. [onDismissComplete] runs
+ * once the sheet has finished closing (see [FinoteBottomSheet]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,10 +43,12 @@ fun FinoteDatePicker(
     onConfirm: (LocalDate) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    onDismissComplete: () -> Unit = {},
 ) {
     ModalSheet(
         isVisible = isVisible,
         onDismiss = onDismiss,
+        onDismissComplete = onDismissComplete,
         modifier = modifier,
         contentPadding = PaddingValues(bottom = FinoteTheme.spacing.lg),
     ) {

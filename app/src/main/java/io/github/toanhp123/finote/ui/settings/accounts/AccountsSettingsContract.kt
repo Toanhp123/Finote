@@ -4,19 +4,30 @@ import io.github.toanhp123.finote.domain.account.model.Account
 
 /**
  * [accounts] are the live ones: followed first by `sortOrder`, ignored last. [selected] is the account whose sheet is
- * open and [mergeTargets] are the live accounts of the same bank it could merge into. [pendingMerge] is source to
- * target while the merge dialog is open, with [mergeCount] transactions that would move. [trashableCount] is what
- * the ignore dialog would offer to trash.
+ * open and [mergeTargets] are the live accounts of the same bank it could merge into. [dialog] is the open
+ * confirmation, if any.
  */
 data class AccountsSettingsState(
     val accounts: List<Account> = emptyList(),
     val selected: Account? = null,
     val mergeTargets: List<Account> = emptyList(),
-    val pendingMerge: Pair<Account, Account>? = null,
-    val mergeCount: Int = 0,
-    val isIgnoreDialogOpen: Boolean = false,
-    val trashableCount: Int = 0,
+    val dialog: AccountsDialog? = null,
 )
+
+sealed interface AccountsDialog {
+    /** [count] is how many transactions would move from [source] to [target]. */
+    data class Merge(
+        val source: Account,
+        val target: Account,
+        val count: Int,
+    ) : AccountsDialog
+
+    /** [trashableCount] is what the dialog offers to trash; [shouldTrash] is the ticked option. */
+    data class Ignore(
+        val trashableCount: Int,
+        val shouldTrash: Boolean = false,
+    ) : AccountsDialog
+}
 
 sealed interface AccountsSettingsIntent {
     data class AccountClicked(
@@ -33,9 +44,11 @@ sealed interface AccountsSettingsIntent {
 
     data object IgnoreClicked : AccountsSettingsIntent
 
-    data class IgnoreConfirmed(
-        val shouldTrash: Boolean,
+    data class TrashToggled(
+        val isChecked: Boolean,
     ) : AccountsSettingsIntent
+
+    data object IgnoreConfirmed : AccountsSettingsIntent
 
     data object FollowAgainClicked : AccountsSettingsIntent
 

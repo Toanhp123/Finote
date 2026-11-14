@@ -48,12 +48,8 @@ class AccountsSettingsViewModel
                 }
 
                 AccountsSettingsIntent.SheetDismissed -> {
-                    setState {
-                        copy(
-                            selected = null,
-                            mergeTargets = emptyList(),
-                        ).withoutDialogs()
-                    }
+                    // mergeTargets stays so the sheet keeps its rows while it slides out; openSheet replaces it.
+                    setState { copy(selected = null).withoutDialogs() }
                 }
 
                 AccountsSettingsIntent.DialogDismissed -> {
@@ -72,8 +68,12 @@ class AccountsSettingsViewModel
                     askIgnore()
                 }
 
-                is AccountsSettingsIntent.IgnoreConfirmed -> {
-                    confirmIgnore(intent.shouldTrash)
+                is AccountsSettingsIntent.TrashToggled -> {
+                    toggleTrash(intent.isChecked)
+                }
+
+                AccountsSettingsIntent.IgnoreConfirmed -> {
+                    confirmIgnore()
                 }
 
                 AccountsSettingsIntent.FollowAgainClicked -> {
@@ -97,13 +97,13 @@ class AccountsSettingsViewModel
                 val count = countMergeMoves(source.id)
                 // The sheet may have closed while the count loaded.
                 if (state.value.selected?.id != source.id) return@launchCatching
-                setState { copy(pendingMerge = source to target, mergeCount = count) }
+                setState { copy(dialog = AccountsDialog.Merge(source, target, count)) }
             }
         }
 
         private fun confirmMerge() {
-            val (source, target) = state.value.pendingMerge ?: return
-            finishAction(AccountsSettingsEffect.Merged) { mergeAccounts(source.id, target.id) }
+            val merge = state.value.dialog as? AccountsDialog.Merge ?: return
+            finishAction(AccountsSettingsEffect.Merged) { mergeAccounts(merge.source.id, merge.target.id) }
         }
 
         private fun askIgnore() {
@@ -111,12 +111,18 @@ class AccountsSettingsViewModel
             launchCatching(onStorageError = ::sendActionFailed) {
                 val count = countTrashable(account.id)
                 if (state.value.selected?.id != account.id) return@launchCatching
-                setState { copy(isIgnoreDialogOpen = true, trashableCount = count) }
+                setState { copy(dialog = AccountsDialog.Ignore(trashableCount = count)) }
             }
         }
 
-        private fun confirmIgnore(shouldTrash: Boolean) {
+        private fun toggleTrash(isChecked: Boolean) =
+            setState { copy(dialog = (dialog as? AccountsDialog.Ignore)?.copy(shouldTrash = isChecked) ?: dialog) }
+
+        private fun confirmIgnore() {
             val account = state.value.selected ?: return
+            val dialog = state.value.dialog as? AccountsDialog.Ignore ?: return
+            // Ticked with nothing to trash must not trash: this is the only guard.
+            val shouldTrash = dialog.shouldTrash && dialog.trashableCount > 0
             finishAction(AccountsSettingsEffect.Ignored) { setIgnored(account.id, ignored = true, shouldTrash) }
         }
 
@@ -135,7 +141,7 @@ class AccountsSettingsViewModel
             success: AccountsSettingsEffect,
             block: suspend () -> Outcome<Unit, AccountError>,
         ) {
-            setState { copy(selected = null, mergeTargets = emptyList()).withoutDialogs() }
+            setState { copy(selected = null).withoutDialogs() }
             launchCatching(onStorageError = ::sendActionFailed) { sendEffect(effectOf(block(), success)) }
         }
 
@@ -157,6 +163,5 @@ class AccountsSettingsViewModel
                 AccountsSettingsEffect.ActionFailed
             }
 
-        private fun AccountsSettingsState.withoutDialogs() =
-            copy(pendingMerge = null, mergeCount = 0, isIgnoreDialogOpen = false, trashableCount = 0)
+        private fun AccountsSettingsState.withoutDialogs() = copy(dialog = null)
     }

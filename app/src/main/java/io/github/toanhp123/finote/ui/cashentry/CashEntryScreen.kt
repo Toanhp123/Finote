@@ -20,12 +20,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,7 +48,6 @@ import io.github.toanhp123.finote.ui.cashentry.component.CashKeypad
 import io.github.toanhp123.finote.ui.cashentry.component.CategoryList
 import io.github.toanhp123.finote.ui.cashentry.component.NotePage
 import io.github.toanhp123.finote.ui.cashentry.component.Selectors
-import io.github.toanhp123.finote.ui.common.ObserveEffects
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
 import io.github.toanhp123.finote.ui.common.component.control.FinoteIconButton
 import io.github.toanhp123.finote.ui.common.component.control.FinoteSegmented
@@ -61,10 +56,7 @@ import io.github.toanhp123.finote.ui.common.component.overlay.FinoteBottomSheet
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteCalendar
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
-import kotlinx.coroutines.delay
 
-// FinoteTheme.motion.standard is a spring with no fixed duration (about 200 ms), so wait a fixed time for the sheet.
-private const val SHEET_EXIT_MILLIS = 250L
 private const val PAGE_SLIDE_MILLIS = 300
 private const val PAGE_FADE_OUT_MILLIS = 90
 private const val PAGE_FADE_IN_MILLIS = 210
@@ -78,32 +70,15 @@ fun CashEntryRoute(
     onClose: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var isVisible by remember { mutableStateOf(true) }
-    // A user dismiss has already moved the sheet away, so there is nothing to wait for.
-    var isDismissedByUser by remember { mutableStateOf(false) }
-    val currentOnClose by rememberUpdatedState(onClose)
-    ObserveEffects(viewModel.effects) { effect ->
-        when (effect) {
-            CashEntryEffect.Close -> isVisible = false
-        }
-    }
-    LaunchedEffect(isVisible) {
-        if (!isVisible) {
-            if (!isDismissedByUser) delay(SHEET_EXIT_MILLIS)
-            currentOnClose()
-        }
-    }
     val keyboard = LocalSoftwareKeyboardController.current
     val closePage = {
         keyboard?.hide()
         viewModel.onIntent(CashEntryIntent.PageClosed)
     }
     FinoteBottomSheet(
-        isVisible = isVisible,
-        onDismiss = {
-            isDismissedByUser = true
-            viewModel.onIntent(CashEntryIntent.Dismissed)
-        },
+        isVisible = state.isVisible,
+        onDismiss = { viewModel.onIntent(CashEntryIntent.Dismissed) },
+        onDismissComplete = onClose,
     ) {
         BackHandler(enabled = state.page != CashEntryPage.KEYPAD, onBack = closePage)
         CashEntrySheet(state = state, onIntent = viewModel::onIntent, onPageClose = closePage)

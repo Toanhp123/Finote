@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import io.github.toanhp123.finote.R
+import io.github.toanhp123.finote.ui.PHONE
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
 import io.github.toanhp123.finote.ui.common.component.control.FinoteIconButton
 import io.github.toanhp123.finote.ui.common.component.display.FinoteEmptyState
@@ -37,7 +38,6 @@ import io.github.toanhp123.finote.ui.common.component.preview.PreviewRedArgb
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
-private const val PHONE = "spec:width=360dp,height=640dp"
 private const val SKELETON_HALFWAY = 0.5f
 private const val EXTRA_ROWS = 6
 
