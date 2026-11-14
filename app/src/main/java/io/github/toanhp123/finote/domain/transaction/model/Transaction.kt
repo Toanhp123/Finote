@@ -28,6 +28,8 @@ data class Transaction(
         require(feeAmount >= 0) { "feeAmount must not be negative" }
         if (type == TransactionType.TRANSFER) {
             require(toAccountId != null && toAccountId != accountId) { "transfer needs a different destination" }
+        } else {
+            require(toAccountId == null) { "only a transfer has a destination" }
         }
         require((type == TransactionType.ADJUSTMENT) == (adjustmentDirection != null)) {
             "only an adjustment has a direction, and it must have one"

@@ -1,7 +1,6 @@
 package io.github.toanhp123.finote.data.transaction.repository
 
 import io.github.toanhp123.finote.data.account.mapper.toDomain
-import io.github.toanhp123.finote.data.account.repository.AccountBalanceRebuilder
 import io.github.toanhp123.finote.data.database.FinoteDatabase
 import io.github.toanhp123.finote.data.database.mapStorageErrors
 import io.github.toanhp123.finote.data.database.storage
@@ -28,8 +27,7 @@ class TransactionRepositoryImpl
         clock: Clock,
     ) : TransactionRepository {
         private val transactions = db.transactionDao()
-        private val rebuilder =
-            AccountBalanceRebuilder(db.accountDao(), transactions, db.accountBalanceSnapshotDao(), clock)
+        private val ledger = LedgerWriter(db, clock)
 
         override suspend fun getTransaction(id: String): Transaction? = storage { transactions.getById(id)?.toDomain() }
 
@@ -56,11 +54,7 @@ class TransactionRepositoryImpl
             transactions.observeTransactions(accountId).map { rows -> rows.map { it.toDomain() } }.mapStorageErrors()
 
         override suspend fun add(transaction: Transaction) {
-            db.storageWrite {
-                val entity = transaction.toEntity()
-                transactions.insert(entity)
-                rebuilder.rebuild(entity.accountIds())
-            }
+            db.storageWrite { ledger.insert(transaction) }
         }
 
         override suspend fun reconcile(
@@ -91,7 +85,7 @@ class TransactionRepositoryImpl
                 val old = checkNotNull(transactions.getById(transaction.id))
                 val entity = transaction.toEntity()
                 transactions.update(entity)
-                rebuilder.rebuild(old.accountIds() + entity.accountIds())
+                ledger.rebuild(old.accountIds() + entity.accountIds())
             }
         }
 
@@ -103,7 +97,7 @@ class TransactionRepositoryImpl
                 val old = checkNotNull(transactions.getById(id))
                 if (old.deletedAt != null) return@storageWrite
                 transactions.update(old.copy(deletedAt = deletedAt, updatedAt = deletedAt))
-                rebuilder.rebuild(old.accountIds())
+                ledger.rebuild(old.accountIds())
             }
         }
 
@@ -130,8 +124,7 @@ class TransactionRepositoryImpl
                     updatedAt = now,
                     source = TransactionSource.ADJUSTMENT,
                 )
-            transactions.insert(adjustment.toEntity())
-            rebuilder.rebuild(setOf(accountId))
+            ledger.insert(adjustment)
             return adjustment
         }
 

@@ -2,16 +2,12 @@ package io.github.toanhp123.finote.data.notification.repository
 
 import io.github.toanhp123.finote.data.account.local.entity.AccountEntity
 import io.github.toanhp123.finote.data.account.mapper.toDomain
-import io.github.toanhp123.finote.data.account.repository.AccountBalanceRebuilder
 import io.github.toanhp123.finote.data.database.FinoteDatabase
 import io.github.toanhp123.finote.data.database.storage
 import io.github.toanhp123.finote.data.database.storageWrite
 import io.github.toanhp123.finote.data.notification.mapper.toDomain
-import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntity
-import io.github.toanhp123.finote.data.transaction.mapper.toDomain
+import io.github.toanhp123.finote.data.transaction.repository.LedgerWriter
 import io.github.toanhp123.finote.domain.account.model.Account
-import io.github.toanhp123.finote.domain.account.service.BalanceCalculator
-import io.github.toanhp123.finote.domain.account.service.anchoredInitialBalance
 import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
@@ -19,9 +15,11 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
-import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
+import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
+import io.github.toanhp123.finote.domain.transaction.service.TransactionRules
 import java.time.Clock
+import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 
@@ -33,8 +31,7 @@ class NotificationSettlementRepositoryImpl
     ) : NotificationSettlementRepository {
         private val logs = db.notificationLogDao()
         private val accounts = db.accountDao()
-        private val transactions = db.transactionDao()
-        private val rebuilder = AccountBalanceRebuilder(accounts, transactions, db.accountBalanceSnapshotDao(), clock)
+        private val ledger = LedgerWriter(db, clock)
 
         override suspend fun getPendingLogs(): List<NotificationLog> =
             storage { logs.getPending().map { it.toDomain() } }
@@ -63,8 +60,8 @@ class NotificationSettlementRepositoryImpl
                 val parsed = checkNotNull(bank.parsed) { "bank side has no parsed fields" }
                 val account =
                     resolveAccount(decision.account, now) ?: return@storageWrite SettlementError.AccountUnusable
-                transactions.insert(
-                    TransactionEntity(
+                val transaction =
+                    Transaction(
                         id = transactionId,
                         amount = parsed.amount,
                         feeAmount = 0L,
@@ -72,22 +69,20 @@ class NotificationSettlementRepositoryImpl
                         adjustmentDirection = null,
                         accountId = account.id,
                         toAccountId = null,
-                        categoryId = null,
                         timestamp = bank.postTime,
+                        deletedAt = null,
+                        createdAt = now,
+                        updatedAt = now,
                         merchantName = decision.merchant,
                         note = decision.note.orEmpty(),
                         source = TransactionSource.NOTIFICATION_PARSER,
-                        isExcludedFromAnalytics = false,
-                        reimbursementStatus = ReimbursementStatus.NONE,
-                        createdAt = now,
-                        updatedAt = now,
-                        deletedAt = null,
                         postBalance = parsed.postBalance,
                         notificationLogId = bank.id,
-                    ),
-                )
-                coldStart(account)
-                rebuilder.rebuild(setOf(account.id))
+                    )
+                TransactionRules
+                    .check(transaction, Instant.ofEpochMilli(now), setOf(account.id), categoryType = null)
+                    ?.let { return@storageWrite SettlementError.Refused(it) }
+                ledger.insert(transaction, coldStart = true)
                 settle(listOf(bank.id), NotificationStatus.CONFIRMED, transactionId)
                     ?: decision.walletSide?.let {
                         settle(
@@ -172,15 +167,6 @@ class NotificationSettlementRepositoryImpl
                 )
             accounts.insert(account)
             return account
-        }
-
-        /** The balance anchor of an uninitialized account fixes its start. A credit card has no anchor. */
-        private suspend fun coldStart(account: AccountEntity) {
-            if (account.isInitialized) return
-            val rows = transactions.getActiveByAccount(account.id).map { it.toDomain() }
-            BalanceCalculator.anchoredInitialBalance(account.toDomain(), rows)?.let {
-                accounts.update(account.copy(initialBalance = it, isInitialized = true))
-            }
         }
 
         private suspend fun settle(

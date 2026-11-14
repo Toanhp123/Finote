@@ -26,8 +26,8 @@ class SettlePendingLogsUseCase
     ) {
         /**
          * Plans the `PENDING` logs and runs each decision in order, each `book` in its own `tx.write`. A decision that
-         * throws or comes back with a [SettlementError] (stale data, rolled back) is skipped and the next decisions
-         * still run. Its logs stay `PENDING` and are retried, unless the log that carries it is older than
+         * throws or comes back with a [SettlementError] (stale or refused, rolled back) is skipped and the next
+         * decisions still run. Its logs stay `PENDING` and are retried, unless the log that carries it is older than
          * [STUCK_AFTER_MILLIS]: then they are written `FAILED` with [FAIL_SETTLE_ERROR] (if that write throws too,
          * they stay `PENDING`). Returns true when `PENDING` logs remain (the worker retries). Runs one at a time in
          * the whole process.

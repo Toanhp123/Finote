@@ -235,6 +235,19 @@ class TransactionDaoTest {
         }
 
     @Test
+    fun `account queries ignore toAccountId of a non-transfer row`() =
+        runTest {
+            seedAccount()
+            dbRule.db.accountDao().insert(account(id = "acc-2"))
+            // A raw entity has no invariant; the SQL must still equal Transaction.touches.
+            dao.insert(transaction(id = "tx-odd", accountId = "acc-1", toAccountId = "acc-2"))
+            assertEquals(emptyList<String>(), dao.getActiveByAccount("acc-2").map { it.id })
+            assertEquals(0, dao.countActiveByAccount("acc-2"))
+            assertEquals(emptyList<String>(), dao.observeTransactions("acc-2").first().map { it.id })
+            assertEquals(1, dao.countActiveByAccount("acc-1"))
+        }
+
+    @Test
     fun `countActiveByAccount counts source and destination and skips deleted`() =
         runTest {
             seedAccount()

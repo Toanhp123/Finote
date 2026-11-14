@@ -7,7 +7,7 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 ## 1. Hiện trạng (2026-11-15)
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2c (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Không có nhánh nào đang mở. Bước tiếp theo: bước 2 ở mục 5.
+- Không có nhánh nào đang mở. Bước tiếp theo: bước 3 ở mục 5.
 - Chưa từng chạy trên máy thật: toàn bộ P2. Bộ mẫu thông báo là mẫu tổng hợp (D4).
 - DB version 7, vẫn dùng `fallbackToDestructiveMigration`: đổi schema là mất dữ liệu.
 - Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: sửa giao dịch, tạo và sửa tài khoản, quản lý danh mục, dashboard.
@@ -41,7 +41,7 @@ Rà code ngày 2026-11-15. Mỗi dòng là một chỗ mà nhiều tính năng s
 
 | # | Nền móng | Hiện tại | Tính năng cần nó | Làm ở |
 |---|---|---|---|---|
-| N1 | **Một đường ghi sổ** | 3 đường ghi riêng: `AddTransactionUseCase` (có `TransactionRules`), `NotificationSettlementRepositoryImpl.book` (tự dựng `TransactionEntity`, không qua rule), `writeAdjustment` | Ghép chuyển khoản, failed-inbox, định kỳ, import, hoàn tiền, tự gán danh mục, FTS | Bước 2 |
+| N1 | **Một đường ghi sổ** | Xong: mọi dòng sổ chèn qua `LedgerWriter.insert`; `book` dựng `Transaction` và chạy `TransactionRules` trước khi ghi | Ghép chuyển khoản, failed-inbox, định kỳ, import, hoàn tiền, tự gán danh mục, FTS | Bước 2 |
 | N2 | **Form giao dịch dùng chung** | Sheet nhập tiền mặt chỉ tạo mới Chi và Thu | Chuyển, sửa giao dịch, failed-inbox (điền sẵn từ log), hoàn tiền, nhãn, tách giao dịch | Bước 3, 4 |
 | N3 | **Bộ so khớp** (matcher) | `SettlementPlanner` gắn cứng một kiểu ghép: ngân hàng + ví, cùng chiều, 30 giây | Ghép chuyển khoản; so "ứng viên với sổ" cho bóc lại log, failed-inbox, định kỳ, import | Bước 5 (tách vị từ), bước 11 (ứng viên với sổ) |
 | N4 | **Migration thật** | Đổi schema là xóa DB | Mọi nhánh thêm bảng hoặc cột sau khi có dữ liệu thật | Bước 6 |
@@ -65,7 +65,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | # | Nhánh | Loại | Dùng | Trạng thái |
 |---|---|---|---|---|
 | 1 | `chore/ui-components` | Dọn dẹp 5 (A12–A15) | | ✅ `c635487` |
-| 2 | `chore/ledger-write-path` | Nền móng N1 | | ⬜ |
+| 2 | `chore/ledger-write-path` | Nền móng N1 | | ✅ |
 | 3 | `feature/cash-transfer` | Việc tồn P1 | N1, N2 | ⬜ |
 | 4 | `feature/transaction-edit` | Must-Have (CRUD giao dịch) | N1, N2 | ⬜ |
 | 5 | `feature/transfer-pairing` (P2d) | Must-Have | N1, N3 | ⬜ |
@@ -225,6 +225,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-15 | Hash dòng bí mật dò ngược được OTP 6 số (nợ #4 cũ); OTA một khóa ghim, chưa xoay khóa | Bước 32 |
 | N-16 | Chuỗi `ja`, `zh-rCN` do máy viết, cần người bản ngữ xem | Trước bước 33 |
 | N-17 | Mục nhỏ của audit 2026-11-10: UI không dùng (`FinoteDatePicker`, `BalanceHeroCard`), test mẫu, `toString()` của log in nội dung, dependency thừa, test dùng đồng hồ thật | Bước 7 |
+| N-18 | Thông báo có `postTime` ngoài khoảng của `TransactionRules` bị `book` từ chối (`SettlementError.Refused`), nằm `PENDING` tới 1 giờ rồi mới `FAILED` với lý do chung; mỗi lần chạy thử lại vô ích. Chỉ xảy ra khi đồng hồ máy sai. Sửa: `planSettlement` ra `Fail` với lý do riêng, giữ kiểm tra ở `book` làm chốt chặn | Bước 5 |
 
 ## 7. Quyết định
 

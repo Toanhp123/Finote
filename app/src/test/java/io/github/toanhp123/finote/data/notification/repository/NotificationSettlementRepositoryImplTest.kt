@@ -20,6 +20,7 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParsedFields
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.service.planSettlement
+import io.github.toanhp123.finote.domain.transaction.error.TransactionError
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.test.runTest
@@ -52,7 +53,7 @@ class NotificationSettlementRepositoryImplTest {
     private fun log(
         id: String,
         postBalance: Long? = 950_000L,
-        postTime: Long = 1_000L,
+        postTime: Long = 1_000L, // offset from T0, so it stays inside the ledger time range
         status: NotificationStatus = NotificationStatus.PENDING,
     ) = NotificationLog(
         id = id,
@@ -61,8 +62,8 @@ class NotificationSettlementRepositoryImplTest {
         title = "t",
         content = "c",
         contentHash = "h-$id",
-        postTime = postTime,
-        receivedAt = postTime,
+        postTime = T0 + postTime,
+        receivedAt = T0 + postTime,
         status = status,
         failureReason = null,
         matchedRuleId = "rule",
@@ -123,7 +124,7 @@ class NotificationSettlementRepositoryImplTest {
             assertEquals(0L, tx.feeAmount)
             assertEquals(TransactionType.EXPENSE, tx.type)
             assertEquals(TransactionSource.NOTIFICATION_PARSER, tx.source)
-            assertEquals(1_000L, tx.timestamp)
+            assertEquals(T0 + 1_000L, tx.timestamp)
             assertEquals(950_000L, tx.postBalance)
             assertEquals("b1", tx.notificationLogId)
             assertEquals("Shop", tx.merchantName)
@@ -132,6 +133,20 @@ class NotificationSettlementRepositoryImplTest {
             val stored = storedLog("b1")
             assertEquals(NotificationStatus.CONFIRMED, stored.status)
             assertEquals("tx-1", stored.linkedTransactionId)
+        }
+
+    @Test
+    fun `book refuses a post time outside the ledger range and writes nothing`() =
+        runTest {
+            val bank = log("b1", postTime = 1_000L - T0) // epoch 1970, before the lower bound
+            seed(bank)
+
+            val error = bookInTx(book(bank))
+
+            assertEquals(SettlementError.Refused(TransactionError.InvalidTimestamp), error)
+            assertTrue(repo.getAccounts().isEmpty())
+            assertNull(dbRule.db.transactionDao().getById("tx-1"))
+            assertEquals(NotificationStatus.PENDING, storedLog("b1").status)
         }
 
     @Test
@@ -205,7 +220,7 @@ class NotificationSettlementRepositoryImplTest {
                 account(bankPackageName = PKG, accountNumberMask = "1234").copy(isInitialized = false),
             )
             // Same timestamp as the booked row; it is created later, so the shared order puts it after the anchor.
-            dbRule.db.transactionDao().insert(transaction(id = "manual", accountId = "acc-1", timestamp = 1_000L))
+            dbRule.db.transactionDao().insert(transaction(id = "manual", accountId = "acc-1", timestamp = T0 + 1_000L))
             val bank = log("b1")
             seed(bank)
 
@@ -344,7 +359,13 @@ class NotificationSettlementRepositoryImplTest {
             assertEquals(NotificationStatus.PENDING, storedLog("b1").status)
 
             val replanned =
-                planSettlement(repo.getPendingLogs(), emptyList(), repo.getAccounts(), repo.getRulesById(), 1_000_000L)
+                planSettlement(
+                    repo.getPendingLogs(),
+                    emptyList(),
+                    repo.getAccounts(),
+                    repo.getRulesById(),
+                    T0 + 1_000_000L,
+                )
             val decision = replanned.single() as SettlementDecision.Book
             assertEquals(AccountTarget.Existing("c"), decision.account)
             repo.book(decision, "tx-2", NOW)
@@ -442,7 +463,7 @@ class NotificationSettlementRepositoryImplTest {
             dbRule.db.notificationLogDao().insert(linked)
 
             assertEquals(listOf("early", "late"), repo.getPendingLogs().map { it.id })
-            val settled = repo.getSettledLogsSince(1_000L)
+            val settled = repo.getSettledLogsSince(T0 + 1_000L)
             assertEquals(listOf("linked", "new"), settled.map { it.id }.sorted())
             assertEquals("tx-1", settled.single { it.id == "linked" }.linkedTransactionId)
             val parsed = settled.first().parsed
@@ -462,6 +483,7 @@ class NotificationSettlementRepositoryImplTest {
 
     private companion object {
         const val PKG = "com.test.bank"
-        const val NOW = 5_000L
+        const val T0 = 1_000_000_000_000L
+        const val NOW = T0 + 5_000L
     }
 }

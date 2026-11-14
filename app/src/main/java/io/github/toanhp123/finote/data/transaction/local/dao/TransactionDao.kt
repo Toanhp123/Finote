@@ -24,7 +24,8 @@ interface TransactionDao {
      * Same rule as `Transaction.touches`.
      */
     @Query(
-        "SELECT * FROM transactions WHERE deletedAt IS NULL AND (accountId = :accountId OR toAccountId = :accountId)",
+        "SELECT * FROM transactions WHERE deletedAt IS NULL AND " +
+            "(accountId = :accountId OR (type = 'TRANSFER' AND toAccountId = :accountId))",
     )
     suspend fun getActiveByAccount(accountId: String): List<TransactionEntity>
 
@@ -34,7 +35,7 @@ interface TransactionDao {
      */
     @Query(
         "SELECT COUNT(*) FROM transactions " +
-            "WHERE deletedAt IS NULL AND (accountId = :accountId OR toAccountId = :accountId)",
+            "WHERE deletedAt IS NULL AND (accountId = :accountId OR (type = 'TRANSFER' AND toAccountId = :accountId))",
     )
     suspend fun countActiveByAccount(accountId: String): Int
 
@@ -61,7 +62,8 @@ interface TransactionDao {
      */
     @Query(
         "SELECT * FROM transactions WHERE deletedAt IS NULL " +
-            "AND (:accountId IS NULL OR accountId = :accountId OR toAccountId = :accountId) " +
+            "AND (:accountId IS NULL OR accountId = :accountId " +
+            "OR (type = 'TRANSFER' AND toAccountId = :accountId)) " +
             "ORDER BY timestamp DESC, createdAt DESC, id DESC",
     )
     fun observeTransactions(accountId: String?): Flow<List<TransactionEntity>>

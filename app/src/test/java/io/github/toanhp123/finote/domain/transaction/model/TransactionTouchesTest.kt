@@ -4,6 +4,7 @@ import io.github.toanhp123.finote.domain.account.A
 import io.github.toanhp123.finote.domain.account.B
 import io.github.toanhp123.finote.domain.account.tx
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -21,8 +22,8 @@ class TransactionTouchesTest {
     }
 
     @Test
-    fun `non-transfer toAccountId is not touched`() {
-        assertFalse(tx(TransactionType.EXPENSE, 1, account = A, to = B).touches(B))
+    fun `non-transfer with a destination cannot be built`() {
+        assertThrows(IllegalArgumentException::class.java) { tx(TransactionType.EXPENSE, 1, account = A, to = B) }
     }
 
     @Test
