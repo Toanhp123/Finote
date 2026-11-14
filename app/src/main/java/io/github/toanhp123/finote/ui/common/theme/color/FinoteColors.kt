@@ -12,6 +12,8 @@ data class FinoteColors(
     val background: Color,
     val card: Color,
     val disabledAlpha: Float = 0.38f,
+    /** Still usable but de-emphasized, unlike [disabledAlpha]. */
+    val mutedAlpha: Float = 0.6f,
 )
 
 data class MoneyColorRole(

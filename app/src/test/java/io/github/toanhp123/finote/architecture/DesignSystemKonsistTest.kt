@@ -11,6 +11,7 @@ class DesignSystemKonsistTest {
                 """|\.dp\b|\.sp\b|\bTextStyle\(|\bRoundedCornerShape\(|\bBrush\.""",
         )
     private val manualFormat = Regex("""\bNumberFormat\b|\bDecimalFormat\b|\bString\.format\(|"\.format\(""")
+    private val dateFormatter = Regex("""\bDateTimeFormatter\b|\bSimpleDateFormat\b|\bDateFormat\.(?:format|get)""")
     private val publicComposable = Regex("""@Composable\s+(?:public\s+)?fun\s+(?:<[^>]+>\s+)?[A-Z]""")
     private val allowedMaterial = setOf("androidx.compose.material3.Text", "androidx.compose.material3.Icon")
     private val wrappedLibraries = listOf("androidx.compose.material3", HAZE, UNSTYLED)
@@ -39,6 +40,15 @@ class DesignSystemKonsistTest {
             .filterNot { it.packageName().inPackage(UI_FORMAT) }
             .assertTrue(strict = false, testName = "only the format package formats numbers") {
                 !manualFormat.containsMatchIn(it.codeText())
+            }
+    }
+
+    @Test
+    fun `ui files format dates only in the format package`() {
+        filesIn(UI)
+            .filterNot { it.packageName().inPackage(UI_FORMAT) }
+            .assertTrue(strict = false, testName = "ui files format dates only in the format package") {
+                !dateFormatter.containsMatchIn(it.codeText())
             }
     }
 

@@ -16,6 +16,7 @@ Code outside `ui/common/theme/` reads tokens through `FinoteTheme`. It never cal
 | Glass colors | `color/FinoteColors.kt` | `FinoteTheme.colors.glass.fill`, `.solidFill`, `.stroke` |
 | Screen background, card | `color/FinoteColors.kt` | `FinoteTheme.colors.background`, `FinoteTheme.colors.card` |
 | Disabled alpha | `color/FinoteColors.kt` | `FinoteTheme.colors.disabledAlpha` (0.38) |
+| Muted alpha | `color/FinoteColors.kt` | `FinoteTheme.colors.mutedAlpha` (0.6; usable but de-emphasized) |
 | Hero gradient | `FinoteBrushes.kt` | `FinoteTheme.brushes.hero` |
 | Dark flag | `FinoteTheme.kt` | `FinoteTheme.isDark` |
 | Text styles | `FinoteTypography.kt` | `FinoteTheme.typography.material.bodyLarge`, `.amountLarge`, `.amountMedium`, `.amountSmall` |
@@ -23,7 +24,7 @@ Code outside `ui/common/theme/` reads tokens through `FinoteTheme`. It never cal
 | Sizes | `FinoteSizes.kt` | `FinoteTheme.sizes.touchTarget`, `.iconMd`, `.avatar`, `.navBarHeight`, and more |
 | Radii | `FinoteRadii.kt` | `FinoteTheme.radii.md` (`Dp`: `sm` 12, `md` 16, `lg` 20, `xl` 24) |
 | Shapes | `FinoteShapes.kt` | `FinoteTheme.shapes.md` (`sm`, `md`, `lg`, `xl`, `full`, `sheet`) |
-| Motion | `FinoteMotion.kt` | `FinoteTheme.motion.standard`, `.emphasized`, `.emphasizedDecelerate`, `.pressedScale` (0.96), `.shimmerMillis` |
+| Motion | `FinoteMotion.kt` | `FinoteTheme.motion.standard`, `.emphasized`, `.emphasizedDecelerate`, `.pressedScale` (0.96), `.shimmerMillis`, `.pageSlideMillis` 300, `.pageFadeOutMillis` 90, `.pageFadeInMillis` 210, `.pageSlideOffset` (`Dp` 30) |
 | Category palette | `color/CategoryColors.kt` | `CategoryPalette` (14 colors; the only colors a user may pick) |
 
 - `FinoteTheme { }` is the root. It uses Dynamic Color on Android 12+ and the brand scheme (seed `#006A6A`, TonalSpot, in `color/BrandColors.kt`) on API 26-30. `dynamicColor = false` forces the brand scheme.
@@ -39,10 +40,10 @@ All are in `ui/common/component/<group>/`, one main component per file; a small 
 
 | Group | What goes there |
 |---|---|
-| `control/` | Input and actions: `FinoteButton`, `FinoteIconButton`, `FinoteTextField`, `FinoteSwitch`, `FinoteChip`, `FinoteSegmented`. `FinoteButtonStyle` is in `FinoteButton.kt` |
+| `control/` | Input and actions: `FinoteButton`, `FinoteIconButton`, `FinoteTextField`, `FinoteSwitch`, `FinoteSwitchRow`, `FinoteChip`, `FinoteSegmented`. `FinoteButtonStyle` is in `FinoteButton.kt` |
 | `overlay/` | Layers and messages: `FinoteBottomSheet`, `FinoteDialog`, `FinoteDatePicker`, `FinoteSnackbar` with its state in the same file, helper `DatePickerDates` |
 | `layout/` | Screen frame: `FinoteScaffold`, `FinoteTopBar`, `FinoteNavBar` (`FinoteNavItem` is in the same file) |
-| `display/` | Generic display with no finance meaning: `FinoteCard`, `FinoteListRow`, `FinoteEmptyState`, `FinoteSkeleton`, helper `ListRowLayout` |
+| `display/` | Generic display with no finance meaning: `FinoteCard`, `FinoteSection`, `FinoteListRow`, `FinoteEmptyState`, `FinoteSkeleton`, helper `ListRowLayout` |
 | `finance/` | Finance widgets: `BalanceHeroCard`, `TransactionRow`, `MoneyText`, `CategoryIcon` |
 | `glass/` | Glass effect infrastructure: `HazeLocals` (holds `LocalBlurEnabled`) |
 | `preview/` | Preview infrastructure: `FinotePreviews` (holds `FinotePreviewSurface`) |
@@ -62,10 +63,12 @@ A component file sits directly in one group. No group has a sub-group. `DesignSy
 | `FinoteIconButton` | `(iconRes, contentDescription, onClick, modifier, enabled)` | Icon-only action. 48dp touch target |
 | `FinoteTextField` | `(value, onValueChange, label, modifier, placeholder?, errorText?, maxLength?, singleLine, keyboardOptions, keyboardActions)` | Text input with label, hint, error, counter |
 | `FinoteSwitch` | `(checked, onCheckedChange, modifier, enabled)` | On/off setting. `onCheckedChange = null` draws it only; a `toggleable` parent owns the tap and the label |
+| `FinoteSwitchRow` | `(title, checked, onCheckedChange, modifier)` | A settings row with a title and a switch. The whole row is one `toggleable` target with `Role.Switch` |
 | `FinoteChip` | `(text, selected, onClick, modifier, iconRes?)` | Filter or single choice in a row |
 | `FinoteSegmented` | `<T>(options, selected, onSelect, label, modifier)` | Pick one of 2-3 modes (expense, income, transfer) |
 | `BalanceHeroCard` | `(label, balance, income, expense, modifier)` | The balance summary on a screen. See the gradient rule below |
 | `FinoteCard` | `(modifier, onClick?, content)` | Group content on a separate surface |
+| `FinoteSection` | `(title, modifier, content)` | A settings group: a heading label above a `FinoteCard` that holds the rows |
 | `FinoteListRow` | `(title, modifier, subtitle?, leading?, trailing?, onClick?)` | One list line. Trailing content drops below the title when the title gets too narrow |
 | `TransactionRow` | `(title, subtitle, amount, kind, iconRes, colorArgb, modifier, onClick?)` | One transaction in a list |
 | `CategoryIcon` | `(iconRes, colorArgb, contentDescription?, modifier)` | Category or account tile |
@@ -89,6 +92,7 @@ Konsist enforces these in `DesignSystemKonsistTest`, inside `testDebugUnitTest`:
 | 2 | No `MaterialTheme`, `Color(`, `Color.<Name>` (except `Transparent`, `Unspecified`), `.dp`, `.sp`, `TextStyle(`, `RoundedCornerShape(`, `Brush.` | `ui/`, not `ui/common/theme/` |
 | 3 | No `NumberFormat`, `DecimalFormat`, `String.format(`, `"...".format(` | all production code, not `ui/common/format/` |
 | 4 | A file with a public `@Composable` has `@FinotePreviews` | `ui/common/component/` |
+| 5 | No `DateTimeFormatter`. Every date is formatted in `ui/common/format/` (locale-aware) | `ui/`, not `ui/common/format/` |
 
 Rule 2 scans comments and strings too. `import` and `package` lines are skipped.
 

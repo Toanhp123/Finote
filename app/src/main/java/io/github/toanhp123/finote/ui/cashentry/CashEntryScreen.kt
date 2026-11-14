@@ -57,11 +57,7 @@ import io.github.toanhp123.finote.ui.common.component.overlay.FinoteCalendar
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
-private const val PAGE_SLIDE_MILLIS = 300
-private const val PAGE_FADE_OUT_MILLIS = 90
-private const val PAGE_FADE_IN_MILLIS = 210
 private const val FALLBACK_HEIGHT_FRACTION = 0.6f
-private const val PAGE_SLIDE_DP = 30f
 private val TypeOptions = listOf(TransactionType.EXPENSE, TransactionType.INCOME)
 
 @Composable
@@ -106,19 +102,19 @@ fun CashEntrySheet(
         } else {
             with(density) { (LocalWindowInfo.current.containerSize.height * FALLBACK_HEIGHT_FRACTION).toDp() }
         }
-    val slidePx = with(density) { Dp(PAGE_SLIDE_DP).roundToPx() }
-    val easing = FinoteTheme.motion.emphasizedDecelerate
+    val motion = FinoteTheme.motion
+    val slidePx = with(density) { motion.pageSlideOffset.roundToPx() }
     AnimatedContent(
         targetState = state.page,
         transitionSpec = {
             // Shared axis X: the old page fades out first, then the new one fades in, so they never overlap.
             val direction = if (targetState == CashEntryPage.KEYPAD) -1 else 1
-            val slide = tween<IntOffset>(PAGE_SLIDE_MILLIS, easing = easing)
+            val slide = tween<IntOffset>(motion.pageSlideMillis, easing = motion.emphasizedDecelerate)
             val enter =
                 slideInHorizontally(slide) { direction * slidePx } +
-                    fadeIn(tween(PAGE_FADE_IN_MILLIS, delayMillis = PAGE_FADE_OUT_MILLIS))
+                    fadeIn(tween(motion.pageFadeInMillis, delayMillis = motion.pageFadeOutMillis))
             val exit =
-                slideOutHorizontally(slide) { -direction * slidePx } + fadeOut(tween(PAGE_FADE_OUT_MILLIS))
+                slideOutHorizontally(slide) { -direction * slidePx } + fadeOut(tween(motion.pageFadeOutMillis))
             (enter togetherWith exit).using(SizeTransform(clip = false) { _, _ -> snap() })
         },
         label = "CashEntryPageTransition",

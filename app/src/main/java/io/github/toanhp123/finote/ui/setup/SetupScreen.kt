@@ -1,7 +1,5 @@
 package io.github.toanhp123.finote.ui.setup
 
-import android.content.Intent
-import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,16 +18,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.ObserveEffects
+import io.github.toanhp123.finote.ui.common.ReportListenerAccess
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButtonStyle
 import io.github.toanhp123.finote.ui.common.component.display.FinoteCard
-import io.github.toanhp123.finote.ui.common.isNotificationListenerEnabled
+import io.github.toanhp123.finote.ui.common.openListenerSettings
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 @Composable
@@ -40,15 +40,11 @@ fun SetupRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    // Every resume, so the screen notices the toggle the user flipped in the system settings.
-    LifecycleResumeEffect(viewModel) {
-        viewModel.onIntent(SetupIntent.Resumed(isNotificationListenerEnabled(context)))
-        onPauseOrDispose {}
-    }
+    ReportListenerAccess { viewModel.onIntent(SetupIntent.Resumed(it)) }
     ObserveEffects(viewModel.effects) { effect ->
         when (effect) {
             SetupEffect.OpenListenerSettings -> {
-                context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                openListenerSettings(context)
             }
 
             SetupEffect.Finished -> {
@@ -137,7 +133,10 @@ private fun SetupActions(
     ) {
         if (step == SetupStep.GRANTED) {
             Row(
-                modifier = Modifier.align(Alignment.CenterHorizontally),
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
                 horizontalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {

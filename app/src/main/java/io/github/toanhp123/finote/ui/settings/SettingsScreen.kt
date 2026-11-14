@@ -13,20 +13,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.ObserveEffects
-import io.github.toanhp123.finote.ui.common.component.display.FinoteCard
+import io.github.toanhp123.finote.ui.common.ReportListenerAccess
 import io.github.toanhp123.finote.ui.common.component.display.FinoteListRow
+import io.github.toanhp123.finote.ui.common.component.display.FinoteSection
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteTopBar
-import io.github.toanhp123.finote.ui.common.isNotificationListenerEnabled
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 @Composable
@@ -37,12 +33,7 @@ fun SettingsRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    // Every resume, so the row notices the toggle the user flipped in the system settings.
-    LifecycleResumeEffect(viewModel) {
-        viewModel.onIntent(SettingsIntent.Resumed(isNotificationListenerEnabled(context)))
-        onPauseOrDispose {}
-    }
+    ReportListenerAccess { viewModel.onIntent(SettingsIntent.Resumed(it)) }
     ObserveEffects(viewModel.effects) { effect ->
         when (effect) {
             SettingsEffect.OpenCaptureSettings -> onOpenCapture()
@@ -64,13 +55,7 @@ fun SettingsScreen(
             modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg),
             verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
         ) {
-            Text(
-                text = stringResource(R.string.settings_group_accounts),
-                modifier = Modifier.semantics { heading() },
-                color = FinoteTheme.scheme.onSurfaceVariant,
-                style = FinoteTheme.typography.material.labelMedium,
-            )
-            FinoteCard(modifier = Modifier.fillMaxWidth()) {
+            FinoteSection(title = stringResource(R.string.settings_group_accounts)) {
                 FinoteListRow(
                     title = stringResource(R.string.settings_accounts_title),
                     subtitle = stringResource(R.string.settings_accounts_subtitle),
@@ -79,13 +64,7 @@ fun SettingsScreen(
                     onClick = { onIntent(SettingsIntent.AccountsClicked) },
                 )
             }
-            Text(
-                text = stringResource(R.string.settings_group_capture),
-                modifier = Modifier.semantics { heading() },
-                color = FinoteTheme.scheme.onSurfaceVariant,
-                style = FinoteTheme.typography.material.labelMedium,
-            )
-            FinoteCard(modifier = Modifier.fillMaxWidth()) {
+            FinoteSection(title = stringResource(R.string.settings_group_capture)) {
                 FinoteListRow(
                     title = stringResource(R.string.settings_capture_title),
                     subtitle = captureSubtitle(state),

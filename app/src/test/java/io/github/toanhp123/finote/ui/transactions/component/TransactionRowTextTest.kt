@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.ui.transactions.component
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.domain.account.A
 import io.github.toanhp123.finote.domain.account.B
 import io.github.toanhp123.finote.domain.account.adjustment
@@ -9,12 +10,17 @@ import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import java.time.LocalDate
 import java.util.Locale
 
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [37])
 class TransactionRowTextTest {
-    private val today = LocalDate.of(2026, 11, 4)
+    private val today = LocalDate.of(2026, 11, 5)
     private val names = mapOf(A to "Vietcombank", B to "MoMo", "cash" to "Tiền mặt")
     private val deleted = "Tài khoản đã xóa"
     private val pendingLabel = "Chờ trả"
@@ -25,17 +31,55 @@ class TransactionRowTextTest {
     @Test
     fun `today and yesterday have their own labels`() {
         assertEquals(DayLabel.Today, label(today))
-        assertEquals(DayLabel.Yesterday, label(LocalDate.of(2026, 11, 3)))
+        assertEquals(DayLabel.Yesterday, label(LocalDate.of(2026, 11, 4)))
     }
 
     @Test
     fun `older day in the same year has weekday and day month`() {
-        assertEquals(DayLabel.Date("Mon, 02/11"), label(LocalDate.of(2026, 11, 2)))
+        assertEquals(DayLabel.Date("Mon, 11/02"), label(LocalDate.of(2026, 11, 2)))
+    }
+
+    @Test
+    fun `day label follows the locale`() {
+        assertEquals(
+            DayLabel.Date("Th 2, 02/11"),
+            dayLabel(LocalDate.of(2026, 11, 2), today, Locale.forLanguageTag("vi")),
+        )
+    }
+
+    @Test
+    fun `vietnamese day in another year carries the year`() {
+        assertEquals(
+            DayLabel.Date("Th 3, 04/11/2025"),
+            dayLabel(LocalDate.of(2025, 11, 4), today, Locale.forLanguageTag("vi")),
+        )
+    }
+
+    @Test
+    fun `japanese day label this year and other year`() {
+        assertEquals(DayLabel.Date("11/02(月)"), dayLabel(LocalDate.of(2026, 11, 2), today, Locale.JAPANESE))
+        assertEquals(DayLabel.Date("2025/11/04(火)"), dayLabel(LocalDate.of(2025, 11, 4), today, Locale.JAPANESE))
+    }
+
+    @Test
+    fun `simplified chinese day label this year and other year`() {
+        assertEquals(DayLabel.Date("11/02周一"), dayLabel(LocalDate.of(2026, 11, 2), today, Locale.SIMPLIFIED_CHINESE))
+        assertEquals(
+            DayLabel.Date("2025/11/04周二"),
+            dayLabel(LocalDate.of(2025, 11, 4), today, Locale.SIMPLIFIED_CHINESE),
+        )
+    }
+
+    @Test
+    fun `a date across the year boundary carries the year`() {
+        val label = dayLabel(LocalDate.of(2025, 12, 31), LocalDate.of(2026, 1, 2), Locale.ENGLISH)
+
+        assertTrue((label as DayLabel.Date).text.contains("2025"))
     }
 
     @Test
     fun `day in another year carries the year`() {
-        assertEquals(DayLabel.Date("Tue, 04/11/2025"), label(LocalDate.of(2025, 11, 4)))
+        assertEquals(DayLabel.Date("Tue, 11/04/2025"), label(LocalDate.of(2025, 11, 4)))
     }
 
     @Test

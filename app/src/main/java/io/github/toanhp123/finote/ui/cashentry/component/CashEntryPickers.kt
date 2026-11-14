@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,8 +28,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -44,11 +49,10 @@ import io.github.toanhp123.finote.ui.common.component.control.FinoteTextField
 import io.github.toanhp123.finote.ui.common.component.display.FinoteListRow
 import io.github.toanhp123.finote.ui.common.component.finance.CategoryIcon
 import io.github.toanhp123.finote.ui.common.format.displayName
+import io.github.toanhp123.finote.ui.common.format.formatMediumDate
 import io.github.toanhp123.finote.ui.common.format.iconRes
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 private const val CHILD_DEPTH = 1
 private const val NOTE_MAX_LINES = 2
@@ -125,14 +129,15 @@ private fun PickerRow(
         title = title,
         modifier = modifier.semantics { selected = isSelected },
         leading = icon?.let { { CategoryIcon(iconRes = it, colorArgb = colorArgb, contentDescription = null) } },
-        // The check is a glyph, so the selection does not rely on color alone.
+        // The check is an icon, so the selection does not rely on color alone.
         trailing =
             if (isSelected) {
                 {
-                    Text(
-                        text = "✓",
-                        color = FinoteTheme.scheme.primary,
-                        style = FinoteTheme.typography.material.titleMedium,
+                    Icon(
+                        painter = painterResource(R.drawable.ic_check),
+                        contentDescription = null,
+                        modifier = Modifier.size(FinoteTheme.sizes.iconMd),
+                        tint = FinoteTheme.scheme.primary,
                     )
                 }
             } else {
@@ -188,6 +193,7 @@ internal fun Selectors(
     Column(verticalArrangement = gap) {
         Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = gap) {
             SelectorRow(
+                label = stringResource(R.string.cash_entry_account),
                 text = accountText,
                 onClick = { onIntent(CashEntryIntent.PageOpened(CashEntryPage.ACCOUNT)) },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -195,6 +201,7 @@ internal fun Selectors(
                 colorArgb = account?.color ?: 0,
             )
             SelectorRow(
+                label = stringResource(R.string.cash_entry_category),
                 text = categoryText,
                 onClick = { onIntent(CashEntryIntent.PageOpened(CashEntryPage.CATEGORY)) },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -204,11 +211,13 @@ internal fun Selectors(
         }
         Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = gap) {
             SelectorRow(
+                label = stringResource(R.string.cash_entry_date),
                 text = dateLabel(state.date, state.isToday),
                 onClick = onDateClick,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             )
             SelectorRow(
+                label = stringResource(R.string.cash_entry_note),
                 text = state.note.ifBlank { stringResource(R.string.cash_entry_note) },
                 onClick = { onIntent(CashEntryIntent.PageOpened(CashEntryPage.NOTE)) },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -227,12 +236,13 @@ private fun dateLabel(
     return if (isToday) {
         stringResource(R.string.cash_entry_today)
     } else {
-        date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))
+        formatMediumDate(date, locale)
     }
 }
 
 @Composable
 private fun SelectorRow(
+    label: String,
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -248,6 +258,8 @@ private fun SelectorRow(
                 .background(FinoteTheme.colors.card)
                 .border(FinoteTheme.sizes.border, FinoteTheme.colors.glass.stroke, FinoteTheme.shapes.md)
                 .clickable(role = Role.Button, onClick = onClick)
+                // One node that reads "label, value"; an empty note shows the label as its text, so read it once.
+                .clearAndSetSemantics { contentDescription = if (text == label) label else "$label, $text" }
                 .padding(horizontal = FinoteTheme.spacing.md, vertical = FinoteTheme.spacing.xs),
         horizontalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,

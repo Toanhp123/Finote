@@ -33,9 +33,6 @@ import io.github.toanhp123.finote.ui.common.rememberLastNonNull
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import kotlinx.coroutines.launch
 
-/** Dimmed, not disabled: the text stays readable and the "Ignored" label carries the meaning. */
-private const val IGNORED_ALPHA = 0.6f
-
 @Composable
 fun AccountsSettingsRoute(
     viewModel: AccountsSettingsViewModel,
@@ -102,7 +99,7 @@ private fun AccountRow(
         if (account.bankPackageName == null) null else ({ onIntent(AccountsSettingsIntent.AccountClicked(account.id)) })
     FinoteListRow(
         title = displayName(account.name, account.nameKey),
-        modifier = if (account.isIgnored) Modifier.alpha(IGNORED_ALPHA) else Modifier,
+        modifier = if (account.isIgnored) Modifier.alpha(FinoteTheme.colors.mutedAlpha) else Modifier,
         subtitle = if (account.isIgnored) stringResource(R.string.accounts_ignored_label) else null,
         trailing = { MoneyText(amount = account.currentBalance, kind = MoneyKind.Neutral) },
         onClick = onClick,

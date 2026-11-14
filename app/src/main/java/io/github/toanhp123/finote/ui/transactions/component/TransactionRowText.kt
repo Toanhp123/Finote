@@ -5,8 +5,8 @@ import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
+import io.github.toanhp123.finote.ui.common.format.formatDayDate
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 fun dayLabel(
@@ -24,8 +24,7 @@ fun dayLabel(
         }
 
         else -> {
-            val pattern = if (date.year == today.year) "EEE, dd/MM" else "EEE, dd/MM/yyyy"
-            DayLabel.Date(DateTimeFormatter.ofPattern(pattern, locale).format(date))
+            DayLabel.Date(formatDayDate(date, today, locale))
         }
     }
 

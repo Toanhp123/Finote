@@ -1,10 +1,13 @@
 package io.github.toanhp123.finote.ui.common
 
 import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationManagerCompat
@@ -24,4 +27,22 @@ fun rememberNotificationListenerEnabled(): Boolean {
         onPauseOrDispose {}
     }
     return isEnabled
+}
+
+/**
+ * Reports the access state on every resume, so a screen notices the toggle the user flipped in the system settings.
+ */
+@Composable
+fun ReportListenerAccess(onResult: (Boolean) -> Unit) {
+    val context = LocalContext.current
+    val latest by rememberUpdatedState(onResult)
+    LifecycleResumeEffect(context) {
+        latest(isNotificationListenerEnabled(context))
+        onPauseOrDispose {}
+    }
+}
+
+/** Opens the system screen where the user grants Notification Listener access. */
+fun openListenerSettings(context: Context) {
+    context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
 }

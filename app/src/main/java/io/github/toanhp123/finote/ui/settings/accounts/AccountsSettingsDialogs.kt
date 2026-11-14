@@ -1,15 +1,12 @@
 package io.github.toanhp123.finote.ui.settings.accounts
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.domain.account.model.Account
-import io.github.toanhp123.finote.ui.common.component.control.FinoteSwitch
+import io.github.toanhp123.finote.ui.common.component.control.FinoteSwitchRow
 import io.github.toanhp123.finote.ui.common.component.display.FinoteListRow
 import io.github.toanhp123.finote.ui.common.component.finance.MoneyText
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteDialog
@@ -83,16 +80,15 @@ internal fun IgnoreDialog(
     )
 }
 
-/** The row owns the tap and announces its label with the state; the switch is only the picture. */
 @Composable
 internal fun TrashOption(
     count: Int,
     isChecked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
-    FinoteListRow(
+    FinoteSwitchRow(
         title = pluralStringResource(R.plurals.accounts_ignore_trash, count, count),
-        modifier = Modifier.toggleable(value = isChecked, role = Role.Switch, onValueChange = onCheckedChange),
-        trailing = { FinoteSwitch(checked = isChecked, onCheckedChange = null) },
+        checked = isChecked,
+        onCheckedChange = onCheckedChange,
     )
 }
