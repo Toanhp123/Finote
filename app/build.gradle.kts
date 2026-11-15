@@ -172,5 +172,7 @@ tasks.register("qualityGate") {
         "testDebugUnitTest",
         "testDebugScreenshotTestDefaultTestSuite",
         "assembleDebug",
+        // The only place R8 runs: catches R8 and release-only compile errors, not runtime reflection breaks.
+        "assembleRelease",
     )
 }

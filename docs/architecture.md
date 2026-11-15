@@ -170,7 +170,7 @@ Project rules, checked over all production code:
 git config core.hooksPath .githooks   # once per clone
 ```
 
-`qualityGate` depends on `spotlessCheck`, `detekt`, `detektMain`, `detektTest`, `lintDebug`, `testDebugUnitTest`, `testDebugScreenshotTestDefaultTestSuite`, `assembleDebug`.
+`qualityGate` depends on `spotlessCheck`, `detekt`, `detektMain`, `detektTest`, `lintDebug`, `testDebugUnitTest`, `testDebugScreenshotTestDefaultTestSuite`, `assembleDebug`, `assembleRelease`.
 
 | Layer | Tool | Enforces |
 |---|---|---|

@@ -65,12 +65,12 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | # | Nhánh | Loại | Dùng | Trạng thái |
 |---|---|---|---|---|
 | 1 | `chore/ui-components` | Dọn dẹp 5 (A12–A15) | | ✅ `c635487` |
-| 2 | `chore/ledger-write-path` | Nền móng N1 | | ✅ |
+| 2 | `chore/ledger-write-path` | Nền móng N1 | | ✅ `5fd95a6` |
 | 3 | `feature/cash-transfer` | Việc tồn P1 | N1, N2 | ⬜ |
 | 4 | `feature/transaction-edit` | Must-Have (CRUD giao dịch) | N1, N2 | ⬜ |
 | 5 | `feature/transfer-pairing` (P2d) | Must-Have | N1, N3 | ⬜ |
 | 6 | `chore/db-migrations` | Nền móng N4 | | ⬜ |
-| 7 | `chore/release-readiness` | Dọn dẹp 7 (A4, A17) | | ⬜ |
+| 7 | `chore/release-readiness` | Dọn dẹp 7 (A4, A17) | | ✅ |
 | 8 | `feature/debug-log-screen` | Công cụ (chỉ bản debug) | | ⬜ |
 | 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | ⏸ sau bước 8 |
 | 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ⏸ cần mẫu thật |
@@ -107,10 +107,13 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 - Đặt ngay trước dogfood để dữ liệu thật không mất.
 
 **7. `chore/release-readiness`** (A4, A17) — `assembleRelease` trong gate, keep rule cho Room, serialization, SQLCipher JNI; loại `app_setup.xml` khỏi backup.
+- Kết quả: không cần thêm keep rule, bản release build qua R8. Lý do: `optimization.packageScope` chỉ gồm `androidx`, `kotlin`, `kotlinx`, nên R8 không đụng code của app, Dagger, SQLCipher. Nới `packageScope` thì phải thêm keep rule cho Room `_Impl`, Hilt và tên lớp worker trước.
+- Chưa chạy APK release trên máy thật: bước 9 xác nhận.
 
 **8. `feature/debug-log-screen`** — màn chỉ có ở bản debug, xem `notification_logs` (trạng thái, lý do lỗi, rule khớp). Nội dung vẫn không ra Logcat.
 
 **9. Dogfood** — cài bản release lên máy thật, dùng 1 tuần. Việc phải làm:
+- Cần `signingConfig` cho bản release trước khi cài (khóa debug là đủ): `assembleRelease` hiện ra APK chưa ký, không cài được.
 - Gom mẫu thật (đã ẩn danh) của VCB, MB, MoMo, Techcombank vào corpus.
 - Xác nhận hoặc bác L1, L2 (mục 6) bằng mẫu thẻ ghi nợ VCB và MoMo nguồn ngân hàng.
 - Lấy mẫu thông báo cập nhật thêm dòng (A5) và nợ N-06.
@@ -224,7 +227,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-14 | `MainActivity` inject thẳng `SetupRepository`, đọc prefs trên main thread; `settleNow()` chạy mỗi `onCreate` (nợ #6 cũ) | Bước 30 |
 | N-15 | Hash dòng bí mật dò ngược được OTP 6 số (nợ #4 cũ); OTA một khóa ghim, chưa xoay khóa | Bước 32 |
 | N-16 | Chuỗi `ja`, `zh-rCN` do máy viết, cần người bản ngữ xem | Trước bước 33 |
-| N-17 | Mục nhỏ của audit 2026-11-10: UI không dùng (`FinoteDatePicker`, `BalanceHeroCard`), test mẫu, `toString()` của log in nội dung, dependency thừa, test dùng đồng hồ thật | Bước 7 |
+| N-17 | Mục nhỏ của audit 2026-11-10: UI không dùng (`FinoteDatePicker`, `BalanceHeroCard`), test mẫu, `toString()` của log in nội dung, dependency thừa, test dùng đồng hồ thật | Trước bước 9 |
 | N-18 | Thông báo có `postTime` ngoài khoảng của `TransactionRules` bị `book` từ chối (`SettlementError.Refused`), nằm `PENDING` tới 1 giờ rồi mới `FAILED` với lý do chung; mỗi lần chạy thử lại vô ích. Chỉ xảy ra khi đồng hồ máy sai. Sửa: `planSettlement` ra `Fail` với lý do riêng, giữ kiểm tra ở `book` làm chốt chặn | Bước 5 |
 
 ## 7. Quyết định
