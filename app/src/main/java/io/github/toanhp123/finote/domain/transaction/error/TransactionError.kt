@@ -22,6 +22,12 @@ sealed interface TransactionError {
      */
     data object InvalidTransfer : TransactionError
 
+    /** The amount is zero or negative. */
+    data object InvalidAmount : TransactionError
+
+    /** A type the form cannot write, such as an adjustment. */
+    data object UnsupportedType : TransactionError
+
     /** The balance math left the `Long` range. Nothing was written. */
     data object AmountOverflow : TransactionError
 }

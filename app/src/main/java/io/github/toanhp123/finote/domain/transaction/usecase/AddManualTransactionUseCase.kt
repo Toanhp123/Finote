@@ -3,8 +3,10 @@ package io.github.toanhp123.finote.domain.transaction.usecase
 import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.transaction.error.TransactionError
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
+import io.github.toanhp123.finote.domain.transaction.model.TransactionFields
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import io.github.toanhp123.finote.domain.transaction.service.TransactionRules
 import java.time.Clock
 import java.time.LocalDate
 import java.util.UUID
@@ -32,7 +34,10 @@ class AddManualTransactionUseCase
             feeAmount: Long = 0,
         ): Outcome<Unit, TransactionError> {
             // Refused here, so a bad combination is an error and never an exception from Transaction.init.
-            val refusal = refusalOf(type, accountId, categoryId, toAccountId, feeAmount, amount)
+            val refusal =
+                TransactionRules.checkFields(
+                    TransactionFields(amount, feeAmount, type, accountId, toAccountId, categoryId),
+                )
             if (refusal != null) return Outcome.Err(refusal)
             return add(
                 Transaction(
@@ -53,41 +58,6 @@ class AddManualTransactionUseCase
                 ),
             )
         }
-
-        private fun refusalOf(
-            type: TransactionType,
-            accountId: String,
-            categoryId: String?,
-            toAccountId: String?,
-            feeAmount: Long,
-            amount: Long,
-        ): TransactionError? =
-            when {
-                feeAmount < 0 -> {
-                    TransactionError.InvalidTransfer
-                }
-
-                type != TransactionType.TRANSFER -> {
-                    TransactionError.InvalidTransfer.takeIf { toAccountId != null || feeAmount != 0L }
-                }
-
-                toAccountId == null || toAccountId == accountId -> {
-                    TransactionError.InvalidTransfer
-                }
-
-                categoryId != null -> {
-                    TransactionError.InvalidTransfer
-                }
-
-                // The source pays amount + fee; refuse before the balance math would overflow.
-                amount > Long.MAX_VALUE - feeAmount -> {
-                    TransactionError.AmountOverflow
-                }
-
-                else -> {
-                    null
-                }
-            }
 
         private fun timestampOf(date: LocalDate): Long =
             if (date == LocalDate.now(clock)) {

@@ -6,6 +6,7 @@ import app.cash.turbine.test
 import io.github.toanhp123.finote.domain.account.A
 import io.github.toanhp123.finote.domain.account.B
 import io.github.toanhp123.finote.domain.account.C
+import io.github.toanhp123.finote.domain.account.adjustment
 import io.github.toanhp123.finote.domain.account.model.BalanceDrift
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.account.tx
@@ -18,21 +19,22 @@ import io.github.toanhp123.finote.domain.category.usecase.FakeCategoryRepository
 import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
 import io.github.toanhp123.finote.domain.common.FakeTransactionRunner
 import io.github.toanhp123.finote.domain.common.StorageException
+import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.usecase.AdjustBalanceDriftUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
-import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -64,10 +66,10 @@ class TransactionListViewModelTest {
             observeList = ObserveTransactionListUseCase(fakeTx, clock),
             observeAccounts = ObserveAccountsUseCase(accounts),
             observeCategories = ObserveCategoriesUseCase(categories),
-            updateTransaction = UpdateTransactionUseCase(fakeTx, FakeTransactionRunner(), clock),
             observeDrifts =
                 ObserveBalanceDriftUseCase(ObserveUsableAccountsUseCase(ObserveAccountsUseCase(accounts)), fakeTx),
             adjustBalanceDrift = AdjustBalanceDriftUseCase(fakeTx, FakeTransactionRunner(), clock),
+            deleteTransaction = DeleteTransactionUseCase(fakeTx, FakeTransactionRunner(), clock),
             clock = clock,
             isDebuggable = true,
         )
@@ -214,195 +216,15 @@ class TransactionListViewModelTest {
     private fun row(
         id: String,
         type: TransactionType = TransactionType.EXPENSE,
-        account: String = A,
         status: ReimbursementStatus = ReimbursementStatus.NONE,
     ): Transaction =
-        tx(type, 10_000, account = account, at = ROW_AT)
+        tx(type, 10_000, at = ROW_AT)
             .copy(id = id, reimbursementStatus = status, isExcludedFromAnalytics = status != ReimbursementStatus.NONE)
 
     private fun store(vararg rows: Transaction) {
         rows.forEach { fakeTx.stored[it.id] = it }
         fakeTx.transactionsFlow.value = rows.toList()
     }
-
-    @Test
-    fun `expense row click opens the sheet and an income row click does nothing`() =
-        runTest(mainRule.dispatcher) {
-            seed()
-            store(row("e"), row("i", TransactionType.INCOME))
-            val vm = open()
-
-            vm.onIntent(TransactionListIntent.RowClicked("i"))
-            assertNull(vm.state.value.editingId)
-            vm.onIntent(TransactionListIntent.RowClicked("e"))
-
-            assertEquals("e", vm.state.value.editingId)
-        }
-
-    @Test
-    fun `picking a choice writes the fields and closes the sheet`() =
-        runTest(mainRule.dispatcher) {
-            seed()
-            store(row("e"))
-            val vm = open()
-            vm.onIntent(TransactionListIntent.RowClicked("e"))
-
-            vm.onIntent(TransactionListIntent.ReimbursementPicked(ReimbursementChoice.PENDING))
-            runCurrent()
-
-            val saved = fakeTx.stored.getValue("e")
-            assertEquals(ReimbursementStatus.PENDING, saved.reimbursementStatus)
-            assertTrue(saved.isExcludedFromAnalytics)
-            assertNull(vm.state.value.editingId)
-            assertFalse(vm.state.value.hasSaveError)
-
-            // The fake does not re-emit on a write, so feed the saved row back as the DB would.
-            fakeTx.transactionsFlow.value = listOf(saved)
-            runCurrent()
-            vm.onIntent(TransactionListIntent.RowClicked("e"))
-            vm.onIntent(TransactionListIntent.ReimbursementPicked(ReimbursementChoice.NORMAL))
-            runCurrent()
-
-            assertEquals(ReimbursementStatus.NONE, fakeTx.stored.getValue("e").reimbursementStatus)
-            assertFalse(fakeTx.stored.getValue("e").isExcludedFromAnalytics)
-        }
-
-    @Test
-    fun `picking the current choice writes nothing and closes the sheet`() =
-        runTest(mainRule.dispatcher) {
-            seed()
-            store(row("e"))
-            val vm = open()
-            vm.onIntent(TransactionListIntent.RowClicked("e"))
-
-            vm.onIntent(TransactionListIntent.ReimbursementPicked(ReimbursementChoice.NORMAL))
-            runCurrent()
-
-            assertEquals(0, fakeTx.writes)
-            assertNull(vm.state.value.editingId)
-        }
-
-    @Test
-    fun `a failed write keeps the sheet open with an error until it is dismissed`() =
-        runTest(mainRule.dispatcher) {
-            seed()
-            store(row("e"))
-            fakeTx.stored.remove("e") // the use case rejects a transaction it cannot find
-            val vm = open()
-            vm.onIntent(TransactionListIntent.RowClicked("e"))
-
-            vm.onIntent(TransactionListIntent.ReimbursementPicked(ReimbursementChoice.SETTLED))
-            runCurrent()
-
-            assertEquals("e", vm.state.value.editingId)
-            assertTrue(vm.state.value.hasSaveError)
-            assertEquals(0, fakeTx.writes)
-
-            // A new attempt clears the error first, so a repeated failure is announced again.
-            vm.onIntent(TransactionListIntent.ReimbursementPicked(ReimbursementChoice.PENDING))
-            assertFalse(vm.state.value.hasSaveError)
-            runCurrent()
-            assertTrue(vm.state.value.hasSaveError)
-
-            vm.onIntent(TransactionListIntent.SheetDismissed)
-
-            assertNull(vm.state.value.editingId)
-            assertFalse(vm.state.value.hasSaveError)
-        }
-
-    @Test
-    fun `storage failure on reimbursement write shows save error`() =
-        runTest(mainRule.dispatcher) {
-            seed()
-            store(row("e"))
-            val vm = open()
-            vm.onIntent(TransactionListIntent.RowClicked("e"))
-            fakeTx.failUpdate = StorageException(RuntimeException("disk"))
-
-            vm.onIntent(TransactionListIntent.ReimbursementPicked(ReimbursementChoice.PENDING))
-            runCurrent()
-
-            assertEquals("e", vm.state.value.editingId)
-            assertTrue(vm.state.value.hasSaveError)
-        }
-
-    @Test
-    fun `an odd excluded pair without a status is cleared by picking normal`() =
-        runTest(mainRule.dispatcher) {
-            seed()
-            store(row("e").copy(isExcludedFromAnalytics = true))
-            val vm = open()
-            vm.onIntent(TransactionListIntent.RowClicked("e"))
-
-            vm.onIntent(TransactionListIntent.ReimbursementPicked(ReimbursementChoice.NORMAL))
-            runCurrent()
-
-            assertEquals(1, fakeTx.writes)
-            assertFalse(fakeTx.stored.getValue("e").isExcludedFromAnalytics)
-            assertEquals(ReimbursementStatus.NONE, fakeTx.stored.getValue("e").reimbursementStatus)
-            assertNull(vm.state.value.editingId)
-        }
-
-    @Test
-    fun `a pick while a write is in flight is ignored`() =
-        runTest(mainRule.dispatcher) {
-            seed()
-            store(row("e"))
-            val vm = open()
-            vm.onIntent(TransactionListIntent.RowClicked("e"))
-
-            vm.onIntent(TransactionListIntent.ReimbursementPicked(ReimbursementChoice.PENDING))
-            vm.onIntent(TransactionListIntent.ReimbursementPicked(ReimbursementChoice.SETTLED))
-            runCurrent()
-
-            assertEquals(1, fakeTx.writes)
-            assertEquals(ReimbursementStatus.PENDING, fakeTx.stored.getValue("e").reimbursementStatus)
-        }
-
-    @Test
-    fun `an expense on an archived account does not open the sheet`() =
-        runTest(mainRule.dispatcher) {
-            seed()
-            store(row("e", account = B))
-            val vm = open()
-
-            vm.onIntent(TransactionListIntent.RowClicked("e"))
-
-            assertNull(vm.state.value.editingId)
-        }
-
-    @Test
-    fun `the sheet closes when its row leaves the list`() =
-        runTest(mainRule.dispatcher) {
-            seed()
-            store(row("e"), row("other"))
-            val vm = open()
-            vm.onIntent(TransactionListIntent.RowClicked("e"))
-            assertEquals("e", vm.state.value.editingId)
-
-            fakeTx.transactionsFlow.value = listOf(row("other"))
-            runCurrent()
-
-            assertNull(vm.state.value.editingId)
-            assertFalse(vm.state.value.hasSaveError)
-        }
-
-    @Test
-    fun `the sheet closes when the list fails`() =
-        runTest(mainRule.dispatcher) {
-            seed()
-            accounts.stored[C] = testAccount(C)
-            store(row("e"))
-            val vm = open()
-            vm.onIntent(TransactionListIntent.RowClicked("e"))
-
-            fakeTx.failObserve = StorageException(SQLiteException("disk"))
-            vm.onIntent(TransactionListIntent.SelectAccount(C))
-            runCurrent()
-
-            assertTrue(vm.state.value.hasError)
-            assertNull(vm.state.value.editingId)
-        }
 
     @Test
     fun `pending chip clears the account and an account clears the pending chip`() =
@@ -510,6 +332,138 @@ class TransactionListViewModelTest {
             runCurrent()
 
             assertEquals(A, fakeTx.adjustCalls.single().accountId)
+        }
+
+    private fun TestScope.click(
+        vm: TransactionListViewModel,
+        id: String,
+    ) {
+        vm.onIntent(TransactionListIntent.RowClicked(id))
+        runCurrent()
+    }
+
+    @Test
+    fun `a click on an expense, an income and a transfer sends OpenEditor`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            accounts.stored[C] = testAccount(C)
+            store(
+                row("e"),
+                row("i", TransactionType.INCOME),
+                tx(TransactionType.TRANSFER, 10_000, to = C, at = ROW_AT).copy(id = "t"),
+            )
+            val vm = open()
+
+            vm.effects.test {
+                listOf("e", "i", "t").forEach {
+                    click(vm, it)
+                    assertEquals(TransactionListEffect.OpenEditor(it), awaitItem())
+                }
+            }
+        }
+
+    @Test
+    fun `a row on an archived account sends nothing`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            store(tx(TransactionType.EXPENSE, 10_000, account = B, at = ROW_AT).copy(id = "old"))
+            val vm = open()
+
+            vm.effects.test {
+                click(vm, "old")
+                expectNoEvents()
+            }
+            assertNull(vm.state.value.deletingId)
+        }
+
+    @Test
+    fun `a transfer whose destination is archived sends nothing`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            store(tx(TransactionType.TRANSFER, 10_000, to = B, at = ROW_AT).copy(id = "t"))
+            val vm = open()
+
+            vm.effects.test {
+                click(vm, "t")
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `a click on an adjustment opens the confirm and sends no effect`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            store(adjustment(AdjustmentDirection.OUT, 10_000, at = ROW_AT).copy(id = "adj"))
+            val vm = open()
+
+            vm.effects.test {
+                click(vm, "adj")
+                expectNoEvents()
+            }
+            assertEquals("adj", vm.state.value.deletingId)
+        }
+
+    @Test
+    fun `confirm deletes the adjustment`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            store(adjustment(AdjustmentDirection.OUT, 10_000, at = ROW_AT).copy(id = "adj"))
+            val vm = open()
+            click(vm, "adj")
+
+            vm.onIntent(TransactionListIntent.DeleteConfirmed)
+            runCurrent()
+
+            assertNull(vm.state.value.deletingId)
+            assertNotNull(fakeTx.stored.getValue("adj").deletedAt)
+        }
+
+    @Test
+    fun `a failed delete sends DeleteFailed`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            store(adjustment(AdjustmentDirection.OUT, 10_000, at = ROW_AT).copy(id = "adj"))
+            fakeTx.failWrite = StorageException(SQLiteException("disk"))
+            val vm = open()
+            click(vm, "adj")
+
+            vm.effects.test {
+                vm.onIntent(TransactionListIntent.DeleteConfirmed)
+                runCurrent()
+                assertEquals(TransactionListEffect.DeleteFailed, awaitItem())
+            }
+            assertNull(vm.state.value.deletingId)
+        }
+
+    @Test
+    fun `a delete the use case refuses sends DeleteFailed`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            // In the list but not in the store: the use case answers NotFound.
+            fakeTx.transactionsFlow.value =
+                listOf(adjustment(AdjustmentDirection.OUT, 10_000, at = ROW_AT).copy(id = "adj"))
+            val vm = open()
+            click(vm, "adj")
+
+            vm.effects.test {
+                vm.onIntent(TransactionListIntent.DeleteConfirmed)
+                runCurrent()
+                assertEquals(TransactionListEffect.DeleteFailed, awaitItem())
+            }
+        }
+
+    @Test
+    fun `dismiss clears deletingId`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            store(adjustment(AdjustmentDirection.OUT, 10_000, at = ROW_AT).copy(id = "adj"))
+            val vm = open()
+            click(vm, "adj")
+
+            vm.onIntent(TransactionListIntent.DeleteDismissed)
+
+            assertNull(vm.state.value.deletingId)
+            assertNull(fakeTx.stored.getValue("adj").deletedAt)
         }
 }
 

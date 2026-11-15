@@ -6,6 +6,7 @@ import io.github.toanhp123.finote.domain.account.tx
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.error.TransactionError
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
+import io.github.toanhp123.finote.domain.transaction.model.TransactionFields
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -98,5 +99,79 @@ class TransactionRulesTest {
         assertEquals(TransactionError.InvalidTimestamp, check(bad, usable = emptySet()))
         assertEquals(TransactionError.AccountUnusable, check(inRange, usable = emptySet()))
         assertEquals(TransactionError.CategoryNotFound, check(inRange))
+    }
+
+    private fun fields(
+        amount: Long = 100L,
+        fee: Long = 0L,
+        type: TransactionType = TransactionType.EXPENSE,
+        to: String? = null,
+        categoryId: String? = null,
+    ) = TransactionFields(amount, fee, type, A, to, categoryId)
+
+    private fun transferFields(
+        amount: Long = 100L,
+        fee: Long = 0L,
+        to: String? = B,
+        categoryId: String? = null,
+    ) = fields(amount, fee, TransactionType.TRANSFER, to, categoryId)
+
+    @Test
+    fun `a non positive amount is InvalidAmount`() {
+        assertEquals(TransactionError.InvalidAmount, TransactionRules.checkFields(fields(amount = 0)))
+        assertEquals(TransactionError.InvalidAmount, TransactionRules.checkFields(fields(amount = -1)))
+    }
+
+    @Test
+    fun `an adjustment is UnsupportedType`() =
+        assertEquals(
+            TransactionError.UnsupportedType,
+            TransactionRules.checkFields(fields(type = TransactionType.ADJUSTMENT)),
+        )
+
+    @Test
+    fun `a negative fee is InvalidTransfer`() =
+        assertEquals(TransactionError.InvalidTransfer, TransactionRules.checkFields(fields(fee = -1)))
+
+    @Test
+    fun `an expense with a destination or a fee is InvalidTransfer`() {
+        assertEquals(TransactionError.InvalidTransfer, TransactionRules.checkFields(fields(to = B)))
+        assertEquals(TransactionError.InvalidTransfer, TransactionRules.checkFields(fields(fee = 1)))
+    }
+
+    @Test
+    fun `a bad transfer is InvalidTransfer`() {
+        assertEquals(TransactionError.InvalidTransfer, TransactionRules.checkFields(transferFields(to = null)))
+        assertEquals(TransactionError.InvalidTransfer, TransactionRules.checkFields(transferFields(to = A)))
+        assertEquals(
+            TransactionError.InvalidTransfer,
+            TransactionRules.checkFields(transferFields(categoryId = "c1")),
+        )
+    }
+
+    @Test
+    fun `a transfer whose amount plus fee overflows is AmountOverflow`() =
+        assertEquals(
+            TransactionError.AmountOverflow,
+            TransactionRules.checkFields(transferFields(amount = Long.MAX_VALUE, fee = 1)),
+        )
+
+    @Test
+    fun `valid fields are allowed`() {
+        assertNull(TransactionRules.checkFields(fields()))
+        assertNull(TransactionRules.checkFields(fields(type = TransactionType.INCOME, categoryId = "c1")))
+        assertNull(TransactionRules.checkFields(transferFields()))
+        assertNull(TransactionRules.checkFields(transferFields(fee = 3_300)))
+    }
+
+    @Test
+    fun `field checks run in order amount, type, transfer`() {
+        val all = fields(amount = 0, fee = -1, type = TransactionType.ADJUSTMENT)
+        assertEquals(TransactionError.InvalidAmount, TransactionRules.checkFields(all))
+        assertEquals(TransactionError.UnsupportedType, TransactionRules.checkFields(all.copy(amount = 1)))
+        assertEquals(
+            TransactionError.InvalidTransfer,
+            TransactionRules.checkFields(all.copy(amount = 1, type = TransactionType.TRANSFER)),
+        )
     }
 }

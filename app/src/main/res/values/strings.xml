@@ -7,6 +7,7 @@
     <string name="cd_back">Quay lại</string>
     <string name="action_ok">OK</string>
     <string name="action_cancel">Hủy</string>
+    <string name="action_delete">Xóa</string>
     <string name="sys_food">Ăn uống</string>
     <string name="sys_food_groceries">Đi chợ</string>
     <string name="sys_food_restaurants">Nhà hàng</string>
@@ -76,6 +77,9 @@
     <string name="cash_entry_error_overflow">Số quá lớn</string>
     <string name="cash_entry_error_save">Không lưu được, thử lại</string>
     <string name="cash_entry_done">Xong</string>
+    <string name="cash_entry_delete_cd">Xóa giao dịch</string>
+    <string name="cash_entry_delete_title">Xóa giao dịch này?</string>
+    <string name="cash_entry_delete_text">Số dư tài khoản sẽ được tính lại.</string>
     <string name="cash_entry_backspace">Xóa</string>
     <string name="cash_entry_tile_label">Ghi tiền mặt</string>
     <string name="cash_entry_shortcut_short">Ghi tiền mặt</string>
@@ -99,7 +103,6 @@
     <string name="reimbursement_normal">Bình thường</string>
     <string name="reimbursement_pending">Chờ trả</string>
     <string name="reimbursement_settled">Đã trả</string>
-    <string name="reimbursement_save_error">Không lưu được</string>
     <string name="transactions_empty_pending">Không có khoản chờ trả</string>
     <string name="setup_title">Tự động ghi giao dịch</string>
     <string name="setup_body">Finote đọc thông báo của app ngân hàng để tự ghi giao dịch.</string>
@@ -113,6 +116,9 @@
     <string name="setup_later">Để sau, tôi nhập tay</string>
     <string name="setup_granted">Đã bật</string>
     <string name="transactions_listener_off">Tự động ghi đang tắt. Bấm để bật.</string>
+    <string name="transactions_delete_adjustment_title">Xóa điều chỉnh này?</string>
+    <string name="transactions_delete_adjustment_text">Nếu số dư còn lệch, bạn có thể điều chỉnh lại.</string>
+    <string name="transactions_delete_error">Không xóa được. Thử lại.</string>
     <string name="settings_group_capture">TỰ ĐỘNG GHI</string>
     <string name="settings_capture_title">Ghi từ thông báo</string>
     <string name="settings_access_on">Bật</string>
@@ -140,6 +146,9 @@
     </plurals>
     <string name="capture_bank_edited">có chỉnh sửa của bạn</string>
     <string name="balance_drift_message">%1$s lệch %2$s so với ngân hàng</string>
+    <plurals name="balance_drift_others">
+        <item quantity="other">và %d tài khoản khác</item>
+    </plurals>
     <string name="balance_drift_adjust">Điều chỉnh</string>
     <string name="balance_drift_adjust_cd">Điều chỉnh số dư %1$s</string>
     <string name="settings_group_accounts">TÀI KHOẢN</string>

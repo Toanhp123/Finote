@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.ui.transactions
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,10 +17,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -30,11 +33,14 @@ import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import io.github.toanhp123.finote.ui.cashentry.CashEntryActivity
+import io.github.toanhp123.finote.ui.common.ObserveEffects
 import io.github.toanhp123.finote.ui.common.component.display.FinoteEmptyState
 import io.github.toanhp123.finote.ui.common.component.display.FinoteSkeleton
 import io.github.toanhp123.finote.ui.common.component.finance.MoneyText
 import io.github.toanhp123.finote.ui.common.component.finance.TransactionRow
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteTopBar
+import io.github.toanhp123.finote.ui.common.component.overlay.FinoteSnackbarState
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import io.github.toanhp123.finote.ui.common.format.displayName
 import io.github.toanhp123.finote.ui.common.format.iconRes
@@ -42,13 +48,13 @@ import io.github.toanhp123.finote.ui.common.rememberNotificationListenerEnabled
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.transactions.component.BalanceDriftBanner
 import io.github.toanhp123.finote.ui.transactions.component.DayLabel
+import io.github.toanhp123.finote.ui.transactions.component.DeleteAdjustmentDialog
 import io.github.toanhp123.finote.ui.transactions.component.ListenerOffBanner
-import io.github.toanhp123.finote.ui.transactions.component.ReimbursementSheet
 import io.github.toanhp123.finote.ui.transactions.component.TransactionFilterChips
 import io.github.toanhp123.finote.ui.transactions.component.dayLabel
 import io.github.toanhp123.finote.ui.transactions.component.moneyKindOf
-import io.github.toanhp123.finote.ui.transactions.component.reimbursementChoice
 import io.github.toanhp123.finote.ui.transactions.component.rowSubtitle
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 private const val SKELETON_ROWS = 6
@@ -56,11 +62,28 @@ private const val SKELETON_ROWS = 6
 @Composable
 fun TransactionListRoute(
     viewModel: TransactionListViewModel,
+    snackbarState: FinoteSnackbarState,
     onOpenSetup: () -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val deleteError = stringResource(R.string.transactions_delete_error)
+    ObserveEffects(viewModel.effects) { effect ->
+        when (effect) {
+            is TransactionListEffect.OpenEditor -> {
+                context.startActivity(
+                    CashEntryActivity.editIntent(context, effect.id),
+                )
+            }
+
+            TransactionListEffect.DeleteFailed -> {
+                scope.launch { snackbarState.show(deleteError) }
+            }
+        }
+    }
     TransactionListScreen(
         state = state,
         onIntent = viewModel::onIntent,
@@ -81,43 +104,39 @@ fun TransactionListScreen(
     isListenerOff: Boolean = false,
     onOpenSetup: () -> Unit = {},
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
-        FinoteTopBar(title = stringResource(R.string.tab_transactions))
-        if (isListenerOff) {
-            ListenerOffBanner(
-                onClick = onOpenSetup,
-                modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg, vertical = FinoteTheme.spacing.sm),
-            )
-        }
-        DriftBanners(state, onIntent)
-        if (state.isLoading) {
-            LoadingRows()
-        } else {
-            // The chips stay on an error: picking another account retries.
-            TransactionFilterChips(state, onIntent)
-            when {
-                state.hasError -> {
-                    FinoteEmptyState(R.drawable.ic_receipt_long, stringResource(R.string.transactions_error))
-                }
+    // The dialog is drawn after the body in the same Box, so an inline overlay (preview mode) covers the top bar.
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            FinoteTopBar(title = stringResource(R.string.tab_transactions))
+            if (isListenerOff) {
+                ListenerOffBanner(
+                    onClick = onOpenSetup,
+                    modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg, vertical = FinoteTheme.spacing.sm),
+                )
+            }
+            DriftBanners(state, onIntent)
+            if (state.isLoading) {
+                LoadingRows()
+            } else {
+                // The chips stay on an error: picking another account retries.
+                TransactionFilterChips(state, onIntent)
+                when {
+                    state.hasError -> {
+                        FinoteEmptyState(R.drawable.ic_receipt_long, stringResource(R.string.transactions_error))
+                    }
 
-                state.days.isEmpty() -> {
-                    FinoteEmptyState(R.drawable.ic_receipt_long, stringResource(state.emptyTitle()))
-                }
+                    state.days.isEmpty() -> {
+                        FinoteEmptyState(R.drawable.ic_receipt_long, stringResource(state.emptyTitle()))
+                    }
 
-                else -> {
-                    DayList(state, onIntent, contentPadding)
+                    else -> {
+                        DayList(state, onIntent, contentPadding)
+                    }
                 }
             }
         }
+        DeleteAdjustmentDialog(isVisible = state.deletingId != null, onIntent = onIntent)
     }
-    val editing = remember(state.days, state.editingId) { state.editingTransaction()?.reimbursementChoice() }
-    ReimbursementSheet(
-        isVisible = state.editingId != null,
-        selected = editing,
-        hasSaveError = state.hasSaveError,
-        onPick = { onIntent(TransactionListIntent.ReimbursementPicked(it)) },
-        onDismiss = { onIntent(TransactionListIntent.SheetDismissed) },
-    )
 }
 
 @Composable
@@ -126,15 +145,17 @@ private fun DriftBanners(
     onIntent: (TransactionListIntent) -> Unit,
 ) {
     val resources = LocalResources.current
-    state.drifts.forEach { drift ->
-        val account = state.accountsById[drift.accountId] ?: return@forEach
-        BalanceDriftBanner(
-            accountName = resources.displayName(account.name, account.nameKey),
-            difference = drift.difference,
-            onAdjust = { onIntent(TransactionListIntent.AdjustDrift(drift.accountId)) },
-            modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg, vertical = FinoteTheme.spacing.sm),
-        )
-    }
+    // One banner for the first drift; the rest only count, so many drifting accounts do not push the list away.
+    val shown = state.drifts.filter { it.accountId in state.accountsById }
+    val drift = shown.firstOrNull() ?: return
+    val account = state.accountsById.getValue(drift.accountId)
+    BalanceDriftBanner(
+        accountName = resources.displayName(account.name, account.nameKey),
+        difference = drift.difference,
+        onAdjust = { onIntent(TransactionListIntent.AdjustDrift(drift.accountId)) },
+        modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg, vertical = FinoteTheme.spacing.sm),
+        otherCount = shown.size - 1,
+    )
 }
 
 @StringRes
@@ -144,9 +165,6 @@ private fun TransactionListState.emptyTitle(): Int =
         selectedAccountId == null -> R.string.transactions_empty
         else -> R.string.transactions_empty_account
     }
-
-private fun TransactionListState.editingTransaction(): Transaction? =
-    days.asSequence().flatMap { it.transactions }.firstOrNull { it.id == editingId }
 
 @Composable
 private fun LoadingRows() {
@@ -165,12 +183,12 @@ private fun DayList(
     contentPadding: PaddingValues,
 ) {
     val resources = LocalResources.current
-    // An archived or missing account cannot be written to, so its rows do not open the sheet.
-    val openableAccountIds = remember(state.accounts) { state.accounts.mapTo(HashSet()) { it.id } }
     val accountNames =
         remember(state.accountsById, resources) {
             state.accountsById.mapValues { resources.displayName(it.value.name, it.value.nameKey) }
         }
+    // A row on an archived or ignored account stays read-only.
+    val openableAccountIds = remember(state.accounts) { state.accounts.mapTo(mutableSetOf()) { it.id } }
     LazyColumn(
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
@@ -178,13 +196,12 @@ private fun DayList(
         state.days.forEach { day ->
             item(key = "day-${day.date}") { DayHeader(day, state.today, showNet = !state.isPendingOnly) }
             items(day.transactions, key = { it.id }) { transaction ->
-                val canOpen = transaction.type == TransactionType.EXPENSE && transaction.accountId in openableAccountIds
                 TransactionItem(
                     transaction = transaction,
                     category = transaction.categoryId?.let(state.categoriesById::get),
                     accountNames = accountNames,
                     onClick =
-                        if (canOpen) {
+                        if (transaction.isOpenable(openableAccountIds)) {
                             { onIntent(TransactionListIntent.RowClicked(transaction.id)) }
                         } else {
                             null

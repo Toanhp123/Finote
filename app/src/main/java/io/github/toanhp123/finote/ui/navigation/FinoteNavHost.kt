@@ -64,6 +64,7 @@ fun FinoteNavHost(
                     entry<Transactions> {
                         TransactionListRoute(
                             viewModel = hiltViewModel(),
+                            snackbarState = snackbarState,
                             onOpenSetup = { openSetup(backStack) },
                             contentPadding = padding,
                         )

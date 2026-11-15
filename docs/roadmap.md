@@ -7,10 +7,10 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 ## 1. Hiện trạng (2026-11-15)
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2c (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Không có nhánh nào đang mở. Bước tiếp theo: bước 4 ở mục 5.
+- Không có nhánh nào đang mở. Bước tiếp theo: bước 5 ở mục 5.
 - Chưa từng chạy trên máy thật: toàn bộ P2. Bộ mẫu thông báo là mẫu tổng hợp (D4).
 - DB version 7, vẫn dùng `fallbackToDestructiveMigration`: đổi schema là mất dữ liệu.
-- Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: sửa giao dịch, tạo và sửa tài khoản, quản lý danh mục, dashboard.
+- Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: tạo và sửa tài khoản, quản lý danh mục, dashboard.
 
 ## 2. Nguyên tắc làm việc
 
@@ -42,7 +42,7 @@ Rà code ngày 2026-11-15. Mỗi dòng là một chỗ mà nhiều tính năng s
 | # | Nền móng | Hiện tại | Tính năng cần nó | Làm ở |
 |---|---|---|---|---|
 | N1 | **Một đường ghi sổ** | Xong: mọi dòng sổ chèn qua `LedgerWriter.insert`; `book` dựng `Transaction` và chạy `TransactionRules` trước khi ghi | Ghép chuyển khoản, failed-inbox, định kỳ, import, hoàn tiền, tự gán danh mục, FTS | Bước 2 |
-| N2 | **Form giao dịch dùng chung** | Sheet tạo mới Chi, Thu, Chuyển (đích, phí). Chưa có chế độ sửa | Chuyển, sửa giao dịch, failed-inbox (điền sẵn từ log), hoàn tiền, nhãn, tách giao dịch | Bước 3, 4 |
+| N2 | **Form giao dịch dùng chung** | Sheet tạo mới Chi, Thu, Chuyển (đích, phí). Đã có chế độ sửa | Chuyển, sửa giao dịch, failed-inbox (điền sẵn từ log), hoàn tiền, nhãn, tách giao dịch | Bước 3, 4 |
 | N3 | **Bộ so khớp** (matcher) | `SettlementPlanner` gắn cứng một kiểu ghép: ngân hàng + ví, cùng chiều, 30 giây | Ghép chuyển khoản; so "ứng viên với sổ" cho bóc lại log, failed-inbox, định kỳ, import | Bước 5 (tách vị từ), bước 11 (ứng viên với sổ) |
 | N4 | **Migration thật** | Đổi schema là xóa DB | Mọi nhánh thêm bảng hoặc cột sau khi có dữ liệu thật | Bước 6 |
 | N5 | **Định danh tài khoản** | Một khóa `(bankPackageName, accountNumberMask)` trên `Account`; gộp tài khoản nối qua `mergedIntoId` | Thẻ ghi nợ, MoMo nguồn ngân hàng, màn tài khoản (liên kết 4 số cuối), thẻ tín dụng, thêm ngân hàng | Bước 10 |
@@ -67,7 +67,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 1 | `chore/ui-components` | Dọn dẹp 5 (A12–A15) | | ✅ `c635487` |
 | 2 | `chore/ledger-write-path` | Nền móng N1 | | ✅ `5fd95a6` |
 | 3 | `feature/cash-transfer` | Việc tồn P1 | N1, N2 | ✅ |
-| 4 | `feature/transaction-edit` | Must-Have (CRUD giao dịch) | N1, N2 | ⬜ |
+| 4 | `feature/transaction-edit` | Must-Have (CRUD giao dịch) | N1, N2 | ✅ |
 | 5 | `feature/transfer-pairing` (P2d) | Must-Have | N1, N3 | ⬜ |
 | 6 | `chore/db-migrations` | Nền móng N4 | | ⬜ |
 | 7 | `chore/release-readiness` | Dọn dẹp 7 (A4, A17) | | ✅ |
@@ -92,6 +92,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 - Chốt chặn tổ hợp sai (`TransactionError.InvalidTransfer`) hiện nằm trong `AddManualTransactionUseCase`. Đường sửa dựng `Transaction` ở chỗ khác nên phải dùng chung chốt chặn đó, không để `Transaction.init` ném lỗi.
 - Bước 3 chưa thử trên máy thật: bàn phím số và focus ở trang phí, TalkBack đọc ô đích và ô phí, sheet cao lên ở chế độ Chuyển. Thử cùng lúc với form sửa.
 - Giữ nguyên `postBalance`, `source`, `notificationLogId` khi sửa.
+- `postBalance` bị xóa khi đổi tài khoản hoặc ngày.
 - Lý do đặt trước dogfood: không sửa được thì không chữa được giao dịch tự bắt sai.
 
 **5. `feature/transfer-pairing` (P2d, Module 7)** — quy trình: `superpowers:brainstorming` → `writing-plans`.
@@ -216,7 +217,6 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-01 | `parseMoney` bỏ dấu âm của số dư (thấu chi); đọc "100.50 USD" thành 100 đồng | Bước 10 |
 | N-02 | Gộp hai tài khoản đều không có mốc thì bỏ số dư đầu của nguồn | Bước 10 |
 | N-03 | Hai thông báo đến sai thứ tự gây báo lệch giả (sổ xếp theo `postTime`) | Bước 9 xem có xảy ra không |
-| N-04 | Nhiều banner lệch số dư đẩy danh sách xuống trên màn nhỏ; luồng báo lệch dừng hẳn nếu một tài khoản ném lỗi | Bước 4 |
 | N-05 | Một log có 4 số cuối và một log không có, cùng app, tạo hai tài khoản | Bước 10 |
 | N-06 | `vcb_card` có thể đọc hạn mức thẻ tín dụng thành số dư (nợ #8 cũ) | Bước 10 |
 | N-07 | Rule `isActive = false` vẫn lọc và vẫn tính để quyết định `NotTracked` | Bước 13 |

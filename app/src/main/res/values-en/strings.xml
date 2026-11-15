@@ -7,6 +7,7 @@
     <string name="cd_back">Back</string>
     <string name="action_ok">OK</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
     <string name="sys_food">Food &amp; Drinks</string>
     <string name="sys_food_groceries">Groceries</string>
     <string name="sys_food_restaurants">Restaurants</string>
@@ -76,6 +77,9 @@
     <string name="cash_entry_error_overflow">Number too large</string>
     <string name="cash_entry_error_save">Could not save, try again</string>
     <string name="cash_entry_done">Done</string>
+    <string name="cash_entry_delete_cd">Delete transaction</string>
+    <string name="cash_entry_delete_title">Delete this transaction?</string>
+    <string name="cash_entry_delete_text">The account balance will be recalculated.</string>
     <string name="cash_entry_backspace">Delete</string>
     <string name="cash_entry_tile_label">Cash entry</string>
     <string name="cash_entry_shortcut_short">Cash entry</string>
@@ -99,7 +103,6 @@
     <string name="reimbursement_normal">Normal</string>
     <string name="reimbursement_pending">Pending</string>
     <string name="reimbursement_settled">Repaid</string>
-    <string name="reimbursement_save_error">Couldn\'t save</string>
     <string name="transactions_empty_pending">Nothing pending</string>
     <string name="setup_title">Record transactions automatically</string>
     <string name="setup_body">Finote reads notifications from your bank apps to record transactions for you.</string>
@@ -113,6 +116,9 @@
     <string name="setup_later">Later, I\'ll enter them by hand</string>
     <string name="setup_granted">Turned on</string>
     <string name="transactions_listener_off">Auto-record is off. Tap to turn it on.</string>
+    <string name="transactions_delete_adjustment_title">Delete this adjustment?</string>
+    <string name="transactions_delete_adjustment_text">If the balance still differs, you can adjust again.</string>
+    <string name="transactions_delete_error">Could not delete. Try again.</string>
     <string name="settings_group_capture">AUTOMATIC CAPTURE</string>
     <string name="settings_capture_title">Capture from notifications</string>
     <string name="settings_access_on">On</string>
@@ -143,6 +149,10 @@
     </plurals>
     <string name="capture_bank_edited">has your edits</string>
     <string name="balance_drift_message">%1$s differs from the bank by %2$s</string>
+    <plurals name="balance_drift_others">
+        <item quantity="one">and %d other account</item>
+        <item quantity="other">and %d other accounts</item>
+    </plurals>
     <string name="balance_drift_adjust">Adjust</string>
     <string name="balance_drift_adjust_cd">Adjust balance of %1$s</string>
     <string name="settings_group_accounts">ACCOUNTS</string>

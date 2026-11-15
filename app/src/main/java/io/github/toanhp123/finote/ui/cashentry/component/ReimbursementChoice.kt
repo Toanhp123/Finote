@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.ui.transactions.component
+package io.github.toanhp123.finote.ui.cashentry.component
 
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
@@ -20,6 +20,3 @@ fun Transaction.reimbursementChoice(): ReimbursementChoice =
         ReimbursementStatus.PENDING -> ReimbursementChoice.PENDING
         ReimbursementStatus.SETTLED -> ReimbursementChoice.SETTLED
     }
-
-fun ReimbursementChoice.applyTo(transaction: Transaction): Transaction =
-    transaction.copy(isExcludedFromAnalytics = isExcludedFromAnalytics, reimbursementStatus = status)

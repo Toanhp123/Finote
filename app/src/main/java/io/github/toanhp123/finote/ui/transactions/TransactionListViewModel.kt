@@ -9,17 +9,13 @@ import io.github.toanhp123.finote.domain.account.usecase.ObserveBalanceDriftUseC
 import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
 import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.domain.common.Outcome
-import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.usecase.AdjustBalanceDriftUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
-import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
-import io.github.toanhp123.finote.ui.transactions.component.applyTo
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -37,18 +33,15 @@ class TransactionListViewModel
         observeList: ObserveTransactionListUseCase,
         observeAccounts: ObserveAccountsUseCase,
         observeCategories: ObserveCategoriesUseCase,
-        private val updateTransaction: UpdateTransactionUseCase,
         observeDrifts: ObserveBalanceDriftUseCase,
         private val adjustBalanceDrift: AdjustBalanceDriftUseCase,
+        private val deleteTransaction: DeleteTransactionUseCase,
         private val clock: Clock,
         @IsDebuggable isDebuggable: Boolean,
     ) : BaseViewModel<TransactionListState, TransactionListIntent, TransactionListEffect>(
             TransactionListState(today = LocalDate.now(clock)),
             isDebuggable,
         ) {
-        // The write in flight; another pick is ignored until it ends.
-        private var pickJob: Job? = null
-
         init {
             // The choices live in the handle only, so they survive process death.
             val selected = savedStateHandle.getStateFlow<String?>(SELECTED_ACCOUNT_KEY, null)
@@ -73,7 +66,7 @@ class TransactionListViewModel
                 }.catchStorage {
                     // Not retried: a DB-level failure, and the list flow shares the same DB.
                     // No message or cause is logged: the content is financial data.
-                    setState { copy(isLoading = false, hasError = true, editingId = null, hasSaveError = false) }
+                    setState { copy(isLoading = false, hasError = true) }
                 }.collect { (list, accountList, categoryList) ->
                     val id = list.accountId
                     val chips = accountList.filter(Account::isUsable)
@@ -83,8 +76,6 @@ class TransactionListViewModel
                     } else {
                         val dayList = list.days.orEmpty()
                         setState {
-                            // The open row is gone from the new list (deleted, changed, list failed): close its sheet.
-                            val isEditingKept = dayList.containsTransaction(editingId)
                             copy(
                                 isLoading = false,
                                 today = LocalDate.now(clock),
@@ -93,8 +84,6 @@ class TransactionListViewModel
                                 selectedAccountId = id,
                                 isPendingOnly = list.isPendingOnly,
                                 days = dayList,
-                                editingId = editingId.takeIf { isEditingKept },
-                                hasSaveError = hasSaveError && isEditingKept,
                                 accountsById = accountList.associateBy { it.id },
                                 categoriesById = categoryList.associateBy { it.id },
                             )
@@ -126,15 +115,15 @@ class TransactionListViewModel
                 }
 
                 is TransactionListIntent.RowClicked -> {
-                    openSheet(intent.id)
+                    openRow(intent.id)
                 }
 
-                is TransactionListIntent.ReimbursementPicked -> {
-                    pick(intent.choice)
+                TransactionListIntent.DeleteConfirmed -> {
+                    deleteAdjustment()
                 }
 
-                TransactionListIntent.SheetDismissed -> {
-                    setState { copy(editingId = null, hasSaveError = false) }
+                TransactionListIntent.DeleteDismissed -> {
+                    setState { copy(deletingId = null) }
                 }
 
                 is TransactionListIntent.AdjustDrift -> {
@@ -143,32 +132,34 @@ class TransactionListViewModel
             }
         }
 
-        private fun findTransaction(id: String) =
-            state.value.days
-                .asSequence()
-                .flatMap { it.transactions }
-                .firstOrNull { it.id == id }
+        // A row on an archived or ignored account is not openable: the editor could not pick it as a source.
+        private fun openRow(id: String) {
+            val current = state.value
+            val liveIds = current.accounts.mapTo(mutableSetOf()) { it.id }
+            val row = current.days.firstNotNullOfOrNull { day -> day.transactions.firstOrNull { it.id == id } }
+            when {
+                row == null || !row.isOpenable(liveIds) -> {}
 
-        // Only an expense on a live account can be reimbursable (the update use case rejects an archived account);
-        // the screen gives other rows no click, this guards the intent.
-        private fun openSheet(id: String) {
-            val transaction = findTransaction(id) ?: return
-            val isOnLiveAccount = state.value.accounts.any { it.id == transaction.accountId }
-            if (transaction.type == TransactionType.EXPENSE && isOnLiveAccount) {
-                setState { copy(editingId = id, hasSaveError = false) }
+                row.type == TransactionType.ADJUSTMENT -> {
+                    setState { copy(deletingId = id) }
+                }
+
+                else -> {
+                    sendEffect(TransactionListEffect.OpenEditor(id))
+                }
             }
         }
 
-        private fun pick(choice: ReimbursementChoice) {
-            val transaction = state.value.editingId?.let(::findTransaction)
-            if (pickJob?.isActive == true || transaction == null) return
-            val updated = choice.applyTo(transaction)
-            if (updated == transaction) {
-                setState { copy(editingId = null, hasSaveError = false) }
-            } else {
-                write(updated)
+        // Clearing deletingId first makes a second confirm do nothing. Nothing is logged: financial data.
+        private fun deleteAdjustment() {
+            val id = state.value.deletingId ?: return
+            setState { copy(deletingId = null) }
+            launchCatching(onStorageError = ::sendDeleteFailed) {
+                if (deleteTransaction(id) is Outcome.Err) sendDeleteFailed()
             }
         }
+
+        private fun sendDeleteFailed() = sendEffect(TransactionListEffect.DeleteFailed)
 
         // The drift flow re-emits once the adjustment lands, which removes the banner.
         private fun adjust(accountId: String) {
@@ -176,23 +167,6 @@ class TransactionListViewModel
             // so the user can tap again. Nothing is logged: the content is financial data.
             launchCatching(onStorageError = {}) { adjustBalanceDrift(accountId) }
         }
-
-        private fun write(updated: Transaction) {
-            // Cleared first, so a repeated failure changes the flag again and is announced again.
-            setState { copy(hasSaveError = false) }
-            pickJob =
-                launchCatching(onStorageError = ::showSaveError) {
-                    when (updateTransaction(updated)) {
-                        is Outcome.Ok -> setState { copy(editingId = null, hasSaveError = false) }
-                        is Outcome.Err -> showSaveError()
-                    }
-                }
-        }
-
-        private fun showSaveError() = setState { copy(hasSaveError = true) }
-
-        private fun List<TransactionDay>.containsTransaction(id: String?): Boolean =
-            id != null && any { day -> day.transactions.any { it.id == id } }
 
         /** The list for one filter choice; a null [days] is a failed list. */
         private data class Listing(

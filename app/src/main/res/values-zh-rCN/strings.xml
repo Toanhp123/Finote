@@ -7,6 +7,7 @@
     <string name="cd_back">返回</string>
     <string name="action_ok">确定</string>
     <string name="action_cancel">取消</string>
+    <string name="action_delete">删除</string>
     <string name="sys_food">餐饮</string>
     <string name="sys_food_groceries">买菜</string>
     <string name="sys_food_restaurants">餐厅</string>
@@ -76,6 +77,9 @@
     <string name="cash_entry_error_overflow">数字太大</string>
     <string name="cash_entry_error_save">无法保存，请重试</string>
     <string name="cash_entry_done">完成</string>
+    <string name="cash_entry_delete_cd">删除交易</string>
+    <string name="cash_entry_delete_title">删除这笔交易？</string>
+    <string name="cash_entry_delete_text">账户余额将重新计算。</string>
     <string name="cash_entry_backspace">删除</string>
     <string name="cash_entry_tile_label">记现金</string>
     <string name="cash_entry_shortcut_short">记现金</string>
@@ -99,7 +103,6 @@
     <string name="reimbursement_normal">普通</string>
     <string name="reimbursement_pending">待还款</string>
     <string name="reimbursement_settled">已还款</string>
-    <string name="reimbursement_save_error">无法保存</string>
     <string name="transactions_empty_pending">没有待还款项目</string>
     <string name="setup_title">自动记录交易</string>
     <string name="setup_body">Finote 读取银行应用的通知，自动为你记账。</string>
@@ -113,6 +116,9 @@
     <string name="setup_later">以后再说，我手动输入</string>
     <string name="setup_granted">已开启</string>
     <string name="transactions_listener_off">自动记录已关闭。点按开启。</string>
+    <string name="transactions_delete_adjustment_title">删除这条调整？</string>
+    <string name="transactions_delete_adjustment_text">如果余额仍有差异，可以再次调整。</string>
+    <string name="transactions_delete_error">无法删除，请重试。</string>
     <string name="settings_group_capture">自动记录</string>
     <string name="settings_capture_title">从通知记录</string>
     <string name="settings_access_on">开启</string>
@@ -140,6 +146,9 @@
     </plurals>
     <string name="capture_bank_edited">含你的修改</string>
     <string name="balance_drift_message">%1$s与银行相差%2$s</string>
+    <plurals name="balance_drift_others">
+        <item quantity="other">还有%d个其他账户</item>
+    </plurals>
     <string name="balance_drift_adjust">调整</string>
     <string name="balance_drift_adjust_cd">调整%1$s的余额</string>
     <string name="settings_group_accounts">账户</string>

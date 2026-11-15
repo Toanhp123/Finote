@@ -4,14 +4,12 @@ import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.BalanceDrift
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
-import io.github.toanhp123.finote.ui.transactions.component.ReimbursementChoice
 import java.time.LocalDate
 
 /**
  * [accounts] are the filter chips: not archived or ignored, by sortOrder. [accountsById] also holds those accounts,
  * so a row can still show their name. A null [selectedAccountId] means every account. [isPendingOnly] shows the rows
- * awaiting repayment of every account, so it excludes an account choice. [editingId] is the expense whose sheet is
- * open.
+ * awaiting repayment of every account, so it excludes an account choice.
  */
 data class TransactionListState(
     val isLoading: Boolean = true,
@@ -24,10 +22,10 @@ data class TransactionListState(
     val accountsById: Map<String, Account> = emptyMap(),
     val categoriesById: Map<String, Category> = emptyMap(),
     val isPendingOnly: Boolean = false,
-    val editingId: String? = null,
-    val hasSaveError: Boolean = false,
     /** Accounts whose balance disagrees with the bank's; each shows a banner with an adjust button. */
     val drifts: List<BalanceDrift> = emptyList(),
+    /** The balance adjustment waiting for the user to confirm its deletion; null shows no dialog. */
+    val deletingId: String? = null,
 )
 
 sealed interface TransactionListIntent {
@@ -41,16 +39,19 @@ sealed interface TransactionListIntent {
         val id: String,
     ) : TransactionListIntent
 
-    data class ReimbursementPicked(
-        val choice: ReimbursementChoice,
-    ) : TransactionListIntent
-
-    data object SheetDismissed : TransactionListIntent
-
     data class AdjustDrift(
         val accountId: String,
     ) : TransactionListIntent
+
+    data object DeleteConfirmed : TransactionListIntent
+
+    data object DeleteDismissed : TransactionListIntent
 }
 
-/** This screen sends no one-time command; the type exists for the contract rule and [BaseViewModel]. */
-sealed interface TransactionListEffect
+sealed interface TransactionListEffect {
+    data class OpenEditor(
+        val id: String,
+    ) : TransactionListEffect
+
+    data object DeleteFailed : TransactionListEffect
+}

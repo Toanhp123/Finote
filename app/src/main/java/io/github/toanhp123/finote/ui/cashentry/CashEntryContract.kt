@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.ui.cashentry
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import io.github.toanhp123.finote.ui.cashentry.component.ReimbursementChoice
 import java.time.LocalDate
 
 /**
@@ -30,6 +31,13 @@ data class CashEntryState(
     val hasSaveError: Boolean = false,
     /** False once the sheet should leave, after a save or a dismiss; the screen closes when the exit ends. */
     val isVisible: Boolean = true,
+    /** True when the sheet edits a stored transaction instead of adding one. */
+    val isEditing: Boolean = false,
+    /** True in edit mode until the stored row filled the form. */
+    val isLoading: Boolean = false,
+    /** Only an expense keeps it; the use case resets it for any other type. */
+    val reimbursement: ReimbursementChoice = ReimbursementChoice.NORMAL,
+    val isDeleteConfirmOpen: Boolean = false,
 ) {
     /** The accounts a transfer can go to: every live account except the source. */
     val destinationChoices: List<Account> get() = accounts.filter { it.id != selectedAccountId }
@@ -86,10 +94,22 @@ sealed interface CashEntryIntent {
     data object SaveClicked : CashEntryIntent
 
     data object Dismissed : CashEntryIntent
+
+    data class ReimbursementPicked(
+        val choice: ReimbursementChoice,
+    ) : CashEntryIntent
+
+    data object DeleteClicked : CashEntryIntent
+
+    data object DeleteConfirmed : CashEntryIntent
+
+    data object DeleteDismissed : CashEntryIntent
 }
 
-/** This screen sends no one-time command; the type exists for the contract rule and [BaseViewModel]. */
-sealed interface CashEntryEffect
+sealed interface CashEntryEffect {
+    /** The sheet was never shown, so the Activity must finish without the exit animation. */
+    data object Close : CashEntryEffect
+}
 
 /** The content the cash-entry sheet shows. Only [KEYPAD] shows the calculator keypad. */
 enum class CashEntryPage { KEYPAD, ACCOUNT, DESTINATION, CATEGORY, FEE, DATE, NOTE }

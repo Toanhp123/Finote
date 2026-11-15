@@ -7,6 +7,7 @@
     <string name="cd_back">戻る</string>
     <string name="action_ok">OK</string>
     <string name="action_cancel">キャンセル</string>
+    <string name="action_delete">削除</string>
     <string name="sys_food">飲食</string>
     <string name="sys_food_groceries">食料品</string>
     <string name="sys_food_restaurants">外食</string>
@@ -76,6 +77,9 @@
     <string name="cash_entry_error_overflow">数値が大きすぎます</string>
     <string name="cash_entry_error_save">保存できません。もう一度お試しください</string>
     <string name="cash_entry_done">完了</string>
+    <string name="cash_entry_delete_cd">取引を削除</string>
+    <string name="cash_entry_delete_title">この取引を削除しますか？</string>
+    <string name="cash_entry_delete_text">口座残高は再計算されます。</string>
     <string name="cash_entry_backspace">削除</string>
     <string name="cash_entry_tile_label">現金記録</string>
     <string name="cash_entry_shortcut_short">現金記録</string>
@@ -99,7 +103,6 @@
     <string name="reimbursement_normal">通常</string>
     <string name="reimbursement_pending">返済待ち</string>
     <string name="reimbursement_settled">返済済み</string>
-    <string name="reimbursement_save_error">保存できませんでした</string>
     <string name="transactions_empty_pending">返済待ちの項目はありません</string>
     <string name="setup_title">取引を自動で記録</string>
     <string name="setup_body">Finote は銀行アプリの通知を読み取り、取引を自動で記録します。</string>
@@ -113,6 +116,9 @@
     <string name="setup_later">あとで、手入力します</string>
     <string name="setup_granted">オンになりました</string>
     <string name="transactions_listener_off">自動記録がオフです。タップしてオンにします。</string>
+    <string name="transactions_delete_adjustment_title">この調整を削除しますか？</string>
+    <string name="transactions_delete_adjustment_text">残高がまだ合わない場合は、もう一度調整できます。</string>
+    <string name="transactions_delete_error">削除できませんでした。もう一度お試しください。</string>
     <string name="settings_group_capture">自動取り込み</string>
     <string name="settings_capture_title">通知から記録</string>
     <string name="settings_access_on">オン</string>
@@ -140,6 +146,9 @@
     </plurals>
     <string name="capture_bank_edited">あなたの編集あり</string>
     <string name="balance_drift_message">%1$sの残高が銀行と%2$sずれています</string>
+    <plurals name="balance_drift_others">
+        <item quantity="other">ほか%d件のアカウント</item>
+    </plurals>
     <string name="balance_drift_adjust">調整</string>
     <string name="balance_drift_adjust_cd">%1$sの残高を調整</string>
     <string name="settings_group_accounts">口座</string>

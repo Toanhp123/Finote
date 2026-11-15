@@ -46,12 +46,15 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.cashentry.component.AccountList
 import io.github.toanhp123.finote.ui.cashentry.component.CashKeypad
 import io.github.toanhp123.finote.ui.cashentry.component.CategoryList
+import io.github.toanhp123.finote.ui.cashentry.component.DeleteConfirmDialog
 import io.github.toanhp123.finote.ui.cashentry.component.FeePage
 import io.github.toanhp123.finote.ui.cashentry.component.NotePage
+import io.github.toanhp123.finote.ui.cashentry.component.ReimbursementRow
 import io.github.toanhp123.finote.ui.cashentry.component.Selectors
+import io.github.toanhp123.finote.ui.cashentry.component.TypeRow
+import io.github.toanhp123.finote.ui.common.ObserveEffects
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
 import io.github.toanhp123.finote.ui.common.component.control.FinoteIconButton
-import io.github.toanhp123.finote.ui.common.component.control.FinoteSegmented
 import io.github.toanhp123.finote.ui.common.component.display.FinoteEmptyState
 import io.github.toanhp123.finote.ui.common.component.finance.MoneyText
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteBottomSheet
@@ -60,7 +63,6 @@ import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 private const val FALLBACK_HEIGHT_FRACTION = 0.6f
-private val TypeOptions = listOf(TransactionType.EXPENSE, TransactionType.INCOME, TransactionType.TRANSFER)
 
 @Composable
 fun CashEntryRoute(
@@ -73,14 +75,19 @@ fun CashEntryRoute(
         keyboard?.hide()
         viewModel.onIntent(CashEntryIntent.PageClosed)
     }
+    // The row cannot be edited and the sheet was never shown: leave at once, without the exit animation.
+    ObserveEffects(viewModel.effects) { if (it is CashEntryEffect.Close) onClose() }
     FinoteBottomSheet(
-        isVisible = state.isVisible,
+        // Edit mode stays hidden until the row filled the form, so the create defaults never flash.
+        isVisible = state.isVisible && !state.isLoading,
         onDismiss = { viewModel.onIntent(CashEntryIntent.Dismissed) },
-        onDismissComplete = onClose,
+        // A sheet hidden from the first composition also reports "settled hidden"; that is not a close.
+        onDismissComplete = { if (!state.isLoading) onClose() },
     ) {
         BackHandler(enabled = state.page != CashEntryPage.KEYPAD, onBack = closePage)
         CashEntrySheet(state = state, onIntent = viewModel::onIntent, onPageClose = closePage)
     }
+    DeleteConfirmDialog(isVisible = state.isDeleteConfirmOpen, onIntent = viewModel::onIntent)
 }
 
 /**
@@ -273,25 +280,22 @@ private fun KeypadPage(
     onIntent: (CashEntryIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val expense = stringResource(R.string.cash_entry_expense)
-    val income = stringResource(R.string.cash_entry_income)
-    val transfer = stringResource(R.string.cash_entry_transfer)
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.md)) {
-        FinoteSegmented(
-            options = TypeOptions,
-            selected = state.type,
-            onSelect = { onIntent(CashEntryIntent.TypeChanged(it)) },
-            label = {
-                when (it) {
-                    TransactionType.INCOME -> income
-                    TransactionType.TRANSFER -> transfer
-                    else -> expense
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
+        TypeRow(
+            type = state.type,
+            onTypeChange = { onIntent(CashEntryIntent.TypeChanged(it)) },
+            isEditing = state.isEditing,
+            isSaving = state.isSaving,
+            onDelete = { onIntent(CashEntryIntent.DeleteClicked) },
         )
         AmountHeader(state)
         Selectors(state, onIntent, onDateClick = { onIntent(CashEntryIntent.PageOpened(CashEntryPage.DATE)) })
+        if (state.isEditing && state.type == TransactionType.EXPENSE) {
+            ReimbursementRow(
+                selected = state.reimbursement,
+                onPick = { onIntent(CashEntryIntent.ReimbursementPicked(it)) },
+            )
+        }
         CashKeypad(onKey = { onIntent(CashEntryIntent.KeyPressed(it)) })
         FinoteButton(
             text = stringResource(R.string.cash_entry_save),

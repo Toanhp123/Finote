@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.ui.cashentry
 
+import androidx.lifecycle.SavedStateHandle
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.account.usecase.FakeAccountRepository
 import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
@@ -16,8 +17,11 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
 import io.github.toanhp123.finote.domain.transaction.usecase.AddManualTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.AddTransactionUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
 import io.github.toanhp123.finote.domain.transaction.usecase.GetLastManualChoicesUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.GetTransactionUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -58,13 +62,21 @@ class CashEntryViewModelTest {
         ).forEach { categories.stored[it.id] = it }
     }
 
-    private fun TestScope.open(repo: TransactionRepository = transactions): CashEntryViewModel {
-        val add = AddTransactionUseCase(repo, FakeTransactionRunner(), clock)
+    private fun TestScope.open(
+        repo: TransactionRepository = transactions,
+        handle: SavedStateHandle = SavedStateHandle(),
+    ): CashEntryViewModel {
+        val runner = FakeTransactionRunner()
+        val add = AddTransactionUseCase(repo, runner, clock)
         return CashEntryViewModel(
+            handle,
             ObserveUsableAccountsUseCase(ObserveAccountsUseCase(accounts)),
             ObserveCategoriesUseCase(categories),
             GetLastManualChoicesUseCase(repo),
             AddManualTransactionUseCase(add, clock),
+            GetTransactionUseCase(repo),
+            UpdateTransactionUseCase(repo, runner, clock),
+            DeleteTransactionUseCase(repo, runner, clock),
             clock,
             isDebuggable = true,
         ).also { runCurrent() }
@@ -549,6 +561,21 @@ class CashEntryViewModelTest {
             assertEquals(TransactionType.INCOME, saved.type)
             assertNull(saved.toAccountId)
             assertEquals(0L, saved.feeAmount)
+        }
+
+    @Test
+    fun `create mode is unchanged`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            transactions.lastAccountId = BANK
+            transactions.lastCategoryIds[TransactionType.EXPENSE] = "c1"
+
+            val s = open().current
+
+            assertFalse(s.isEditing)
+            assertFalse(s.isLoading)
+            assertEquals(BANK, s.selectedAccountId)
+            assertEquals("c1", s.selectedCategoryIds[TransactionType.EXPENSE])
         }
 
     private companion object {

@@ -136,6 +136,21 @@ class AddManualTransactionUseCaseTest {
             assertEquals(Outcome.Ok(Unit), transfer(amount = Long.MAX_VALUE - 1L, fee = 1L))
         }
 
+    @Test
+    fun `a zero amount and an adjustment are errors, not exceptions`() =
+        runTest {
+            val day = LocalDate.of(2026, 11, 10)
+            assertEquals(
+                Outcome.Err(TransactionError.InvalidAmount),
+                addManual(0L, TransactionType.EXPENSE, ACCOUNT, null, day, ""),
+            )
+            assertEquals(
+                Outcome.Err(TransactionError.UnsupportedType),
+                addManual(5L, TransactionType.ADJUSTMENT, ACCOUNT, null, day, ""),
+            )
+            assertEquals(0, repo.writes)
+        }
+
     private companion object {
         const val ACCOUNT = "acc"
         const val OTHER = "acc-2"

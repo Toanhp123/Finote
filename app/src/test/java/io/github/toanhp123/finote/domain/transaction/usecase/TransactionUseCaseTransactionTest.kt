@@ -8,6 +8,9 @@ import io.github.toanhp123.finote.data.transaction.repository.TransactionReposit
 import io.github.toanhp123.finote.data.transaction.repository.domainTx
 import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.transaction.error.TransactionError
+import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
+import io.github.toanhp123.finote.domain.transaction.model.TransactionEdit
+import io.github.toanhp123.finote.domain.transaction.model.TransactionFields
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -17,6 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneOffset
 
 /** The transaction use cases on the real Room runner: the check and the write share one transaction. */
@@ -73,7 +77,16 @@ class TransactionUseCaseTransactionTest {
             val rowBefore = checkNotNull(transactions.getById("tx-1"))
             val snapshotsBefore = snapshots.getByAccount("acc-1")
 
-            val result = UpdateTransactionUseCase(repo, runner, clock)(income.copy(amount = 1_000L))
+            val edit =
+                TransactionEdit(
+                    fields = TransactionFields(1_000L, 0L, TransactionType.INCOME, "acc-1", null, null),
+                    date = LocalDate.of(2026, 11, 2),
+                    note = "",
+                    isExcludedFromAnalytics = false,
+                    reimbursementStatus = ReimbursementStatus.NONE,
+                )
+
+            val result = UpdateTransactionUseCase(repo, runner, clock)("tx-1", edit)
 
             assertEquals(Outcome.Err(TransactionError.AmountOverflow), result)
             assertEquals(rowBefore, transactions.getById("tx-1"))

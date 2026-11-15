@@ -1,6 +1,5 @@
 package io.github.toanhp123.finote.ui.transactions
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,6 +11,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.BalanceDrift
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
@@ -71,18 +71,25 @@ private fun TransactionListPendingPreview() = Frame(pendingMode(populated(withRe
 private fun TransactionListPendingEmptyPreview() =
     Frame(pendingMode(populated(withReimbursement = true)).copy(days = emptyList()))
 
-// t2 is pending, t6 is a plain expense: the sheet opens on the choice of the edited row.
 @PreviewTest
 @Preview(name = "Light", device = PHONE)
-@Preview(name = "Dark", device = PHONE, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun ReimbursementSheetPreview() = Frame(populated(withReimbursement = true).copy(editingId = "t2"))
+private fun TransactionListDeleteAdjustmentPreview() = Frame(populated().copy(deletingId = "t4"))
 
 @PreviewTest
 @Preview(name = "Light", device = PHONE)
 @Composable
-private fun ReimbursementSheetErrorPreview() =
-    Frame(populated(withReimbursement = true).copy(editingId = "t6", hasSaveError = true))
+private fun TransactionListDriftPreview() =
+    Frame(
+        populated().copy(
+            drifts =
+                listOf(
+                    BalanceDrift(bank.id, 50_000),
+                    BalanceDrift(cash.id, -20_000),
+                    BalanceDrift(momo.id, 10_000),
+                ),
+        ),
+    )
 
 @Composable
 private fun Frame(state: TransactionListState) {

@@ -12,6 +12,8 @@ import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import io.github.toanhp123.finote.ui.cashentry.component.DeleteConfirmDialog
+import io.github.toanhp123.finote.ui.cashentry.component.ReimbursementChoice
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteBottomSheet
 import io.github.toanhp123.finote.ui.common.component.preview.PreviewGreenArgb
 import io.github.toanhp123.finote.ui.common.component.preview.PreviewRedArgb
@@ -78,6 +80,31 @@ private fun CashEntryDivideByZeroPreview() =
         ),
     )
 
+@PreviewTest
+@CashEntryPreviews
+@Composable
+private fun CashEntryEditExpensePreview() =
+    SheetOverScrim(keypadState().copy(isEditing = true, reimbursement = ReimbursementChoice.PENDING))
+
+@PreviewTest
+@CashEntryPreviews
+@Composable
+private fun CashEntryEditTransferPreview() =
+    SheetOverScrim(
+        keypadState().copy(
+            isEditing = true,
+            type = TransactionType.TRANSFER,
+            accounts = listOf(cash, bank),
+            destinationId = bank.id,
+        ),
+    )
+
+@PreviewTest
+@CashEntryPreviews
+@Composable
+private fun CashEntryDeleteConfirmPreview() =
+    SheetOverScrim(keypadState().copy(isEditing = true, isDeleteConfirmOpen = true))
+
 @Composable
 private fun SheetOverScrim(state: CashEntryState) {
     FinoteTheme(dynamicColor = false) {
@@ -85,6 +112,8 @@ private fun SheetOverScrim(state: CashEntryState) {
             FinoteBottomSheet(isVisible = true, onDismiss = {}) {
                 CashEntrySheet(state = state, onIntent = {}, onPageClose = {})
             }
+            // Called last, as the route does, so its inline scrim covers the sheet.
+            DeleteConfirmDialog(isVisible = state.isDeleteConfirmOpen, onIntent = {})
         }
     }
 }

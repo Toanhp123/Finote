@@ -1,5 +1,7 @@
 package io.github.toanhp123.finote.ui.cashentry
 
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -27,5 +29,31 @@ class CashEntryActivity : AppCompatActivity() {
                 CashEntryRoute(viewModel, onClose = ::finish)
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // singleTask reuses this instance, and its ViewModel keeps the first id: another mode needs a fresh instance.
+        val current = this.intent.getStringExtra(EXTRA_TRANSACTION_ID)
+        if (shouldRestartFor(current, intent.getStringExtra(EXTRA_TRANSACTION_ID))) {
+            finish()
+            startActivity(intent)
+        }
+    }
+
+    companion object {
+        /** The id of the transaction to edit. Absent: the sheet adds a new one. */
+        const val EXTRA_TRANSACTION_ID = "transaction_id"
+
+        /** Another row or mode needs a fresh ViewModel; the same one keeps what the user typed. */
+        internal fun shouldRestartFor(
+            current: String?,
+            incoming: String?,
+        ): Boolean = current != incoming
+
+        fun editIntent(
+            context: Context,
+            id: String,
+        ): Intent = Intent(context, CashEntryActivity::class.java).putExtra(EXTRA_TRANSACTION_ID, id)
     }
 }

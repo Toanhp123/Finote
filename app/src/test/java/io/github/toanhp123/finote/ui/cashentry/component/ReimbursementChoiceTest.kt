@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.ui.transactions.component
+package io.github.toanhp123.finote.ui.cashentry.component
 
 import io.github.toanhp123.finote.domain.account.tx
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
@@ -16,23 +16,12 @@ class ReimbursementChoiceTest {
 
     @Test
     fun `each choice maps to its stored pair`() {
-        for (choice in ReimbursementChoice.entries) {
-            val written = choice.applyTo(expense)
-            assertEquals(choice, written.reimbursementChoice())
-        }
-        val normal = ReimbursementChoice.NORMAL.applyTo(expense)
-        assertEquals(false to ReimbursementStatus.NONE, normal.isExcludedFromAnalytics to normal.reimbursementStatus)
-        val pending = ReimbursementChoice.PENDING.applyTo(expense)
-        assertEquals(
-            true to ReimbursementStatus.PENDING,
-            pending.isExcludedFromAnalytics to pending.reimbursementStatus,
-        )
-        val settled = ReimbursementChoice.SETTLED.applyTo(expense)
-        assertEquals(
-            true to ReimbursementStatus.SETTLED,
-            settled.isExcludedFromAnalytics to settled.reimbursementStatus,
-        )
+        assertEquals(false to ReimbursementStatus.NONE, ReimbursementChoice.NORMAL.pair())
+        assertEquals(true to ReimbursementStatus.PENDING, ReimbursementChoice.PENDING.pair())
+        assertEquals(true to ReimbursementStatus.SETTLED, ReimbursementChoice.SETTLED.pair())
     }
+
+    private fun ReimbursementChoice.pair() = isExcludedFromAnalytics to status
 
     @Test
     fun `the stored pairs read back as their choice`() {
@@ -46,15 +35,5 @@ class ReimbursementChoiceTest {
         assertEquals(ReimbursementChoice.NORMAL, choiceOf(true, ReimbursementStatus.NONE))
         assertEquals(ReimbursementChoice.PENDING, choiceOf(false, ReimbursementStatus.PENDING))
         assertEquals(ReimbursementChoice.SETTLED, choiceOf(false, ReimbursementStatus.SETTLED))
-    }
-
-    @Test
-    fun `applying a choice keeps every other field`() {
-        val original = expense.copy(note = "keep", categoryId = "cat")
-
-        assertEquals(
-            original.copy(isExcludedFromAnalytics = true, reimbursementStatus = ReimbursementStatus.PENDING),
-            ReimbursementChoice.PENDING.applyTo(original),
-        )
     }
 }

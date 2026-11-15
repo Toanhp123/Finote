@@ -20,6 +20,13 @@ class ObserveBalanceDriftUseCase
                 observeUsableAccounts(),
                 transactionRepository.observeTransactions(null),
             ) { accounts, transactions ->
-                accounts.mapNotNull { detectBalanceDrift(it, transactions) }
+                // An account whose ledger overflows Long has no usable drift; it must not stop the others.
+                accounts.mapNotNull {
+                    try {
+                        detectBalanceDrift(it, transactions)
+                    } catch (_: ArithmeticException) {
+                        null
+                    }
+                }
             }
     }
