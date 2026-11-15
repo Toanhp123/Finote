@@ -16,6 +16,12 @@ sealed interface TransactionError {
     /** An expense needs an expense category, an income needs an income category. */
     data object CategoryTypeMismatch : TransactionError
 
+    /**
+     * The transfer fields do not fit the type: a transfer without a destination, to its own source, or with a
+     * category; or a destination or fee on another type; or a negative fee.
+     */
+    data object InvalidTransfer : TransactionError
+
     /** The balance math left the `Long` range. Nothing was written. */
     data object AmountOverflow : TransactionError
 }

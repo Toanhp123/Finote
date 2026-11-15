@@ -62,6 +62,13 @@
     <string name="cash_entry_category">カテゴリ</string>
     <string name="cash_entry_no_account">口座がありません</string>
     <string name="cash_entry_no_category">カテゴリなし</string>
+    <string name="cash_entry_transfer">振替</string>
+    <string name="cash_entry_to_account">振替先口座</string>
+    <string name="cash_entry_choose_account">口座を選択</string>
+    <string name="cash_entry_fee">手数料</string>
+    <string name="cash_entry_to_value">%1$sへ</string>
+    <string name="cash_entry_fee_value">手数料：%1$s</string>
+    <string name="cash_entry_no_destination">振替には口座が2つ以上必要です</string>
     <string name="cash_entry_date">日付</string>
     <string name="cash_entry_note">メモ</string>
     <string name="cash_entry_today">今日</string>

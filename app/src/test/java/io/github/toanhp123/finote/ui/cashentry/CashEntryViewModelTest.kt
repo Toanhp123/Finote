@@ -383,6 +383,174 @@ class CashEntryViewModelTest {
             assertEquals("70", viewModel.current.expression)
         }
 
+    private fun CashEntryViewModel.openTransfer(destination: String? = BANK) {
+        onIntent(CashEntryIntent.TypeChanged(TransactionType.TRANSFER))
+        destination?.let { onIntent(CashEntryIntent.DestinationPicked(it)) }
+    }
+
+    @Test
+    fun `saving a transfer sends destination and fee and no category`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            transactions.lastCategoryIds[TransactionType.EXPENSE] = "c1"
+            val viewModel = open()
+            viewModel.press(CalcKey.D5, CalcKey.D0, CalcKey.TRIPLE_ZERO)
+            viewModel.openTransfer()
+            viewModel.onIntent(CashEntryIntent.FeeChanged("1500"))
+
+            viewModel.onIntent(CashEntryIntent.SaveClicked)
+            runCurrent()
+
+            val saved = transactions.stored.values.single()
+            assertEquals(TransactionType.TRANSFER, saved.type)
+            assertEquals(50_000L, saved.amount)
+            assertEquals(CASH, saved.accountId)
+            assertEquals(BANK, saved.toAccountId)
+            assertEquals(1_500L, saved.feeAmount)
+            assertNull(saved.categoryId)
+            assertFalse(viewModel.current.isVisible)
+        }
+
+    @Test
+    fun `a transfer cannot be saved without a destination`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val viewModel = open()
+            viewModel.press(CalcKey.D5)
+            viewModel.openTransfer(destination = null)
+
+            assertFalse(viewModel.current.isSaveEnabled)
+            viewModel.onIntent(CashEntryIntent.SaveClicked)
+            runCurrent()
+            assertTrue(transactions.stored.isEmpty())
+
+            viewModel.onIntent(CashEntryIntent.DestinationPicked(BANK))
+            assertTrue(viewModel.current.isSaveEnabled)
+        }
+
+    @Test
+    fun `destination choices skip the source and a pick of the source is ignored`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val viewModel = open()
+            viewModel.openTransfer(destination = null)
+            viewModel.onIntent(CashEntryIntent.PageOpened(CashEntryPage.DESTINATION))
+
+            viewModel.onIntent(CashEntryIntent.DestinationPicked(CASH))
+
+            assertEquals(listOf(BANK), viewModel.current.destinationChoices.map { it.id })
+            assertNull(viewModel.current.destinationId)
+            assertEquals(CashEntryPage.DESTINATION, viewModel.current.page)
+        }
+
+    @Test
+    fun `picking the destination as source clears the destination`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val viewModel = open()
+            viewModel.openTransfer()
+            assertEquals(BANK, viewModel.current.destinationId)
+
+            viewModel.onIntent(CashEntryIntent.AccountPicked(BANK))
+
+            assertEquals(BANK, viewModel.current.selectedAccountId)
+            assertNull(viewModel.current.destinationId)
+        }
+
+    @Test
+    fun `a destination that leaves the live list is cleared`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val viewModel = open()
+            viewModel.openTransfer()
+
+            accounts.setArchived(BANK, archived = true, updatedAt = 2L)
+            runCurrent()
+
+            assertNull(viewModel.current.destinationId)
+        }
+
+    @Test
+    fun `source leaving the list falls back to the destination and clears it`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val viewModel = open()
+            viewModel.openTransfer()
+            assertEquals(CASH, viewModel.current.selectedAccountId)
+            assertEquals(BANK, viewModel.current.destinationId)
+
+            accounts.setArchived(CASH, archived = true, updatedAt = 2L)
+            runCurrent()
+
+            assertEquals(BANK, viewModel.current.selectedAccountId)
+            assertNull(viewModel.current.destinationId)
+        }
+
+    @Test
+    fun `fee keeps digits only and at most thirteen of them`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val viewModel = open()
+
+            viewModel.onIntent(CashEntryIntent.FeeChanged("1a2.3-4"))
+            assertEquals(1_234L, viewModel.current.fee)
+
+            viewModel.onIntent(CashEntryIntent.FeeChanged("9".repeat(20)))
+            assertEquals(9_999_999_999_999L, viewModel.current.fee)
+
+            viewModel.onIntent(CashEntryIntent.FeeChanged("x"))
+            assertEquals(0L, viewModel.current.fee)
+        }
+
+    @Test
+    fun `amount plus fee overflow shows the save error and keeps the sheet`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val viewModel = open()
+            // 3037000499 squared is just below Long.MAX_VALUE, so any 13-digit fee overflows the sum.
+            val side = "3037000499".map { CalcKey.valueOf("D$it") }
+            viewModel.press(*side.toTypedArray(), CalcKey.TIMES, *side.toTypedArray())
+            viewModel.openTransfer()
+            viewModel.onIntent(CashEntryIntent.FeeChanged("9".repeat(20)))
+            assertTrue(viewModel.current.result is AmountResult.Ok)
+
+            viewModel.onIntent(CashEntryIntent.SaveClicked)
+            runCurrent()
+
+            assertTrue(viewModel.current.hasSaveError)
+            assertFalse(viewModel.current.isSaving)
+            assertTrue(viewModel.current.isVisible)
+            assertTrue(transactions.stored.isEmpty())
+        }
+
+    @Test
+    fun `type switch keeps the entry, and a non-transfer drops destination and fee`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val viewModel = open()
+            viewModel.press(CalcKey.D7)
+            viewModel.onIntent(CashEntryIntent.NoteChanged("n"))
+            viewModel.onIntent(CashEntryIntent.DatePicked(LocalDate.of(2026, 10, 1)))
+            viewModel.openTransfer()
+            viewModel.onIntent(CashEntryIntent.FeeChanged("500"))
+
+            viewModel.onIntent(CashEntryIntent.TypeChanged(TransactionType.INCOME))
+
+            val s = viewModel.current
+            assertEquals("7", s.expression)
+            assertEquals("n", s.note)
+            assertEquals(LocalDate.of(2026, 10, 1), s.date)
+            assertEquals(CASH, s.selectedAccountId)
+
+            viewModel.onIntent(CashEntryIntent.SaveClicked)
+            runCurrent()
+
+            val saved = transactions.stored.values.single()
+            assertEquals(TransactionType.INCOME, saved.type)
+            assertNull(saved.toAccountId)
+            assertEquals(0L, saved.feeAmount)
+        }
+
     private companion object {
         const val CASH = "sys_cash"
         const val BANK = "acc-1"

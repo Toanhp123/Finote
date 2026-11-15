@@ -20,6 +20,7 @@ class AddManualTransactionUseCase
          * Delegates to [AddTransactionUseCase], which opens the write transaction.
          * Today keeps the current time of day; another day is noon in the clock's zone. A blank note stays empty.
          */
+        @Suppress("LongParameterList") // why: one parameter per field of the manual form
         suspend operator fun invoke(
             amount: Long,
             type: TransactionType,
@@ -27,16 +28,21 @@ class AddManualTransactionUseCase
             categoryId: String?,
             date: LocalDate,
             note: String,
-        ): Outcome<Unit, TransactionError> =
-            add(
+            toAccountId: String? = null,
+            feeAmount: Long = 0,
+        ): Outcome<Unit, TransactionError> {
+            // Refused here, so a bad combination is an error and never an exception from Transaction.init.
+            val refusal = refusalOf(type, accountId, categoryId, toAccountId, feeAmount, amount)
+            if (refusal != null) return Outcome.Err(refusal)
+            return add(
                 Transaction(
                     id = UUID.randomUUID().toString(),
                     amount = amount,
-                    feeAmount = 0,
+                    feeAmount = feeAmount,
                     type = type,
                     adjustmentDirection = null,
                     accountId = accountId,
-                    toAccountId = null,
+                    toAccountId = toAccountId,
                     timestamp = timestampOf(date),
                     deletedAt = null,
                     createdAt = 0,
@@ -46,6 +52,42 @@ class AddManualTransactionUseCase
                     source = TransactionSource.MANUAL,
                 ),
             )
+        }
+
+        private fun refusalOf(
+            type: TransactionType,
+            accountId: String,
+            categoryId: String?,
+            toAccountId: String?,
+            feeAmount: Long,
+            amount: Long,
+        ): TransactionError? =
+            when {
+                feeAmount < 0 -> {
+                    TransactionError.InvalidTransfer
+                }
+
+                type != TransactionType.TRANSFER -> {
+                    TransactionError.InvalidTransfer.takeIf { toAccountId != null || feeAmount != 0L }
+                }
+
+                toAccountId == null || toAccountId == accountId -> {
+                    TransactionError.InvalidTransfer
+                }
+
+                categoryId != null -> {
+                    TransactionError.InvalidTransfer
+                }
+
+                // The source pays amount + fee; refuse before the balance math would overflow.
+                amount > Long.MAX_VALUE - feeAmount -> {
+                    TransactionError.AmountOverflow
+                }
+
+                else -> {
+                    null
+                }
+            }
 
         private fun timestampOf(date: LocalDate): Long =
             if (date == LocalDate.now(clock)) {

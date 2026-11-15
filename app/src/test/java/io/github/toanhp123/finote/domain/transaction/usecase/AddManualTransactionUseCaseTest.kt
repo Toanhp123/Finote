@@ -16,7 +16,7 @@ import java.time.ZoneId
 
 class AddManualTransactionUseCaseTest {
     private val clock = Clock.fixed(Instant.parse("2026-11-10T08:30:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"))
-    private val repo = FakeTransactionRepository(activeAccounts = setOf(ACCOUNT))
+    private val repo = FakeTransactionRepository(activeAccounts = setOf(ACCOUNT, OTHER))
     private val addManual =
         AddManualTransactionUseCase(AddTransactionUseCase(repo, FakeTransactionRunner(), clock), clock)
 
@@ -90,7 +90,54 @@ class AddManualTransactionUseCaseTest {
             assertEquals(0, repo.writes)
         }
 
+    private suspend fun transfer(
+        amount: Long = 50_000L,
+        to: String? = OTHER,
+        fee: Long = 1_000L,
+        categoryId: String? = null,
+    ) = addManual(amount, TransactionType.TRANSFER, ACCOUNT, categoryId, LocalDate.of(2026, 11, 10), "", to, fee)
+
+    @Test
+    fun `a transfer stores destination and fee with no category`() =
+        runTest {
+            assertEquals(Outcome.Ok(Unit), transfer())
+
+            val saved = repo.stored.values.single()
+            assertEquals(TransactionType.TRANSFER, saved.type)
+            assertEquals(ACCOUNT, saved.accountId)
+            assertEquals(OTHER, saved.toAccountId)
+            assertEquals(1_000L, saved.feeAmount)
+            assertNull(saved.categoryId)
+        }
+
+    @Test
+    fun `bad transfer combinations are refused and nothing is stored`() =
+        runTest {
+            val invalid = Outcome.Err(TransactionError.InvalidTransfer)
+            assertEquals(invalid, transfer(to = null))
+            assertEquals(invalid, transfer(to = ACCOUNT))
+            assertEquals(invalid, transfer(categoryId = "c1"))
+            assertEquals(invalid, transfer(fee = -1L))
+            assertEquals(
+                invalid,
+                addManual(5L, TransactionType.EXPENSE, ACCOUNT, null, LocalDate.of(2026, 11, 10), "", OTHER),
+            )
+            assertEquals(
+                invalid,
+                addManual(5L, TransactionType.INCOME, ACCOUNT, null, LocalDate.of(2026, 11, 10), "", null, 1L),
+            )
+            assertEquals(0, repo.writes)
+        }
+
+    @Test
+    fun `a transfer whose amount plus fee overflows is refused`() =
+        runTest {
+            assertEquals(Outcome.Err(TransactionError.AmountOverflow), transfer(amount = Long.MAX_VALUE, fee = 1L))
+            assertEquals(Outcome.Ok(Unit), transfer(amount = Long.MAX_VALUE - 1L, fee = 1L))
+        }
+
     private companion object {
         const val ACCOUNT = "acc"
+        const val OTHER = "acc-2"
     }
 }

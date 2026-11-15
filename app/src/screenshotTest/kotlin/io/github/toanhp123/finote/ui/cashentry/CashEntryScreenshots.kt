@@ -39,6 +39,26 @@ private fun CashEntryDatePreview() = SheetOverScrim(keypadState().copy(page = Ca
 private fun CashEntryNotePreview() = SheetOverScrim(keypadState().copy(page = CashEntryPage.NOTE, note = "Lunch"))
 
 @PreviewTest
+@CashEntryPreviews
+@Composable
+private fun CashEntryTransferPreview() =
+    SheetOverScrim(
+        keypadState().copy(
+            type = TransactionType.TRANSFER,
+            accounts = listOf(cash, bank),
+            destinationId = bank.id,
+            fee = 1_100,
+        ),
+    )
+
+// One account only, so a transfer has no destination to offer.
+@PreviewTest
+@Preview(name = "Light", device = TALL_PHONE)
+@Composable
+private fun CashEntryNoDestinationPreview() =
+    SheetOverScrim(keypadState().copy(type = TransactionType.TRANSFER, page = CashEntryPage.DESTINATION))
+
+@PreviewTest
 @Preview(name = "Light", device = TALL_PHONE)
 @Composable
 private fun CashEntryNotPositivePreview() =
@@ -101,6 +121,8 @@ private val cash =
         updatedAt = 0,
         deletedAt = null,
     )
+
+private val bank = cash.copy(id = "acc_bank", name = "Bank", nameKey = null, icon = "payments", color = PreviewRedArgb)
 
 private val categories =
     listOf(

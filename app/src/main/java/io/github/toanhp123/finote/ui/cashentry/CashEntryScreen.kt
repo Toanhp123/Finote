@@ -46,11 +46,13 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.cashentry.component.AccountList
 import io.github.toanhp123.finote.ui.cashentry.component.CashKeypad
 import io.github.toanhp123.finote.ui.cashentry.component.CategoryList
+import io.github.toanhp123.finote.ui.cashentry.component.FeePage
 import io.github.toanhp123.finote.ui.cashentry.component.NotePage
 import io.github.toanhp123.finote.ui.cashentry.component.Selectors
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
 import io.github.toanhp123.finote.ui.common.component.control.FinoteIconButton
 import io.github.toanhp123.finote.ui.common.component.control.FinoteSegmented
+import io.github.toanhp123.finote.ui.common.component.display.FinoteEmptyState
 import io.github.toanhp123.finote.ui.common.component.finance.MoneyText
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteBottomSheet
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteCalendar
@@ -58,7 +60,7 @@ import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 private const val FALLBACK_HEIGHT_FRACTION = 0.6f
-private val TypeOptions = listOf(TransactionType.EXPENSE, TransactionType.INCOME)
+private val TypeOptions = listOf(TransactionType.EXPENSE, TransactionType.INCOME, TransactionType.TRANSFER)
 
 @Composable
 fun CashEntryRoute(
@@ -139,7 +141,9 @@ private fun pageTitle(page: CashEntryPage): String =
     stringResource(
         when (page) {
             CashEntryPage.ACCOUNT -> R.string.cash_entry_account
+            CashEntryPage.DESTINATION -> R.string.cash_entry_to_account
             CashEntryPage.CATEGORY -> R.string.cash_entry_category
+            CashEntryPage.FEE -> R.string.cash_entry_fee
             CashEntryPage.DATE -> R.string.cash_entry_date
             CashEntryPage.NOTE -> R.string.cash_entry_note
             CashEntryPage.KEYPAD -> error("The keypad page has no title")
@@ -160,6 +164,32 @@ private fun PageContent(
                 selectedId = state.selectedAccountId,
                 onPick = { onIntent(CashEntryIntent.AccountPicked(it)) },
                 modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        CashEntryPage.DESTINATION -> {
+            if (state.destinationChoices.isEmpty()) {
+                // Fewer than two usable accounts: say why, and Save stays disabled.
+                FinoteEmptyState(
+                    iconRes = R.drawable.ic_swap_horiz,
+                    title = stringResource(R.string.cash_entry_no_destination),
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                AccountList(
+                    accounts = state.destinationChoices,
+                    selectedId = state.destinationId,
+                    onPick = { onIntent(CashEntryIntent.DestinationPicked(it)) },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+
+        CashEntryPage.FEE -> {
+            FeePage(
+                fee = state.fee,
+                onFeeChange = { onIntent(CashEntryIntent.FeeChanged(it)) },
+                onDone = onPageClose,
             )
         }
 
@@ -245,12 +275,19 @@ private fun KeypadPage(
 ) {
     val expense = stringResource(R.string.cash_entry_expense)
     val income = stringResource(R.string.cash_entry_income)
+    val transfer = stringResource(R.string.cash_entry_transfer)
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.md)) {
         FinoteSegmented(
             options = TypeOptions,
             selected = state.type,
             onSelect = { onIntent(CashEntryIntent.TypeChanged(it)) },
-            label = { if (it == TransactionType.INCOME) income else expense },
+            label = {
+                when (it) {
+                    TransactionType.INCOME -> income
+                    TransactionType.TRANSFER -> transfer
+                    else -> expense
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
         )
         AmountHeader(state)
@@ -282,6 +319,7 @@ private fun AmountHeader(
         when {
             state.result is AmountResult.NotPositive -> MoneyKind.Neutral
             state.type == TransactionType.INCOME -> MoneyKind.Income
+            state.type == TransactionType.TRANSFER -> MoneyKind.Neutral
             else -> MoneyKind.Expense
         }
     val error = errorMessage(state)

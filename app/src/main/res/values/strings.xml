@@ -62,6 +62,13 @@
     <string name="cash_entry_category">Danh mục</string>
     <string name="cash_entry_no_account">Chưa có tài khoản</string>
     <string name="cash_entry_no_category">Không chọn danh mục</string>
+    <string name="cash_entry_transfer">Chuyển</string>
+    <string name="cash_entry_to_account">Tài khoản đích</string>
+    <string name="cash_entry_choose_account">Chọn tài khoản</string>
+    <string name="cash_entry_fee">Phí</string>
+    <string name="cash_entry_to_value">Đến %1$s</string>
+    <string name="cash_entry_fee_value">Phí %1$s</string>
+    <string name="cash_entry_no_destination">Cần ít nhất hai tài khoản để chuyển</string>
     <string name="cash_entry_date">Ngày</string>
     <string name="cash_entry_note">Ghi chú</string>
     <string name="cash_entry_today">Hôm nay</string>

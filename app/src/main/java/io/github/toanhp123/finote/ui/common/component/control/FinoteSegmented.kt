@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -102,11 +103,15 @@ private fun SegmentItem(
                 .padding(horizontal = FinoteTheme.spacing.sm, vertical = FinoteTheme.spacing.xs),
         contentAlignment = Alignment.Center,
     ) {
+        val style = FinoteTheme.typography.material.labelLarge
         Text(
             text = text,
             color = if (isSelected) FinoteTheme.scheme.onPrimary else FinoteTheme.scheme.onSurface,
-            style = FinoteTheme.typography.material.labelLarge,
+            style = style,
             textAlign = TextAlign.Center,
+            maxLines = 1,
+            // Three long labels at a large font scale would break mid-word; shrink like MoneyText instead.
+            autoSize = TextAutoSize.StepBased(minFontSize = style.fontSize / 2, maxFontSize = style.fontSize),
         )
     }
 }

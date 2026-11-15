@@ -67,6 +67,14 @@ class CashEntryViewModel
                     onAccount(intent.id)
                 }
 
+                is CashEntryIntent.DestinationPicked -> {
+                    onDestination(intent.id)
+                }
+
+                is CashEntryIntent.FeeChanged -> {
+                    setState { copy(fee = feeOf(intent.text), hasSaveError = false) }
+                }
+
                 is CashEntryIntent.CategoryPicked -> {
                     setState { pickCategory(intent.id).backToKeypad() }
                 }
@@ -100,8 +108,26 @@ class CashEntryViewModel
             setState { if (intent is CashEntryIntent.PageOpened) copy(page = intent.page) else backToKeypad() }
 
         // An id that is not in the live list (for example archived while the page was open) changes nothing.
+        // A destination equal to the new source is cleared, so the two never match.
         private fun onAccount(id: String) =
-            setState { if (accounts.any { it.id == id }) copy(selectedAccountId = id).backToKeypad() else this }
+            setState {
+                if (accounts.any { it.id == id }) {
+                    copy(selectedAccountId = id, destinationId = destinationId?.takeIf { it != id }).backToKeypad()
+                } else {
+                    this
+                }
+            }
+
+        // Only a live account other than the source counts; anything else changes nothing.
+        private fun onDestination(id: String) =
+            setState { if (destinationChoices.any { it.id == id }) copy(destinationId = id).backToKeypad() else this }
+
+        // Digits only, at most MAX_DIGITS: the fee fits a Long, and the use case checks amount + fee.
+        private fun feeOf(text: String): Long =
+            text
+                .filter { it in '0'..'9' }
+                .take(AmountExpression.MAX_DIGITS)
+                .toLongOrNull() ?: 0L
 
         private fun CashEntryState.backToKeypad() = copy(page = CashEntryPage.KEYPAD)
 
@@ -136,6 +162,7 @@ class CashEntryViewModel
                 copy(
                     accounts = accountList,
                     selectedAccountId = account,
+                    destinationId = destinationId?.takeIf { d -> d != account && accountList.any { it.id == d } },
                     selectedCategoryIds = kept,
                     categories = visible(type),
                 )
@@ -153,15 +180,19 @@ class CashEntryViewModel
             val accountId = s.selectedAccountId
             if (!s.isSaveEnabled || amount == null || accountId == null) return
             setState { copy(isSaving = true, hasSaveError = false) }
+            // Destination and fee belong to a transfer only; a transfer has no category.
+            val isTransfer = s.type == TransactionType.TRANSFER
             launchCatching(onStorageError = ::showSaveError) {
                 val result =
                     addManualTransaction(
                         amount = amount,
                         type = s.type,
                         accountId = accountId,
-                        categoryId = s.selectedCategoryIds[s.type],
+                        categoryId = if (isTransfer) null else s.selectedCategoryIds[s.type],
                         date = s.date,
                         note = s.note,
+                        toAccountId = if (isTransfer) s.destinationId else null,
+                        feeAmount = if (isTransfer) s.fee else 0L,
                     )
                 when (result) {
                     // isSaving stays true so a second save cannot run while the sheet leaves.

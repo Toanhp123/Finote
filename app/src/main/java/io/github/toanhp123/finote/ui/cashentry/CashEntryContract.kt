@@ -21,13 +21,25 @@ data class CashEntryState(
     val categories: List<Category> = emptyList(),
     val selectedCategoryIds: Map<TransactionType, String?> = emptyMap(),
     val note: String = "",
+    /** The transfer destination, kept across a type change. Never equals [selectedAccountId]. */
+    val destinationId: String? = null,
+    /** The transfer fee in VND, kept across a type change; only a transfer saves it. */
+    val fee: Long = 0,
     val page: CashEntryPage = CashEntryPage.KEYPAD,
     val isSaving: Boolean = false,
     val hasSaveError: Boolean = false,
     /** False once the sheet should leave, after a save or a dismiss; the screen closes when the exit ends. */
     val isVisible: Boolean = true,
 ) {
-    val isSaveEnabled: Boolean get() = result is AmountResult.Ok && selectedAccountId != null && !isSaving
+    /** The accounts a transfer can go to: every live account except the source. */
+    val destinationChoices: List<Account> get() = accounts.filter { it.id != selectedAccountId }
+
+    val isSaveEnabled: Boolean
+        get() =
+            result is AmountResult.Ok &&
+                selectedAccountId != null &&
+                !isSaving &&
+                (type != TransactionType.TRANSFER || destinationId != null)
 }
 
 sealed interface CashEntryIntent {
@@ -41,6 +53,15 @@ sealed interface CashEntryIntent {
 
     data class AccountPicked(
         val id: String,
+    ) : CashEntryIntent
+
+    data class DestinationPicked(
+        val id: String,
+    ) : CashEntryIntent
+
+    /** The raw fee text; the ViewModel keeps its digits only. */
+    data class FeeChanged(
+        val text: String,
     ) : CashEntryIntent
 
     /** A null [id] clears the category. */
@@ -71,4 +92,4 @@ sealed interface CashEntryIntent {
 sealed interface CashEntryEffect
 
 /** The content the cash-entry sheet shows. Only [KEYPAD] shows the calculator keypad. */
-enum class CashEntryPage { KEYPAD, ACCOUNT, CATEGORY, DATE, NOTE }
+enum class CashEntryPage { KEYPAD, ACCOUNT, DESTINATION, CATEGORY, FEE, DATE, NOTE }
