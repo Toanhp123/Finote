@@ -1,7 +1,5 @@
 package io.github.toanhp123.finote.ui.cashentry
 
-import android.content.Context
-import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -9,12 +7,18 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.lifecycle.withCreationCallback
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 // Translucent host so the sheet floats over whatever app the user was in.
 @AndroidEntryPoint
 class CashEntryActivity : AppCompatActivity() {
-    private val viewModel: CashEntryViewModel by viewModels()
+    // This host only adds: editing runs in the main window, as a nav entry.
+    private val viewModel: CashEntryViewModel by viewModels(
+        extrasProducer = {
+            defaultViewModelCreationExtras.withCreationCallback<CashEntryViewModel.Factory> { it.create(null) }
+        },
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,31 +33,5 @@ class CashEntryActivity : AppCompatActivity() {
                 CashEntryRoute(viewModel, onClose = ::finish)
             }
         }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        // singleTask reuses this instance, and its ViewModel keeps the first id: another mode needs a fresh instance.
-        val current = this.intent.getStringExtra(EXTRA_TRANSACTION_ID)
-        if (shouldRestartFor(current, intent.getStringExtra(EXTRA_TRANSACTION_ID))) {
-            finish()
-            startActivity(intent)
-        }
-    }
-
-    companion object {
-        /** The id of the transaction to edit. Absent: the sheet adds a new one. */
-        const val EXTRA_TRANSACTION_ID = "transaction_id"
-
-        /** Another row or mode needs a fresh ViewModel; the same one keeps what the user typed. */
-        internal fun shouldRestartFor(
-            current: String?,
-            incoming: String?,
-        ): Boolean = current != incoming
-
-        fun editIntent(
-            context: Context,
-            id: String,
-        ): Intent = Intent(context, CashEntryActivity::class.java).putExtra(EXTRA_TRANSACTION_ID, id)
     }
 }

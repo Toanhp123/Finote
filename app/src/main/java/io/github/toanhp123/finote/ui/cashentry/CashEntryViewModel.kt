@@ -1,7 +1,9 @@
 package io.github.toanhp123.finote.ui.cashentry
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.usecase.ObserveUsableAccountsUseCase
@@ -26,14 +28,14 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
-import javax.inject.Inject
 
-@HiltViewModel
+@HiltViewModel(assistedFactory = CashEntryViewModel.Factory::class)
 class CashEntryViewModel
     @Suppress("LongParameterList") // why: Hilt injects one collaborator per use case; grouping them would hide the deps
-    @Inject
+    @AssistedInject
     constructor(
-        savedStateHandle: SavedStateHandle,
+        // Null: the sheet adds a transaction. Otherwise it edits this one.
+        @Assisted private val transactionId: String?,
         private val observeUsableAccounts: ObserveUsableAccountsUseCase,
         private val observeCategories: ObserveCategoriesUseCase,
         private val getLastManualChoices: GetLastManualChoicesUseCase,
@@ -44,13 +46,18 @@ class CashEntryViewModel
         private val clock: Clock,
         @IsDebuggable isDebuggable: Boolean,
     ) : BaseViewModel<CashEntryState, CashEntryIntent, CashEntryEffect>(
-            savedStateHandle.get<String>(CashEntryActivity.EXTRA_TRANSACTION_ID).let { id ->
-                CashEntryState(date = LocalDate.now(clock), isEditing = id != null, isLoading = id != null)
-            },
+            CashEntryState(
+                date = LocalDate.now(clock),
+                isEditing = transactionId != null,
+                isLoading = transactionId != null,
+            ),
             isDebuggable,
         ) {
-        // Null: the sheet adds a transaction. Otherwise it edits this one.
-        private val transactionId: String? = savedStateHandle[CashEntryActivity.EXTRA_TRANSACTION_ID]
+        @AssistedFactory
+        interface Factory {
+            fun create(transactionId: String?): CashEntryViewModel
+        }
+
         private var lastAccountId: String? = null
         private var isSeeded = false
         private var allCategories: List<Category> = emptyList()

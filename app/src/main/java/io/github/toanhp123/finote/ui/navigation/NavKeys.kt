@@ -31,3 +31,9 @@ data object AccountsSettings : NavKey
 /** The notification capture page, pushed on top of [Settings]. */
 @Serializable
 data object NotificationCaptureSettings : NavKey
+
+/** The cash entry sheet in edit mode for the transaction [id], drawn over the list below it. */
+@Serializable
+data class EditTransaction(
+    val id: String,
+) : NavKey

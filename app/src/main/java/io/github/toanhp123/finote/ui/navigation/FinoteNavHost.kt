@@ -4,16 +4,20 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.github.toanhp123.finote.R
+import io.github.toanhp123.finote.ui.cashentry.CashEntryRoute
+import io.github.toanhp123.finote.ui.cashentry.CashEntryViewModel
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavBar
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavItem
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteScaffold
@@ -36,16 +40,8 @@ fun FinoteNavHost(
         modifier = modifier,
         snackbarState = snackbarState,
         bottomBar =
-            if (backStack.lastOrNull() in TopLevelTabs) {
-                {
-                    val items = TopLevelTabs.map { FinoteNavItem(it.iconRes(), stringResource(it.labelRes())) }
-                    val selected = currentTab(backStack)
-                    FinoteNavBar(
-                        items = items,
-                        selectedIndex = TopLevelTabs.indexOf(selected),
-                        onSelect = { index -> selectTab(backStack, TopLevelTabs[index]) },
-                    )
-                }
+            if (isTabBarVisible(backStack)) {
+                { TabBar(selected = currentTab(backStack), onSelect = { selectTab(backStack, it) }) }
             } else {
                 null
             },
@@ -58,6 +54,7 @@ fun FinoteNavHost(
                     rememberSaveableStateHolderNavEntryDecorator(),
                     rememberViewModelStoreNavEntryDecorator(),
                 ),
+            sceneStrategies = remember { listOf(SheetSceneStrategy()) },
             entryProvider =
                 entryProvider<NavKey> {
                     entry<Overview> { ComingSoonScreen(R.string.tab_overview) }
@@ -66,6 +63,7 @@ fun FinoteNavHost(
                             viewModel = hiltViewModel(),
                             snackbarState = snackbarState,
                             onOpenSetup = { openSetup(backStack) },
+                            onOpenEditor = { id -> openEditor(backStack, id) },
                             contentPadding = padding,
                         )
                     }
@@ -93,6 +91,7 @@ fun FinoteNavHost(
                             modifier = Modifier.padding(padding),
                         )
                     }
+                    editorEntry(backStack)
                     entry<Setup> { key ->
                         SetupRoute(
                             viewModel = hiltViewModel(),
@@ -103,6 +102,32 @@ fun FinoteNavHost(
                 },
         )
     }
+}
+
+/** The edit sheet. It has no inline UI: the sheet opens its own window, so the list below stays visible. */
+private fun EntryProviderScope<NavKey>.editorEntry(backStack: MutableList<NavKey>) {
+    entry<EditTransaction>(metadata = SheetSceneStrategy.sheet()) { key ->
+        CashEntryRoute(
+            viewModel =
+                hiltViewModel<CashEntryViewModel, CashEntryViewModel.Factory>(
+                    creationCallback = { it.create(key.id) },
+                ),
+            onClose = { closeEditor(backStack, key) },
+        )
+    }
+}
+
+@Composable
+private fun TabBar(
+    selected: NavKey,
+    onSelect: (NavKey) -> Unit,
+) {
+    val items = TopLevelTabs.map { FinoteNavItem(it.iconRes(), stringResource(it.labelRes())) }
+    FinoteNavBar(
+        items = items,
+        selectedIndex = TopLevelTabs.indexOf(selected),
+        onSelect = { index -> onSelect(TopLevelTabs[index]) },
+    )
 }
 
 @DrawableRes

@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -33,7 +32,6 @@ import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
-import io.github.toanhp123.finote.ui.cashentry.CashEntryActivity
 import io.github.toanhp123.finote.ui.common.ObserveEffects
 import io.github.toanhp123.finote.ui.common.component.display.FinoteEmptyState
 import io.github.toanhp123.finote.ui.common.component.display.FinoteSkeleton
@@ -64,19 +62,17 @@ fun TransactionListRoute(
     viewModel: TransactionListViewModel,
     snackbarState: FinoteSnackbarState,
     onOpenSetup: () -> Unit,
+    onOpenEditor: (String) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val deleteError = stringResource(R.string.transactions_delete_error)
     ObserveEffects(viewModel.effects) { effect ->
         when (effect) {
             is TransactionListEffect.OpenEditor -> {
-                context.startActivity(
-                    CashEntryActivity.editIntent(context, effect.id),
-                )
+                onOpenEditor(effect.id)
             }
 
             TransactionListEffect.DeleteFailed -> {

@@ -1,27 +1,16 @@
 package io.github.toanhp123.finote.ui.cashentry
 
-import androidx.lifecycle.SavedStateHandle
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.account.usecase.FakeAccountRepository
-import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
-import io.github.toanhp123.finote.domain.account.usecase.ObserveUsableAccountsUseCase
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.category.testCategory
 import io.github.toanhp123.finote.domain.category.usecase.FakeCategoryRepository
-import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
-import io.github.toanhp123.finote.domain.common.FakeTransactionRunner
 import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
-import io.github.toanhp123.finote.domain.transaction.usecase.AddManualTransactionUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.AddTransactionUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
-import io.github.toanhp123.finote.domain.transaction.usecase.GetLastManualChoicesUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.GetTransactionUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -62,25 +51,8 @@ class CashEntryViewModelTest {
         ).forEach { categories.stored[it.id] = it }
     }
 
-    private fun TestScope.open(
-        repo: TransactionRepository = transactions,
-        handle: SavedStateHandle = SavedStateHandle(),
-    ): CashEntryViewModel {
-        val runner = FakeTransactionRunner()
-        val add = AddTransactionUseCase(repo, runner, clock)
-        return CashEntryViewModel(
-            handle,
-            ObserveUsableAccountsUseCase(ObserveAccountsUseCase(accounts)),
-            ObserveCategoriesUseCase(categories),
-            GetLastManualChoicesUseCase(repo),
-            AddManualTransactionUseCase(add, clock),
-            GetTransactionUseCase(repo),
-            UpdateTransactionUseCase(repo, runner, clock),
-            DeleteTransactionUseCase(repo, runner, clock),
-            clock,
-            isDebuggable = true,
-        ).also { runCurrent() }
-    }
+    private fun TestScope.open(repo: TransactionRepository = transactions): CashEntryViewModel =
+        cashEntryViewModel(null, accounts, categories, repo, clock).also { runCurrent() }
 
     private fun CashEntryViewModel.press(vararg keys: CalcKey) =
         keys.forEach { onIntent(CashEntryIntent.KeyPressed(it)) }

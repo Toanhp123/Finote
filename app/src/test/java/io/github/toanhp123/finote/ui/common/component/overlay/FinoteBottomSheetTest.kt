@@ -103,6 +103,17 @@ class FinoteBottomSheetTest {
         assertEquals(1, dismissedCount)
     }
 
+    // The gap over the panel is part of the sheet's layout: the scrim never gets a tap there.
+    @Test
+    fun `a tap just above the panel dismisses`() {
+        showSheet()
+
+        rule.onNodeWithText("Sheet").performTouchInput { click(Offset(centerX, -40f)) }
+        rule.waitForIdle()
+
+        assertEquals(1, dismissCount)
+    }
+
     @Test
     fun `re-show during the exit does not call onDismissComplete`() {
         showSheet()

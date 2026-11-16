@@ -24,6 +24,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalInspectionMode
 import com.composeunstyled.Scrim
 import com.composeunstyled.Sheet
@@ -80,7 +81,11 @@ internal fun ModalSheet(
         if (isVisible) {
             CompositionLocalProvider(LocalHazeState provides null) {
                 InlineOverlay(Alignment.BottomCenter) {
-                    SheetSurface(modifier = modifier, contentPadding = contentPadding, content = content)
+                    SheetSurface(
+                        modifier = modifier.statusBarsPadding().padding(top = FinoteTheme.sizes.touchTarget),
+                        contentPadding = contentPadding,
+                        content = content,
+                    )
                 }
             }
         }
@@ -114,9 +119,24 @@ internal fun ModalSheet(
         UnstyledModalBottomSheet(
             state = state,
             onDismiss = { if (visible) onDismiss() },
-            overlay = { Scrim(enter = fadeIn(), exit = fadeOut()) },
+            overlay = {
+                // The library starts the scrim's fade only after a swiped sheet has settled, so the dark would
+                // outlast the sheet. Tying its alpha to the sheet's position makes it leave with the sheet.
+                Scrim(
+                    modifier =
+                        Modifier.graphicsLayer {
+                            alpha = state.progress(SheetDetent.Hidden, SheetDetent.FullyExpanded)
+                        },
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                )
+            },
         ) {
-            Sheet(modifier = modifier) { SheetSurface(contentPadding = contentPadding, content = content) }
+            // The gap that keeps the panel off the status bar goes on the Sheet's own modifier: the library puts its
+            // tap handler after it, so a tap in the gap falls through to the scrim and dismisses.
+            Sheet(modifier = modifier.statusBarsPadding().padding(top = FinoteTheme.sizes.touchTarget)) {
+                SheetSurface(contentPadding = contentPadding, content = content)
+            }
         }
     }
 }
@@ -131,8 +151,6 @@ internal fun SheetSurface(
         modifier =
             modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(top = FinoteTheme.sizes.touchTarget)
                 .finoteGlass(FinoteTheme.shapes.sheet)
                 .navigationBarsPadding(),
     ) {
