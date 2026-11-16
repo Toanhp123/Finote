@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.ui.transactions.component
+package io.github.toanhp123.finote.ui.transactions.logic
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.domain.account.A

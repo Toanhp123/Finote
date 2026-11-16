@@ -78,17 +78,6 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun captureSubtitle(state: SettingsState): String {
-    val access = if (state.isAccessEnabled) R.string.settings_access_on else R.string.settings_access_off
-    return pluralStringResource(
-        R.plurals.settings_capture_subtitle,
-        state.bankCount,
-        stringResource(access),
-        state.bankCount,
-    )
-}
-
-@Composable
 private fun RowIcon(
     @DrawableRes iconRes: Int,
     tint: Color,
@@ -98,5 +87,16 @@ private fun RowIcon(
         contentDescription = null,
         modifier = Modifier.size(FinoteTheme.sizes.iconMd),
         tint = tint,
+    )
+}
+
+@Composable
+private fun captureSubtitle(state: SettingsState): String {
+    val access = if (state.isAccessEnabled) R.string.settings_access_on else R.string.settings_access_off
+    return pluralStringResource(
+        R.plurals.settings_capture_subtitle,
+        state.bankCount,
+        stringResource(access),
+        state.bankCount,
     )
 }

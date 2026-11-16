@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.ui.settings
+package io.github.toanhp123.finote.ui.settings.logic
 
 import io.github.toanhp123.finote.domain.notification.testRule
 import org.junit.Assert.assertEquals

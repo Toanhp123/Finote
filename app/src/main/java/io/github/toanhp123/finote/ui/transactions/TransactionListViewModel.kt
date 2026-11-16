@@ -15,6 +15,7 @@ import io.github.toanhp123.finote.domain.transaction.usecase.AdjustBalanceDriftU
 import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
+import io.github.toanhp123.finote.ui.transactions.logic.isOpenable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest

@@ -11,6 +11,8 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
+import io.github.toanhp123.finote.ui.cashentry.logic.AmountResult
+import io.github.toanhp123.finote.ui.cashentry.logic.CalcKey
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope

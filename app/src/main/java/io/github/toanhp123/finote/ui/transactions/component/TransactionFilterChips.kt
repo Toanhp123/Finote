@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.component.control.FinoteChip
@@ -15,11 +16,13 @@ import io.github.toanhp123.finote.ui.transactions.TransactionListState
 
 /** One chip at a time: All, an account, or the reimbursements awaiting repayment, which always comes last. */
 @Composable
-internal fun TransactionFilterChips(
+fun TransactionFilterChips(
     state: TransactionListState,
     onIntent: (TransactionListIntent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     LazyRow(
+        modifier = modifier,
         contentPadding = PaddingValues(horizontal = FinoteTheme.spacing.lg),
         horizontalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
     ) {

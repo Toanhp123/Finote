@@ -147,7 +147,7 @@ class ProjectRulesKonsistTest {
 
     @Test
     fun `ui does not catch broad exceptions`() {
-        uiFiles("ui/common/BaseViewModel.kt", "ui/cashentry/AmountExpression.kt")
+        uiFiles("ui/common/BaseViewModel.kt", "ui/cashentry/logic/AmountExpression.kt")
             .assertTrue(strict = false, testName = "ui does not catch broad exceptions") { file ->
                 file.codeLines().none { broadCatch.containsMatchIn(it) }
             }

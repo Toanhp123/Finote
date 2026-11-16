@@ -2,21 +2,17 @@ package io.github.toanhp123.finote.ui.settings.accounts
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.domain.account.model.Account
@@ -25,12 +21,14 @@ import io.github.toanhp123.finote.ui.common.component.display.FinoteCard
 import io.github.toanhp123.finote.ui.common.component.display.FinoteListRow
 import io.github.toanhp123.finote.ui.common.component.finance.MoneyText
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteTopBar
-import io.github.toanhp123.finote.ui.common.component.overlay.FinoteBottomSheet
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteSnackbarState
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import io.github.toanhp123.finote.ui.common.format.displayName
 import io.github.toanhp123.finote.ui.common.rememberLastNonNull
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
+import io.github.toanhp123.finote.ui.settings.accounts.component.AccountSheet
+import io.github.toanhp123.finote.ui.settings.accounts.component.IgnoreDialog
+import io.github.toanhp123.finote.ui.settings.accounts.component.MergeDialog
 import kotlinx.coroutines.launch
 
 @Composable
@@ -106,21 +104,6 @@ private fun AccountRow(
     )
 }
 
-@Composable
-private fun AccountSheet(
-    state: AccountsSettingsState,
-    onIntent: (AccountsSettingsIntent) -> Unit,
-) {
-    // The sheet keeps its content while it slides out.
-    val shownAccount = rememberLastNonNull(state.selected)
-    FinoteBottomSheet(
-        isVisible = state.selected != null,
-        onDismiss = { onIntent(AccountsSettingsIntent.SheetDismissed) },
-    ) {
-        shownAccount?.let { AccountSheetContent(it, state.mergeTargets, onIntent) }
-    }
-}
-
 /** Keeps the last dialog while it fades out, so the text does not blank. */
 @Composable
 private fun AccountsDialogs(
@@ -132,61 +115,5 @@ private fun AccountsDialogs(
         is AccountsDialog.Merge -> MergeDialog(shown, isVisible, onIntent)
         is AccountsDialog.Ignore -> IgnoreDialog(shown, isVisible, onIntent)
         null -> Unit
-    }
-}
-
-@Composable
-internal fun ColumnScope.AccountSheetContent(
-    account: Account,
-    mergeTargets: List<Account>,
-    onIntent: (AccountsSettingsIntent) -> Unit,
-) {
-    Text(
-        text = displayName(account.name, account.nameKey),
-        modifier = Modifier.padding(bottom = FinoteTheme.spacing.sm).semantics { heading() },
-        color = FinoteTheme.scheme.onSurface,
-        style = FinoteTheme.typography.material.titleLarge,
-    )
-    MergeTargets(mergeTargets, onIntent)
-    if (account.isIgnored) {
-        FinoteListRow(
-            title = stringResource(R.string.accounts_follow_again),
-            onClick = { onIntent(AccountsSettingsIntent.FollowAgainClicked) },
-        )
-    } else {
-        FinoteListRow(
-            title = stringResource(R.string.accounts_ignore_action),
-            onClick = { onIntent(AccountsSettingsIntent.IgnoreClicked) },
-        )
-    }
-}
-
-@Composable
-private fun MergeTargets(
-    targets: List<Account>,
-    onIntent: (AccountsSettingsIntent) -> Unit,
-) {
-    Column {
-        Text(
-            text = stringResource(R.string.accounts_merge_into),
-            modifier = Modifier.padding(vertical = FinoteTheme.spacing.sm).semantics { heading() },
-            color = FinoteTheme.scheme.onSurfaceVariant,
-            style = FinoteTheme.typography.material.labelMedium,
-        )
-        if (targets.isEmpty()) {
-            Text(
-                text = stringResource(R.string.accounts_merge_none),
-                modifier = Modifier.padding(bottom = FinoteTheme.spacing.sm),
-                color = FinoteTheme.scheme.onSurfaceVariant,
-                style = FinoteTheme.typography.material.bodyMedium,
-            )
-        }
-        targets.forEach { target ->
-            FinoteListRow(
-                title = displayName(target.name, target.nameKey),
-                trailing = { MoneyText(amount = target.currentBalance, kind = MoneyKind.Neutral) },
-                onClick = { onIntent(AccountsSettingsIntent.MergeTargetPicked(target.id)) },
-            )
-        }
     }
 }

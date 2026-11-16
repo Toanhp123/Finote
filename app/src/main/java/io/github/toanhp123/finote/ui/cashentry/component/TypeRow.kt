@@ -17,7 +17,7 @@ private val TypeOptions = listOf(TransactionType.EXPENSE, TransactionType.INCOME
 
 /** The type selector. Editing a stored transaction adds a trash button at the end, off while a save runs. */
 @Composable
-internal fun TypeRow(
+fun TypeRow(
     type: TransactionType,
     onTypeChange: (TransactionType) -> Unit,
     isEditing: Boolean,

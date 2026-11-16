@@ -1,7 +1,7 @@
 package io.github.toanhp123.finote.ui.settings.capture
 
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
-import io.github.toanhp123.finote.ui.settings.BankSummary
+import io.github.toanhp123.finote.ui.settings.logic.BankSummary
 
 /**
  * [isChecking] is true while an update runs. [lastCheck] is null before the first one.

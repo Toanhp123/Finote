@@ -45,13 +45,14 @@ import io.github.toanhp123.finote.ui.common.format.iconRes
 import io.github.toanhp123.finote.ui.common.rememberNotificationListenerEnabled
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.transactions.component.BalanceDriftBanner
-import io.github.toanhp123.finote.ui.transactions.component.DayLabel
 import io.github.toanhp123.finote.ui.transactions.component.DeleteAdjustmentDialog
 import io.github.toanhp123.finote.ui.transactions.component.ListenerOffBanner
 import io.github.toanhp123.finote.ui.transactions.component.TransactionFilterChips
-import io.github.toanhp123.finote.ui.transactions.component.dayLabel
-import io.github.toanhp123.finote.ui.transactions.component.moneyKindOf
-import io.github.toanhp123.finote.ui.transactions.component.rowSubtitle
+import io.github.toanhp123.finote.ui.transactions.logic.DayLabel
+import io.github.toanhp123.finote.ui.transactions.logic.dayLabel
+import io.github.toanhp123.finote.ui.transactions.logic.isOpenable
+import io.github.toanhp123.finote.ui.transactions.logic.moneyKindOf
+import io.github.toanhp123.finote.ui.transactions.logic.rowSubtitle
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 

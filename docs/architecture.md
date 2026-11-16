@@ -24,7 +24,7 @@ data/<feature>/
   repository/        *RepositoryImpl, AccountBalanceRebuilder
   seed/              System*, *Seeder
   remote/            HttpParserRuleFeed, RuleFeedCodec (notification only)
-ui/<feature>/        Screen, Contract, ViewModel
+ui/<feature>/        Contract, ViewModel, Screen; component/, logic/
 ui/common/           theme, shared components, BaseViewModel (tokens and components: docs/design-system.md)
 automation/          NotificationListenerService, thin
 work/                Worker, thin
@@ -77,7 +77,7 @@ The debug flag is `@IsDebuggable isDebuggable: Boolean` (from `ApplicationInfo.F
 
 Konsist rules (`ProjectRulesKonsistTest`, `LayoutKonsistTest`):
 
-- `ui does not catch broad exceptions`: no `catch (` with `IllegalArgumentException`, `IllegalStateException`, `ArithmeticException`, `RuntimeException`, `Exception`, or `Throwable` in `ui`. Exempt by path: `ui/common/BaseViewModel.kt` (defines the helpers) and `ui/cashentry/AmountExpression.kt` (catches `ArithmeticException` for its own math).
+- `ui does not catch broad exceptions`: no `catch (` with `IllegalArgumentException`, `IllegalStateException`, `ArithmeticException`, `RuntimeException`, `Exception`, or `Throwable` in `ui`. Exempt by path: `ui/common/BaseViewModel.kt` (defines the helpers) and `ui/cashentry/logic/AmountExpression.kt` (catches `ArithmeticException` for its own math).
 - `ui flows catch only through catchStorage`: no `.catch {` and no import of `kotlinx.coroutines.flow.catch` in `ui`, except `ui/common/BaseViewModel.kt`.
 - `error folders hold sealed errors`: every top-level declaration in `domain/<f>/error` is a sealed interface, a sealed class, or an enum class. Any other type there must extend a sealed type declared in the same file.
 
@@ -94,17 +94,40 @@ Callers outside `ui`:
 Rules 2 and 3 apply to `ui` only. `domain/<f>` and `data/<f>` follow the role folders in Layers; `LayoutKonsistTest` enforces them.
 
 1. Split a package into subfolders only when it mixes two or more roles.
-2. A subfolder should hold three or more files. Exceptions: infrastructure groups (`glass/`, `preview/`) and the `component/` folder of a feature, so every feature has the same shape.
+2. A subfolder should hold three or more files. Exceptions: infrastructure groups (`glass/`, `preview/`) and the `component/` and `logic/` folders of a feature, so every feature has the same shape.
 3. Do not split when the file suffix already names the role (for example `*Screen`, `*ViewModel`).
-4. At most one level of subfolder under `component/`, `theme/`, or a feature.
+4. At most one level of subfolder under `component/` or `theme/`. A feature may hold sub-features; each sub-feature has its own `component/` and `logic/`.
 
 ### Feature template
 
 ```text
 ui/<feature>/
-├── component/   # sub-composables used by this feature only
-└── (root)       # *Contract, *ViewModel, *Screen, *Activity, *TileService, pure screen logic (*Defaults, AmountExpression)
+├── <Feature>Contract.kt     # State, Intent, Effect
+├── <Feature>ViewModel.kt    # takes intents, emits state and effects
+├── <Feature>Screen.kt       # <Feature>Route + <Feature>Screen + private sections
+├── *Activity.kt, *TileService.kt   # Android entry points, only when the feature has one
+├── component/               # composables of this feature, one per file
+└── logic/                   # pure screen logic, no Compose
 ```
+
+`component/` and `logic/` exist only when a file needs them. A feature may hold sub-features (`settings/accounts`, `settings/capture`); each sub-feature follows the same template, with its own `component/` and `logic/` beside its `*Screen.kt`.
+
+FSD map, for orientation: `ui` is `*Screen.kt` plus `component/`; `model` is `*Contract.kt` plus `*ViewModel.kt`; `lib` is `logic/`; `shared` is `ui/common/`.
+
+Rules:
+
+1. **Feature root.** A file directly in a feature package ends with `Contract`, `ViewModel`, `Screen`, `Activity`, or `TileService`.
+2. **Screen file.** `<Feature>Screen.kt` declares `<Feature>Screen` and, when the screen has a ViewModel, `<Feature>Route`. Every other top-level declaration in it is `private`. Order: `Route`, `Screen`, sections top-down, `@Composable` text helpers last.
+3. **A composable leaves the screen file for `component/` when** it is a dialog or a sheet, or a second file uses it, or the file would pass the 400-line limit (move the largest section). A page of a multi-page screen also moves; this last trigger is judgment and is checked by `reviewer`.
+4. **Component file.** A file in a feature's `component/` declares exactly one non-private composable, named like the file. Its helpers are `private` and sit below it. No grab-bag files (`*Pickers`, `*Dialogs`).
+5. **Logic file.** A file in `logic/` holds pure input or display logic for the feature: no `@Composable`, no `androidx.compose` import. It may co-locate a small type with the functions that serve it.
+6. **Text helpers.** A `@Composable` function that only turns state into a string through `stringResource` stays `private` in the file that calls it.
+7. **Visibility.** Feature composables are public or `private`. No `internal` in a `*Screen.kt` or a feature `component/` file.
+8. **ViewModel base.** Every `*ViewModel` class in `ui/` extends `BaseViewModel`, so each screen has one `state`, one `effects` flow, one `onIntent`, and the shared error handling.
+9. **Hosts.** Inside the app, a screen is reached through `FinoteNavHost` in the main Activity, never through `startActivity`. A feature has its own `*Activity` only for entry from outside the app (Quick Settings tile, shortcut, notification, widget), where no main Activity is running to draw it. `Route` and `Screen` do not know their host: closing is a callback the host supplies. Why: the list once opened `CashEntryActivity`, which owns a separate task for the tile, so the edit sheet and the app were two windows that the system ordered on its own.
+10. **Tests** follow the package of their subject.
+
+`FeatureTemplateKonsistTest` enforces rules 1, 2, 5, 8, the composable part of rules 4 and 7, and parts of 3 and 9.
 
 A new feature follows this shape. Shared components are grouped by role in `ui/common/component/<group>/` (docs/design-system.md). Theme colors are in `ui/common/theme/color/`.
 
@@ -119,7 +142,7 @@ UI flow is MVI: Screen sends `Intent`, ViewModel calls use cases (reads included
 | Pure logic | `NotificationParser` | `domain/<f>/service` | Pure business rules. No I/O. Imports nothing from `repository` or `port` |
 | Port | `ParserRuleFeed` | `domain/<f>/port` | Interface only. Outward interface that is not a repository |
 | Error | `AccountError`, `RuleFeedError` | `domain/<f>/error` | Sealed `<Feature>Error` interfaces, enums for a reason or a port error. Nothing else |
-| Screen logic | `AmountExpression` | `ui/<screen>` | Pure input or display logic that serves one screen. Not in `domain` |
+| Screen logic | `AmountExpression` | `ui/<f>/logic` | Pure input or display logic that serves one screen. Not in `domain` |
 | Repository | `TransactionRepository` | `domain/<f>/repository` | Interface only |
 | Repository impl | `TransactionRepositoryImpl` | `data/<f>/repository` | Drive DAOs, map |
 | Entity | `TransactionEntity` | `data/<f>/local/entity` | Schema |
@@ -233,3 +256,7 @@ Machines cannot enforce these. `reviewer` checks them on every branch.
 - The hero gradient (`brushes.hero`) is used only by `BalanceHeroCard`, at most once per screen.
 - Glass (`finoteGlass`) is only for floating chrome: nav bar, snackbar, and the sheet surface. It blurs only in the scaffold; a modal sheet always takes the opaque `solidFill`. Never for content cards.
 - Color is never the only signal. An amount has a sign, a transaction has a type icon, an error has text.
+- A page of a multi-page screen lives in `component/`.
+- A feature `*Activity` exists only for entry from outside the app.
+- A test sits in the package of its subject.
+- A `*Screen.kt` keeps the order `Route`, `Screen`, sections, text helpers last.

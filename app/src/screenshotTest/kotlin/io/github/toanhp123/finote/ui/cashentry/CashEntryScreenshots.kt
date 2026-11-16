@@ -13,7 +13,9 @@ import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.cashentry.component.DeleteConfirmDialog
-import io.github.toanhp123.finote.ui.cashentry.component.ReimbursementChoice
+import io.github.toanhp123.finote.ui.cashentry.logic.AmountResult
+import io.github.toanhp123.finote.ui.cashentry.logic.InvalidReason
+import io.github.toanhp123.finote.ui.cashentry.logic.ReimbursementChoice
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteBottomSheet
 import io.github.toanhp123.finote.ui.common.component.preview.PreviewGreenArgb
 import io.github.toanhp123.finote.ui.common.component.preview.PreviewRedArgb
@@ -110,7 +112,7 @@ private fun SheetOverScrim(state: CashEntryState) {
     FinoteTheme(dynamicColor = false) {
         Box(Modifier.fillMaxSize().background(FinoteTheme.colors.background)) {
             FinoteBottomSheet(isVisible = true, onDismiss = {}) {
-                CashEntrySheet(state = state, onIntent = {}, onPageClose = {})
+                CashEntryScreen(state = state, onIntent = {}, onPageClose = {})
             }
             // Called last, as the route does, so its inline scrim covers the sheet.
             DeleteConfirmDialog(isVisible = state.isDeleteConfirmOpen, onIntent = {})

@@ -11,7 +11,7 @@ import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
 import io.github.toanhp123.finote.ui.ScreenPreviews
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
-import io.github.toanhp123.finote.ui.settings.BankSummary
+import io.github.toanhp123.finote.ui.settings.logic.BankSummary
 import java.time.ZoneOffset
 
 // 2026-11-10 08:30 UTC. Every preview passes ZoneOffset.UTC, so the text does not depend on the recording machine.

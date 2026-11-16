@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.ui.transactions
+package io.github.toanhp123.finote.ui.transactions.logic
 
 import io.github.toanhp123.finote.domain.account.A
 import io.github.toanhp123.finote.domain.account.B

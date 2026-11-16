@@ -9,12 +9,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.toanhp123.finote.R
+import io.github.toanhp123.finote.ui.cashentry.logic.ReimbursementChoice
 import io.github.toanhp123.finote.ui.common.component.control.FinoteSegmented
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 /** The reimbursement choice of an expense: a small label over the segmented control. */
 @Composable
-internal fun ReimbursementRow(
+fun ReimbursementRow(
     selected: ReimbursementChoice,
     onPick: (ReimbursementChoice) -> Unit,
     modifier: Modifier = Modifier,

@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.ui.cashentry.component
+package io.github.toanhp123.finote.ui.cashentry.logic
 
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction

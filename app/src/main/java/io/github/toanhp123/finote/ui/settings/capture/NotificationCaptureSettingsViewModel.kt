@@ -9,7 +9,7 @@ import io.github.toanhp123.finote.domain.notification.usecase.ObserveRuleCheckin
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveRuleUpdateStatusUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.SetRuleAutoUpdateUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
-import io.github.toanhp123.finote.ui.settings.summarizeBanks
+import io.github.toanhp123.finote.ui.settings.logic.summarizeBanks
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import javax.inject.Inject

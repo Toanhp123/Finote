@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.ui.cashentry
+package io.github.toanhp123.finote.ui.cashentry.logic
 
 /** Cash-entry keypad calculator. Operators are stored as '+', '−', '×', '÷'. All money is whole VND. */
 object AmountExpression {

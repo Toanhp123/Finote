@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.ui.cashentry
+package io.github.toanhp123.finote.ui.cashentry.component
 
 import android.content.Context
 import androidx.compose.ui.test.assertCountEquals
@@ -10,7 +10,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.R
-import io.github.toanhp123.finote.ui.cashentry.component.Selectors
+import io.github.toanhp123.finote.ui.cashentry.CashEntryState
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import org.junit.Rule
 import org.junit.Test

@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.ui.cashentry
+package io.github.toanhp123.finote.ui.cashentry.logic
 
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.SYSTEM_CASH_ACCOUNT_ID

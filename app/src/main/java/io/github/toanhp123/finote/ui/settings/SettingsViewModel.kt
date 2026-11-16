@@ -5,6 +5,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
+import io.github.toanhp123.finote.ui.settings.logic.summarizeBanks
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 

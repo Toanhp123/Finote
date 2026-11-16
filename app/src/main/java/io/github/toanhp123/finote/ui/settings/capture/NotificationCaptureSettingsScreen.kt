@@ -36,7 +36,7 @@ import io.github.toanhp123.finote.ui.common.component.layout.FinoteTopBar
 import io.github.toanhp123.finote.ui.common.format.formatShortDateTime
 import io.github.toanhp123.finote.ui.common.openListenerSettings
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
-import io.github.toanhp123.finote.ui.settings.BankSummary
+import io.github.toanhp123.finote.ui.settings.logic.BankSummary
 import java.time.ZoneId
 
 @Composable
@@ -165,6 +165,17 @@ private fun LastCheckLine(
 }
 
 @Composable
+private fun BanksSection(banks: List<BankSummary>) {
+    FinoteSection(stringResource(R.string.capture_group_banks)) {
+        Column {
+            banks.forEach { bank ->
+                FinoteListRow(title = bank.bankName, subtitle = bankSubtitle(bank))
+            }
+        }
+    }
+}
+
+@Composable
 private fun resultText(result: RuleUpdateResult): String =
     when (result) {
         is RuleUpdateResult.Updated -> {
@@ -188,17 +199,6 @@ private fun resultText(result: RuleUpdateResult): String =
             stringResource(R.string.capture_result_error)
         }
     }
-
-@Composable
-private fun BanksSection(banks: List<BankSummary>) {
-    FinoteSection(stringResource(R.string.capture_group_banks)) {
-        Column {
-            banks.forEach { bank ->
-                FinoteListRow(title = bank.bankName, subtitle = bankSubtitle(bank))
-            }
-        }
-    }
-}
 
 @Composable
 private fun bankSubtitle(bank: BankSummary): String {

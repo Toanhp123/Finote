@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.ui.transactions.component
+package io.github.toanhp123.finote.ui.transactions.logic
 
 import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
