@@ -32,10 +32,6 @@ class SettingsViewModel
 
         override fun onIntent(intent: SettingsIntent) {
             when (intent) {
-                is SettingsIntent.Resumed -> {
-                    setState { copy(isAccessEnabled = intent.isGranted) }
-                }
-
                 SettingsIntent.CaptureClicked -> {
                     sendEffect(SettingsEffect.OpenCaptureSettings)
                 }

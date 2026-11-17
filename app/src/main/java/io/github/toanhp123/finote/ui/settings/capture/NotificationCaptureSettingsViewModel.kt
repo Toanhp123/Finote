@@ -51,10 +51,6 @@ class NotificationCaptureSettingsViewModel
 
         override fun onIntent(intent: NotificationCaptureSettingsIntent) {
             when (intent) {
-                is NotificationCaptureSettingsIntent.Resumed -> {
-                    setState { copy(isAccessEnabled = intent.isGranted) }
-                }
-
                 NotificationCaptureSettingsIntent.AccessClicked -> {
                     sendEffect(NotificationCaptureSettingsEffect.OpenListenerSettings)
                 }

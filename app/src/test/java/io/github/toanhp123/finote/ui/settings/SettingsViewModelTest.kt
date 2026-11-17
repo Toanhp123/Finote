@@ -58,18 +58,6 @@ class SettingsViewModelTest {
         }
 
     @Test
-    fun `resumed updates access`() =
-        runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = true, isDebuggable = true)
-
-            vm.onIntent(SettingsIntent.Resumed(isGranted = true))
-            assertTrue(vm.state.value.isAccessEnabled)
-
-            vm.onIntent(SettingsIntent.Resumed(isGranted = false))
-            assertFalse(vm.state.value.isAccessEnabled)
-        }
-
-    @Test
     fun `capture click emits OpenCaptureSettings`() =
         runTest(mainRule.dispatcher) {
             val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = true, isDebuggable = true)

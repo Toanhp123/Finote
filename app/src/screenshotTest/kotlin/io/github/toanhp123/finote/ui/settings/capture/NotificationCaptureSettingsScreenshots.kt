@@ -27,7 +27,8 @@ private val banks =
 @PreviewTest
 @ScreenPreviews
 @Composable
-private fun CaptureOffNeverCheckedPreview() = Frame(NotificationCaptureSettingsState(banks = banks))
+private fun CaptureOffNeverCheckedPreview() =
+    Frame(NotificationCaptureSettingsState(banks = banks), isAccessEnabled = false)
 
 @PreviewTest
 @ScreenPreviews
@@ -35,11 +36,11 @@ private fun CaptureOffNeverCheckedPreview() = Frame(NotificationCaptureSettingsS
 private fun CaptureOnCheckingPreview() =
     Frame(
         NotificationCaptureSettingsState(
-            isAccessEnabled = true,
             isAutoUpdateEnabled = true,
             isChecking = true,
             banks = banks,
         ),
+        isAccessEnabled = true,
     )
 
 @PreviewTest
@@ -48,18 +49,26 @@ private fun CaptureOnCheckingPreview() =
 private fun CaptureOnUpdatedPreview() =
     Frame(
         NotificationCaptureSettingsState(
-            isAccessEnabled = true,
             isAutoUpdateEnabled = true,
             lastCheck = RuleUpdateCheck(CHECKED_AT, RuleUpdateResult.Updated(2)),
             banks = banks,
         ),
+        isAccessEnabled = true,
     )
 
 @Composable
-private fun Frame(state: NotificationCaptureSettingsState) {
+private fun Frame(
+    state: NotificationCaptureSettingsState,
+    isAccessEnabled: Boolean,
+) {
     FinoteTheme(dynamicColor = false) {
         Box(Modifier.fillMaxSize().background(FinoteTheme.colors.background).statusBarsPadding()) {
-            NotificationCaptureSettingsScreen(state = state, onIntent = {}, zone = ZoneOffset.UTC)
+            NotificationCaptureSettingsScreen(
+                state = state,
+                isAccessEnabled = isAccessEnabled,
+                onIntent = {},
+                zone = ZoneOffset.UTC,
+            )
         }
     }
 }

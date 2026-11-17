@@ -58,7 +58,6 @@ class NotificationCaptureSettingsViewModelTest {
             runCurrent()
             val check = RuleUpdateCheck(checkedAt = 1_000L, result = RuleUpdateResult.Updated(2))
 
-            vm.onIntent(NotificationCaptureSettingsIntent.Resumed(isGranted = true))
             vm.onIntent(NotificationCaptureSettingsIntent.AutoUpdateToggled(isEnabled = false))
             settings.lastCheck.value = check
             scheduler.isChecking.value = true
@@ -66,7 +65,6 @@ class NotificationCaptureSettingsViewModelTest {
             runCurrent()
 
             val state = vm.state.value
-            assertTrue(state.isAccessEnabled)
             assertFalse(state.isAutoUpdateEnabled)
             assertTrue(state.isChecking)
             assertEquals(check, state.lastCheck)

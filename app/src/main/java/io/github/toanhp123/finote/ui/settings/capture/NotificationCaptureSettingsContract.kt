@@ -8,7 +8,6 @@ import io.github.toanhp123.finote.ui.settings.logic.BankSummary
  * [banks] lists the supported banks, read only.
  */
 data class NotificationCaptureSettingsState(
-    val isAccessEnabled: Boolean = false,
     val isAutoUpdateEnabled: Boolean = false,
     val isChecking: Boolean = false,
     val lastCheck: RuleUpdateCheck? = null,
@@ -16,11 +15,6 @@ data class NotificationCaptureSettingsState(
 )
 
 sealed interface NotificationCaptureSettingsIntent {
-    /** The screen came back to the foreground. The screen reads the permission, so this class stays pure. */
-    data class Resumed(
-        val isGranted: Boolean,
-    ) : NotificationCaptureSettingsIntent
-
     data object AccessClicked : NotificationCaptureSettingsIntent
 
     data class AutoUpdateToggled(

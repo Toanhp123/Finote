@@ -19,10 +19,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.ObserveEffects
-import io.github.toanhp123.finote.ui.common.ReportListenerAccess
 import io.github.toanhp123.finote.ui.common.component.display.FinoteListRow
 import io.github.toanhp123.finote.ui.common.component.display.FinoteSection
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteTopBar
+import io.github.toanhp123.finote.ui.common.rememberNotificationListenerEnabled
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 @Composable
@@ -34,7 +34,6 @@ fun SettingsRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    ReportListenerAccess { viewModel.onIntent(SettingsIntent.Resumed(it)) }
     ObserveEffects(viewModel.effects) { effect ->
         when (effect) {
             SettingsEffect.OpenCaptureSettings -> onOpenCapture()
@@ -42,12 +41,14 @@ fun SettingsRoute(
             SettingsEffect.OpenNotificationLogs -> onOpenLogs()
         }
     }
-    SettingsScreen(state, viewModel::onIntent, modifier)
+    SettingsScreen(state, rememberNotificationListenerEnabled(), viewModel::onIntent, modifier)
 }
 
+/** [isAccessEnabled] is read in composition, not in the ViewModel, so the first frame already shows the real value. */
 @Composable
 fun SettingsScreen(
     state: SettingsState,
+    isAccessEnabled: Boolean,
     onIntent: (SettingsIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -69,7 +70,7 @@ fun SettingsScreen(
             FinoteSection(title = stringResource(R.string.settings_group_capture)) {
                 FinoteListRow(
                     title = stringResource(R.string.settings_capture_title),
-                    subtitle = captureSubtitle(state),
+                    subtitle = captureSubtitle(state.bankCount, isAccessEnabled),
                     leading = { RowIcon(R.drawable.ic_notifications, FinoteTheme.scheme.primary) },
                     trailing = { RowIcon(R.drawable.ic_chevron_right, FinoteTheme.scheme.onSurfaceVariant) },
                     onClick = { onIntent(SettingsIntent.CaptureClicked) },
@@ -102,12 +103,15 @@ private fun RowIcon(
 }
 
 @Composable
-private fun captureSubtitle(state: SettingsState): String {
-    val access = if (state.isAccessEnabled) R.string.settings_access_on else R.string.settings_access_off
+private fun captureSubtitle(
+    bankCount: Int,
+    isAccessEnabled: Boolean,
+): String {
+    val access = if (isAccessEnabled) R.string.settings_access_on else R.string.settings_access_off
     return pluralStringResource(
         R.plurals.settings_capture_subtitle,
-        state.bankCount,
+        bankCount,
         stringResource(access),
-        state.bankCount,
+        bankCount,
     )
 }

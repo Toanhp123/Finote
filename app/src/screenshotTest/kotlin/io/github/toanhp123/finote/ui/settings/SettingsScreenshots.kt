@@ -13,18 +13,21 @@ import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 @PreviewTest
 @ScreenPreviews
 @Composable
-private fun SettingsAccessOnPreview() = Frame(SettingsState(isAccessEnabled = true, bankCount = 4))
+private fun SettingsAccessOnPreview() = Frame(SettingsState(bankCount = 4), isAccessEnabled = true)
 
 @PreviewTest
 @ScreenPreviews
 @Composable
-private fun SettingsAccessOffPreview() = Frame(SettingsState(isAccessEnabled = false, bankCount = 4))
+private fun SettingsAccessOffPreview() = Frame(SettingsState(bankCount = 4), isAccessEnabled = false)
 
 @Composable
-private fun Frame(state: SettingsState) {
+private fun Frame(
+    state: SettingsState,
+    isAccessEnabled: Boolean,
+) {
     FinoteTheme(dynamicColor = false) {
         Box(Modifier.fillMaxSize().background(FinoteTheme.colors.background).statusBarsPadding()) {
-            SettingsScreen(state = state, onIntent = {})
+            SettingsScreen(state = state, isAccessEnabled = isAccessEnabled, onIntent = {})
         }
     }
 }

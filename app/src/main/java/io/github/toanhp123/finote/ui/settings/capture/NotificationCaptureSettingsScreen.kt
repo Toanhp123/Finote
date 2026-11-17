@@ -26,7 +26,6 @@ import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
 import io.github.toanhp123.finote.ui.common.ObserveEffects
-import io.github.toanhp123.finote.ui.common.ReportListenerAccess
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButtonStyle
 import io.github.toanhp123.finote.ui.common.component.control.FinoteSwitchRow
@@ -35,6 +34,7 @@ import io.github.toanhp123.finote.ui.common.component.display.FinoteSection
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteTopBar
 import io.github.toanhp123.finote.ui.common.format.formatShortDateTime
 import io.github.toanhp123.finote.ui.common.openListenerSettings
+import io.github.toanhp123.finote.ui.common.rememberNotificationListenerEnabled
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.settings.logic.BankSummary
 import java.time.ZoneId
@@ -47,7 +47,6 @@ fun NotificationCaptureSettingsRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    ReportListenerAccess { viewModel.onIntent(NotificationCaptureSettingsIntent.Resumed(it)) }
     ObserveEffects(viewModel.effects) { effect ->
         when (effect) {
             NotificationCaptureSettingsEffect.OpenListenerSettings -> {
@@ -59,12 +58,14 @@ fun NotificationCaptureSettingsRoute(
             }
         }
     }
-    NotificationCaptureSettingsScreen(state, viewModel::onIntent, modifier)
+    NotificationCaptureSettingsScreen(state, rememberNotificationListenerEnabled(), viewModel::onIntent, modifier)
 }
 
+/** [isAccessEnabled] is read in composition, not in the ViewModel, so the first frame already shows the real value. */
 @Composable
 fun NotificationCaptureSettingsScreen(
     state: NotificationCaptureSettingsState,
+    isAccessEnabled: Boolean,
     onIntent: (NotificationCaptureSettingsIntent) -> Unit,
     modifier: Modifier = Modifier,
     zone: ZoneId = ZoneId.systemDefault(),
@@ -83,7 +84,7 @@ fun NotificationCaptureSettingsScreen(
                     .padding(top = FinoteTheme.spacing.sm),
             verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.lg),
         ) {
-            AccessSection(state.isAccessEnabled, onIntent)
+            AccessSection(isAccessEnabled, onIntent)
             PatternsSection(state, onIntent, zone)
             if (state.banks.isNotEmpty()) BanksSection(state.banks)
         }
