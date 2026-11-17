@@ -20,9 +20,11 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParsedFields
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.service.planSettlement
+import io.github.toanhp123.finote.domain.notification.usecase.SettlePendingLogsUseCase
 import io.github.toanhp123.finote.domain.transaction.error.TransactionError
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -37,6 +39,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 
+@Suppress("LargeClass") // why: one class per repository; the pairing cases share its log and account helpers
 @RunWith(AndroidJUnit4::class)
 class NotificationSettlementRepositoryImplTest {
     @get:Rule
@@ -50,14 +53,19 @@ class NotificationSettlementRepositoryImplTest {
         repo = NotificationSettlementRepositoryImpl(dbRule.db, clock)
     }
 
+    @Suppress("LongParameterList") // why: one named default per log field the pairing tests vary
     private fun log(
         id: String,
         postBalance: Long? = 950_000L,
         postTime: Long = 1_000L, // offset from T0, so it stays inside the ledger time range
         status: NotificationStatus = NotificationStatus.PENDING,
+        amount: Long = 50_000L,
+        type: TransactionType = TransactionType.EXPENSE,
+        mask: String? = "1234",
+        packageName: String = PKG,
     ) = NotificationLog(
         id = id,
-        packageName = PKG,
+        packageName = packageName,
         channelId = null,
         title = "t",
         content = "c",
@@ -67,13 +75,16 @@ class NotificationSettlementRepositoryImplTest {
         status = status,
         failureReason = null,
         matchedRuleId = "rule",
-        parsed = ParsedFields(50_000L, TransactionType.EXPENSE, "1234", postBalance, "Parsed shop", null),
+        parsed = ParsedFields(amount, type, mask, postBalance, "Parsed shop", null),
     )
 
     private suspend fun seed(vararg logs: NotificationLog) =
         logs.forEach { dbRule.db.notificationLogDao().insert(it.toEntity()) }
 
-    private fun newAccount(type: AccountType = AccountType.BANK) = AccountTarget.New(PKG, "1234", "Vietcombank", type)
+    private fun newAccount(
+        type: AccountType = AccountType.BANK,
+        mask: String? = "1234",
+    ) = AccountTarget.New(PKG, mask, "Vietcombank", type)
 
     private fun book(
         bank: NotificationLog,
@@ -481,9 +492,308 @@ class NotificationSettlementRepositoryImplTest {
             assertEquals(setOf("good"), repo.getRulesById().keys)
         }
 
+    private suspend fun accountOf(mask: String) = repo.getAccounts().single { it.accountNumberMask == mask }
+
+    private suspend fun liveRows() =
+        dbRule.db
+            .transactionDao()
+            .observeTransactions(null)
+            .first()
+
+    private fun debit(postBalance: Long? = 1_500_000L) = log("d", postBalance, 1_000L, amount = 500_000L, mask = "1111")
+
+    private fun credit(postBalance: Long? = 700_000L) =
+        log(
+            id = "c",
+            postBalance = postBalance,
+            postTime = 1_000L + 5 * MINUTE,
+            amount = 500_000L,
+            type = TransactionType.INCOME,
+            mask = "2222",
+        )
+
+    private fun walletCredit(postTime: Long) =
+        log(
+            id = "w",
+            postBalance = 700_000L,
+            postTime = postTime,
+            amount = 500_000L,
+            type = TransactionType.INCOME,
+            mask = null,
+            packageName = MOMO,
+        )
+
+    /** A 500_000 debit on account 1111, then a 500_000 credit on account 2222 five minutes later. */
+    private suspend fun bookDebitThenCredit() {
+        seed(debit(), credit())
+        repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
+        repo.book(book(credit(), target = newAccount(mask = "2222")), "tx-2", NOW)
+    }
+
+    @Test
+    fun `debit then credit 5 min later becomes one transfer`() =
+        runTest {
+            seed(debit(), credit())
+            repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
+            val partnerBefore = dbRule.db.transactionDao().getById("tx-1")!!
+            repo.book(book(credit(), target = newAccount(mask = "2222")), "tx-2", NOW)
+
+            val a = accountOf("1111")
+            val b = accountOf("2222")
+            val transfer = liveRows().single()
+            assertEquals(TransactionType.TRANSFER, transfer.type)
+            assertEquals(a.id, transfer.accountId)
+            assertEquals(b.id, transfer.toAccountId)
+            assertEquals(500_000L, transfer.amount)
+            assertEquals(1_500_000L, transfer.postBalance)
+            assertEquals(700_000L, transfer.toPostBalance)
+            assertEquals(T0 + 1_000L + 5 * MINUTE, transfer.toTimestamp)
+            assertNull(transfer.notificationLogId)
+            listOf("tx-1", "tx-2").forEach {
+                val original = dbRule.db.transactionDao().getById(it)!!
+                assertNotNull(original.deletedAt)
+                assertEquals(transfer.id, original.pairedIntoId)
+            }
+            // The partner keeps every stored field (updatedAt included) except the two pair fields.
+            assertEquals(
+                partnerBefore.copy(deletedAt = NOW, pairedIntoId = transfer.id),
+                dbRule.db.transactionDao().getById("tx-1"),
+            )
+            assertEquals(NotificationStatus.PAIRED_TRANSFER, storedLog("d").status)
+            assertEquals("tx-1", storedLog("d").linkedTransactionId)
+            assertEquals(NotificationStatus.PAIRED_TRANSFER, storedLog("c").status)
+            assertEquals("tx-2", storedLog("c").linkedTransactionId)
+            // Same balances as a manual transfer of 500_000 from a (2_000_000 start) to b (200_000 start).
+            assertEquals(2_000_000L, a.initialBalance)
+            assertEquals(1_500_000L, a.currentBalance)
+            assertEquals(200_000L, b.initialBalance)
+            assertEquals(700_000L, b.currentBalance)
+        }
+
+    @Test
+    fun `second row is never live`() =
+        runTest {
+            bookDebitThenCredit()
+
+            assertNotNull(
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-2")!!
+                    .deletedAt,
+            )
+        }
+
+    @Test
+    fun `a debit that arrives after its credit still sends from the debit account`() =
+        runTest {
+            seed(debit(), credit())
+            repo.book(book(credit(), target = newAccount(mask = "2222")), "tx-2", NOW)
+            repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
+
+            val transfer = liveRows().single()
+            assertEquals(accountOf("1111").id, transfer.accountId)
+            assertEquals(accountOf("2222").id, transfer.toAccountId)
+            assertEquals(T0 + 1_000L, transfer.timestamp)
+        }
+
+    /** A log due at the clock of [runSettlement], [minutesAgo] before it. */
+    private fun dueLog(
+        id: String,
+        minutesAgo: Long,
+        type: TransactionType,
+        mask: String?,
+        rule: String = "rule",
+        packageName: String = PKG,
+    ) = log(
+        id = id,
+        postBalance = 800_000L,
+        postTime = SETTLE_NOW - T0 - minutesAgo * MINUTE,
+        amount = 500_000L,
+        type = type,
+        mask = mask,
+        packageName = packageName,
+    ).copy(matchedRuleId = rule, content = "text-$id") // distinct text, or the planner reads it as a repost
+
+    private suspend fun runSettlement(): Boolean {
+        val clock = Clock.fixed(Instant.ofEpochMilli(SETTLE_NOW), ZoneOffset.UTC)
+        val dao = dbRule.db.parserRuleDao()
+        dao.insert(parserRuleEntity(id = "rule", packageName = PKG))
+        dao.insert(parserRuleEntity(id = "wallet-rule", packageName = MOMO, accountType = "WALLET"))
+        return SettlePendingLogsUseCase(repo, RoomTransactionRunner(dbRule.db), clock)()
+    }
+
+    @Test
+    fun `same worker run pairs`() =
+        runTest {
+            seed(
+                dueLog("d", 40, TransactionType.EXPENSE, "1111"),
+                dueLog("c", 35, TransactionType.INCOME, "2222"),
+            )
+
+            assertFalse(runSettlement())
+
+            val transfer = liveRows().single()
+            assertEquals(TransactionType.TRANSFER, transfer.type)
+            assertEquals(accountOf("1111").id, transfer.accountId)
+            assertEquals(accountOf("2222").id, transfer.toAccountId)
+            assertEquals(NotificationStatus.PAIRED_TRANSFER, storedLog("d").status)
+            assertEquals(NotificationStatus.PAIRED_TRANSFER, storedLog("c").status)
+        }
+
+    @Test
+    fun `MoMo top-up from VCB pairs`() =
+        runTest {
+            val bank = debit()
+            val wallet = walletCredit(postTime = 1_000L + 20_000L)
+            seed(bank, wallet)
+
+            repo.book(book(bank, target = newAccount(mask = "1111")), "tx-1", NOW)
+            repo.book(book(wallet, target = AccountTarget.New(MOMO, null, "MoMo", AccountType.WALLET)), "tx-2", NOW)
+
+            val transfer = liveRows().single()
+            assertEquals(TransactionType.TRANSFER, transfer.type)
+            assertEquals(accountOf("1111").id, transfer.accountId)
+            assertEquals(AccountType.WALLET, repo.getAccounts().single { it.id == transfer.toAccountId }.type)
+        }
+
+    @Test
+    fun `MoMo paid from VCB stays one expense`() =
+        runTest {
+            val wallet = dueLog("w", 40, TransactionType.EXPENSE, null, rule = "wallet-rule", packageName = MOMO)
+            seed(dueLog("d", 40, TransactionType.EXPENSE, "1111"), wallet.copy(postTime = wallet.postTime + 10_000L))
+
+            assertFalse(runSettlement())
+
+            assertEquals(TransactionType.EXPENSE, liveRows().single().type)
+            assertEquals(NotificationStatus.CONFIRMED, storedLog("d").status)
+            assertEquals(NotificationStatus.DEDUPLICATED, storedLog("w").status)
+        }
+
+    @Test
+    fun `wallet log deduplicated into a paired row keeps its link`() =
+        runTest {
+            val wallet = walletCredit(postTime = 1_000L + 5 * MINUTE + 10_000L)
+            seed(debit(), credit(), wallet)
+            repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
+
+            repo.book(book(credit(), wallet, newAccount(mask = "2222")), "tx-2", NOW)
+
+            assertEquals(TransactionType.TRANSFER, liveRows().single().type)
+            assertEquals(NotificationStatus.DEDUPLICATED, storedLog("w").status)
+            assertEquals("tx-2", storedLog("w").linkedTransactionId)
+        }
+
+    @Test
+    fun `partner account archived after its booking books the new row alone`() =
+        runTest {
+            seed(debit(), credit())
+            repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
+            val accountDao = dbRule.db.accountDao()
+            accountDao.update(accountDao.getById(accountOf("1111").id)!!.copy(isArchived = true))
+
+            assertNull(bookInTx(book(credit(), target = newAccount(mask = "2222")), "tx-2"))
+
+            val rows = liveRows()
+            assertEquals(listOf("tx-1", "tx-2"), rows.map { it.id }.sorted())
+            assertEquals(TransactionType.INCOME, rows.single { it.id == "tx-2" }.type)
+            assertEquals(NotificationStatus.CONFIRMED, storedLog("c").status)
+            assertNull(
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-2")!!
+                    .pairedIntoId,
+            )
+        }
+
+    @Test
+    fun `uninitialized receiver gets its start from toPostBalance`() =
+        runTest {
+            dbRule.db.accountDao().insert(
+                account(id = "acc-b", currentBalance = 0L, bankPackageName = PKG, accountNumberMask = "2222")
+                    .copy(isInitialized = false),
+            )
+            seed(debit(), credit())
+            repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
+
+            repo.book(book(credit(), target = AccountTarget.Existing("acc-b")), "tx-2", NOW)
+
+            assertEquals(TransactionType.TRANSFER, liveRows().single().type)
+            val b = accountOf("2222")
+            assertTrue(b.isInitialized)
+            assertEquals(200_000L, b.initialBalance)
+            assertEquals(700_000L, b.currentBalance)
+        }
+
+    @Test
+    fun `late receiver row after pairing does not cause drift`() =
+        runTest {
+            // The receiver starts at 230_000: with the late 30_000 expense the books match the bank's 700_000.
+            dbRule.db.accountDao().insert(
+                account(id = "acc-b", currentBalance = 230_000L, bankPackageName = PKG, accountNumberMask = "2222"),
+            )
+            val late = log("late", 200_000L, 1_000L + 2 * MINUTE, amount = 30_000L, mask = "2222")
+            seed(debit(), credit(), late)
+            repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
+            repo.book(book(credit(), target = AccountTarget.Existing("acc-b")), "tx-2", NOW)
+
+            repo.book(book(late, target = AccountTarget.Existing("acc-b")), "tx-3", NOW)
+
+            assertEquals(setOf(TransactionType.TRANSFER, TransactionType.EXPENSE), liveRows().map { it.type }.toSet())
+            val b = accountOf("2222")
+            assertEquals(700_000L, b.currentBalance)
+            val rows =
+                dbRule.db
+                    .transactionDao()
+                    .getActiveByAccount(b.id)
+                    .map { it.toDomain() }
+            // The drift assertion carries the test: a wrong anchor on the late expense would report 500_000.
+            assertNull(detectBalanceDrift(b, rows))
+        }
+
+    @Test
+    fun `failure while pairing rolls back the new row`() =
+        runTest {
+            dbRule.db.accountDao().insert(
+                account(id = "acc-b", currentBalance = 200_000L, bankPackageName = PKG, accountNumberMask = "2222"),
+            )
+            seed(debit(), credit())
+            repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
+            val balancesBefore = repo.getAccounts().associate { it.id to it.currentBalance }
+
+            val thrown =
+                runCatching {
+                    RoomTransactionRunner(dbRule.db).write<Unit, SettlementError> {
+                        repo.book(book(credit(), target = AccountTarget.Existing("acc-b")), "tx-2", NOW)
+                        error("boom")
+                    }
+                }.exceptionOrNull()
+
+            assertTrue(thrown is IllegalStateException)
+            assertNull(dbRule.db.transactionDao().getById("tx-2"))
+            assertNull(
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-1")!!
+                    .deletedAt,
+            )
+            assertNull(
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-1")!!
+                    .pairedIntoId,
+            )
+            assertEquals(NotificationStatus.PENDING, storedLog("c").status)
+            assertEquals(NotificationStatus.CONFIRMED, storedLog("d").status)
+            assertEquals(2, balancesBefore.size)
+            assertEquals(balancesBefore, repo.getAccounts().associate { it.id to it.currentBalance })
+        }
+
     private companion object {
         const val PKG = "com.test.bank"
+        const val MOMO = "com.test.momo"
+        const val MINUTE = 60_000L
         const val T0 = 1_000_000_000_000L
+        val SETTLE_NOW: Long = Instant.parse("2026-11-03T00:00:00Z").toEpochMilli()
         const val NOW = T0 + 5_000L
     }
 }

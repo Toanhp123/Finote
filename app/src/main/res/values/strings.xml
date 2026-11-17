@@ -80,6 +80,9 @@
     <string name="cash_entry_delete_cd">Xóa giao dịch</string>
     <string name="cash_entry_delete_title">Xóa giao dịch này?</string>
     <string name="cash_entry_delete_text">Số dư tài khoản sẽ được tính lại.</string>
+    <string name="cash_entry_unpair">Không phải chuyển khoản</string>
+    <string name="cash_entry_unpair_confirm_title">Tách thành hai giao dịch?</string>
+    <string name="cash_entry_unpair_confirm_body">Tách lại thành hai giao dịch Chi và Thu ban đầu. Những thay đổi bạn đã sửa trên dòng này sẽ mất.</string>
     <string name="cash_entry_backspace">Xóa</string>
     <string name="cash_entry_tile_label">Ghi tiền mặt</string>
     <string name="cash_entry_shortcut_short">Ghi tiền mặt</string>
@@ -96,6 +99,7 @@
     <string name="transactions_adjustment">Điều chỉnh số dư</string>
     <string name="transactions_uncategorized">Chưa phân loại</string>
     <string name="transactions_deleted_account">Tài khoản đã xóa</string>
+    <string name="transactions_auto_paired">Tự ghép</string>
     <string name="transactions_empty">Chưa có giao dịch</string>
     <string name="transactions_empty_account">Tài khoản này chưa có giao dịch</string>
     <string name="transactions_error">Không tải được giao dịch</string>

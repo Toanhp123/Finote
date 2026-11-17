@@ -22,6 +22,12 @@ data class Transaction(
     /** VND balance the bank printed after this transaction; null for a manual one. */
     val postBalance: Long? = null,
     val notificationLogId: String? = null,
+    /** Transfer only: VND balance the receiving bank printed. */
+    val toPostBalance: Long? = null,
+    /** Transfer only: the receiver's own notification time. */
+    val toTimestamp: Long? = null,
+    /** On a soft-deleted original: the TRANSFER that replaced it. */
+    val pairedIntoId: String? = null,
 ) {
     init {
         require(amount > 0) { "amount must be positive" }
@@ -30,7 +36,9 @@ data class Transaction(
             require(toAccountId != null && toAccountId != accountId) { "transfer needs a different destination" }
         } else {
             require(toAccountId == null) { "only a transfer has a destination" }
+            require(toPostBalance == null && toTimestamp == null) { "only a transfer has receiver fields" }
         }
+        require(pairedIntoId == null || deletedAt != null) { "only a deleted row has a pair link" }
         require((type == TransactionType.ADJUSTMENT) == (adjustmentDirection != null)) {
             "only an adjustment has a direction, and it must have one"
         }

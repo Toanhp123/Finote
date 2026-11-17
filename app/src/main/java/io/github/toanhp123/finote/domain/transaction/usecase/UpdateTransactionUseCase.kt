@@ -57,6 +57,8 @@ class UpdateTransactionUseCase
             val old = Instant.ofEpochMilli(existing.timestamp).atZone(clock.zone)
             val isSameDate = edit.date == old.toLocalDate()
             val isExpense = fields.type == TransactionType.EXPENSE
+            val isSameReceiver =
+                isSameDate && fields.accountId == existing.accountId && fields.toAccountId == existing.toAccountId
             return existing.copy(
                 amount = fields.amount,
                 feeAmount = fields.feeAmount,
@@ -70,7 +72,11 @@ class UpdateTransactionUseCase
                 timestamp = if (isSameDate) existing.timestamp else movedTimestamp(old.toLocalTime(), edit.date),
                 // The bank printed this balance for the old account and day only.
                 postBalance = existing.postBalance.takeIf { isSameDate && fields.accountId == existing.accountId },
-                updatedAt = clock.millis(),
+                // The receiver's figures hold for the same day and the same pair of accounts only.
+                toPostBalance = existing.toPostBalance.takeIf { isSameReceiver },
+                toTimestamp = existing.toTimestamp.takeIf { isSameReceiver },
+                // The clock may not have moved since createdAt; an edit must still look newer.
+                updatedAt = maxOf(clock.millis(), existing.createdAt + 1),
             )
         }
 

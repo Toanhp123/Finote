@@ -12,6 +12,7 @@ import io.github.toanhp123.finote.data.notification.repository.NotificationSettl
 import io.github.toanhp123.finote.data.notification.repository.ParserRuleRepositoryImpl
 import io.github.toanhp123.finote.data.setup.repository.SetupRepositoryImpl
 import io.github.toanhp123.finote.data.transaction.repository.TransactionRepositoryImpl
+import io.github.toanhp123.finote.data.transaction.repository.TransferPairRepositoryImpl
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
 import io.github.toanhp123.finote.domain.common.TransactionRunner
@@ -20,6 +21,7 @@ import io.github.toanhp123.finote.domain.notification.repository.NotificationSet
 import io.github.toanhp123.finote.domain.notification.repository.ParserRuleRepository
 import io.github.toanhp123.finote.domain.setup.repository.SetupRepository
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
+import io.github.toanhp123.finote.domain.transaction.repository.TransferPairRepository
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -32,6 +34,9 @@ interface RepositoryModule {
 
     @Binds
     fun bindTransactionRepository(impl: TransactionRepositoryImpl): TransactionRepository
+
+    @Binds
+    fun bindTransferPairRepository(impl: TransferPairRepositoryImpl): TransferPairRepository
 
     @Binds
     fun bindNotificationCaptureRepository(impl: NotificationCaptureRepositoryImpl): NotificationCaptureRepository

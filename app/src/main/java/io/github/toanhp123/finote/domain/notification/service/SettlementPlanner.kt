@@ -12,12 +12,15 @@ import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.B
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Fail
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Ignore
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Repost
+import io.github.toanhp123.finote.domain.transaction.service.TransactionRules
+import java.time.Instant
 import kotlin.math.abs
 
 // Failure reasons a settlement run writes to a log.
 const val FAIL_AMBIGUOUS_ACCOUNT = "ambiguous_account"
 const val FAIL_ACCOUNT_ARCHIVED = "account_archived"
 const val FAIL_INVALID_AMOUNT = "invalid_amount"
+const val FAIL_INVALID_TIME = "invalid_time"
 const val FAIL_SETTLE_ERROR = "settle_error"
 
 // 10^15 VND: far above any real balance, far below Long.MAX_VALUE, so balance sums cannot overflow.
@@ -34,7 +37,8 @@ private val LOG_ORDER = compareBy<NotificationLog>({ it.postTime }, { it.id })
 /**
  * Decides what becomes of the [pending] logs. A log is due once it is [PAIR_WINDOW_MILLIS] old; until then it waits
  * (but can still be the partner of a due log). Result order: every Book and Fail by the time of the log that
- * carries it, then every Repost in log order. A Repost whose original still waits is not emitted yet.
+ * carries it, then every Repost in log order. A log with an impossible post time fails at once, due or not.
+ * A Repost whose original still waits is not emitted yet.
  * Logs are ordered by postTime, then id; "earlier" always means earlier in that order.
  */
 fun planSettlement(
@@ -92,12 +96,14 @@ private fun NotificationLog.sameText(other: NotificationLog) =
 private class Planner(
     private val accounts: List<Account>,
     private val rulesById: Map<String, ParserRule>,
-    now: Long,
+    private val now: Long,
 ) {
     private val dueTime = now - PAIR_WINDOW_MILLIS
 
     /** Book and Fail decisions for the logs that are not reposts, ordered by the log that carries each. */
-    fun settle(pool: List<NotificationLog>): List<SettlementDecision> {
+    fun settle(allLogs: List<NotificationLog>): List<SettlementDecision> {
+        // An impossible post time can never be booked and never becomes due: fail it now, before pairing.
+        val (pool, badTime) = allLogs.partition { it.hasValidTime() }
         val valid = pool.filter { it.hasValidAmount() }
         val pairs = pair(valid)
         val paired = pairs.flatMap { listOf(it.first, it.second) }.toSet()
@@ -105,12 +111,16 @@ private class Planner(
             pool
                 .filter { it.isDue() && !it.hasValidAmount() }
                 .map { it to Fail(it, null, FAIL_INVALID_AMOUNT) }
+        val timeFailures = badTime.map { it to Fail(it, null, FAIL_INVALID_TIME) }
         val pairDecisions = pairs.map { (bank, wallet) -> bank to decide(bank, wallet) }
         val singles = valid.filter { it !in paired && it.isDue() }.map { it to decide(it, null) }
-        return (invalid + pairDecisions + singles).sortedWith(compareBy(LOG_ORDER) { it.first }).map { it.second }
+        val decisions = timeFailures + invalid + pairDecisions + singles
+        return decisions.sortedWith(compareBy(LOG_ORDER) { it.first }).map { it.second }
     }
 
     private fun NotificationLog.isDue() = postTime <= dueTime
+
+    private fun NotificationLog.hasValidTime() = TransactionRules.isValidTimestamp(postTime, Instant.ofEpochMilli(now))
 
     private fun NotificationLog.hasValidAmount() = (parsed?.amount ?: 0L) in 1L..MAX_AMOUNT
 

@@ -40,6 +40,9 @@ data class CashEntryState(
     /** Only an expense keeps it; the use case resets it for any other type. */
     val reimbursement: ReimbursementChoice = ReimbursementChoice.NORMAL,
     val isDeleteConfirmOpen: Boolean = false,
+    /** Edit mode: original rows were folded into this one by auto-pairing, whatever its type is now. Read once. */
+    val isAutoPaired: Boolean = false,
+    val isUnpairConfirmOpen: Boolean = false,
 ) {
     /** The accounts a transfer can go to: every live account except the source. */
     val destinationChoices: List<Account> get() = accounts.filter { it.id != selectedAccountId }
@@ -106,6 +109,12 @@ sealed interface CashEntryIntent {
     data object DeleteConfirmed : CashEntryIntent
 
     data object DeleteDismissed : CashEntryIntent
+
+    data object UnpairClicked : CashEntryIntent
+
+    data object UnpairConfirmed : CashEntryIntent
+
+    data object UnpairDismissed : CashEntryIntent
 }
 
 sealed interface CashEntryEffect {

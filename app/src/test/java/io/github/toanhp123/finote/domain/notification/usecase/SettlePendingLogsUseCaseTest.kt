@@ -25,7 +25,7 @@ import java.time.Instant
 import java.time.ZoneOffset
 
 class SettlePendingLogsUseCaseTest {
-    private val now = 10_000_000L
+    private val now = 1_800_000_000_000L + 10_000_000L // 2027, inside the allowed post time range
     private val old = now - 3_600_000L
     private val clock = Clock.fixed(Instant.ofEpochMilli(now), ZoneOffset.UTC)
 

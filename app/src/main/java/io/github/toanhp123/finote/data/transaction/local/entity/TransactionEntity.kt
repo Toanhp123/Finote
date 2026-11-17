@@ -50,6 +50,7 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionType
             Index(value = ["categoryId"]),
             Index(value = ["timestamp"]),
             Index(value = ["notificationLogId"]),
+            Index(value = ["pairedIntoId"]),
         ],
 )
 data class TransactionEntity(
@@ -79,4 +80,10 @@ data class TransactionEntity(
     val postBalance: Long?,
     /** The notification this transaction came from. Cleared when the log row is purged. */
     val notificationLogId: String?,
+    /** Transfer only: VND balance the receiving bank printed. */
+    val toPostBalance: Long? = null,
+    /** Transfer only: the receiver's own notification time. */
+    val toTimestamp: Long? = null,
+    /** On a soft-deleted original: the TRANSFER that replaced it. */
+    val pairedIntoId: String? = null,
 )

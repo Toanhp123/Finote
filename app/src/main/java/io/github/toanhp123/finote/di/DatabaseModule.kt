@@ -16,6 +16,7 @@ import io.github.toanhp123.finote.data.notification.local.dao.NotificationLogDao
 import io.github.toanhp123.finote.data.notification.local.dao.ParserRuleDao
 import io.github.toanhp123.finote.data.transaction.local.dao.TagDao
 import io.github.toanhp123.finote.data.transaction.local.dao.TransactionDao
+import io.github.toanhp123.finote.data.transaction.local.dao.TransferPairDao
 import java.time.Clock
 import javax.inject.Singleton
 
@@ -43,6 +44,9 @@ object DatabaseModule {
 
     @Provides
     fun provideTransactionDao(db: FinoteDatabase): TransactionDao = db.transactionDao()
+
+    @Provides
+    fun provideTransferPairDao(db: FinoteDatabase): TransferPairDao = db.transferPairDao()
 
     @Provides
     fun provideTagDao(db: FinoteDatabase): TagDao = db.tagDao()

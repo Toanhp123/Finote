@@ -21,6 +21,7 @@ import io.github.toanhp123.finote.ui.cashentry.CashEntryState
 import io.github.toanhp123.finote.ui.cashentry.logic.AmountResult
 import io.github.toanhp123.finote.ui.cashentry.logic.InvalidReason
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
+import io.github.toanhp123.finote.ui.common.component.control.FinoteButtonStyle
 import io.github.toanhp123.finote.ui.common.component.finance.MoneyText
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
@@ -39,6 +40,15 @@ fun KeypadPage(
             isSaving = state.isSaving,
             onDelete = { onIntent(CashEntryIntent.DeleteClicked) },
         )
+        if (state.isEditing && state.isAutoPaired) {
+            FinoteButton(
+                text = stringResource(R.string.cash_entry_unpair),
+                onClick = { onIntent(CashEntryIntent.UnpairClicked) },
+                modifier = Modifier.fillMaxWidth(),
+                style = FinoteButtonStyle.Secondary,
+                enabled = !state.isSaving,
+            )
+        }
         AmountHeader(state)
         Selectors(state, onIntent, onDateClick = { onIntent(CashEntryIntent.PageOpened(CashEntryPage.DATE)) })
         if (state.isEditing && state.type == TransactionType.EXPENSE) {

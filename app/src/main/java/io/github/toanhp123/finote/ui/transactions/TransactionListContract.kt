@@ -26,6 +26,8 @@ data class TransactionListState(
     val drifts: List<BalanceDrift> = emptyList(),
     /** The balance adjustment waiting for the user to confirm its deletion; null shows no dialog. */
     val deletingId: String? = null,
+    /** Ids of the transfers made by auto-pairing; their row says so. */
+    val autoPairedIds: Set<String> = emptySet(),
 )
 
 sealed interface TransactionListIntent {

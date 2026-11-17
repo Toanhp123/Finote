@@ -14,6 +14,12 @@ object TransactionRules {
     const val MIN_TIMESTAMP_MS = 946_684_800_000L
     const val MAX_FUTURE_DAYS = 366L
 
+    /** True when [timestamp] is from 2000-01-01 up to [MAX_FUTURE_DAYS] after [now], both inclusive. */
+    fun isValidTimestamp(
+        timestamp: Long,
+        now: Instant,
+    ): Boolean = timestamp in MIN_TIMESTAMP_MS..now.plus(MAX_FUTURE_DAYS, ChronoUnit.DAYS).toEpochMilli()
+
     /**
      * Checks in this order: timestamp, accounts, category.
      * [usableAccountIds] is the part of the transaction's accounts that exist and are usable.
@@ -25,10 +31,9 @@ object TransactionRules {
         usableAccountIds: Set<String>,
         categoryType: CategoryType?,
     ): TransactionError? {
-        val max = now.plus(MAX_FUTURE_DAYS, ChronoUnit.DAYS).toEpochMilli()
         val wanted = setOfNotNull(transaction.accountId, transaction.toAccountId)
         return when {
-            transaction.timestamp !in MIN_TIMESTAMP_MS..max -> TransactionError.InvalidTimestamp
+            !isValidTimestamp(transaction.timestamp, now) -> TransactionError.InvalidTimestamp
             !usableAccountIds.containsAll(wanted) -> TransactionError.AccountUnusable
             else -> checkCategory(transaction, categoryType)
         }

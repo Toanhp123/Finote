@@ -13,6 +13,7 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.usecase.AdjustBalanceDriftUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.ObserveAutoPairedIdsUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import io.github.toanhp123.finote.ui.transactions.logic.isOpenable
@@ -37,6 +38,7 @@ class TransactionListViewModel
         observeDrifts: ObserveBalanceDriftUseCase,
         private val adjustBalanceDrift: AdjustBalanceDriftUseCase,
         private val deleteTransaction: DeleteTransactionUseCase,
+        observeAutoPairedIds: ObserveAutoPairedIdsUseCase,
         private val clock: Clock,
         @IsDebuggable isDebuggable: Boolean,
     ) : BaseViewModel<TransactionListState, TransactionListIntent, TransactionListEffect>(
@@ -100,6 +102,12 @@ class TransactionListViewModel
                 observeDrifts()
                     .catchStorage { emit(emptyList()) }
                     .collect { setState { copy(drifts = it) } }
+            }
+            // Same for the label: a failed flow only drops it.
+            viewModelScope.launch {
+                observeAutoPairedIds()
+                    .catchStorage { emit(emptySet()) }
+                    .collect { setState { copy(autoPairedIds = it) } }
             }
         }
 

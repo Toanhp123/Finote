@@ -7,7 +7,7 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 ## 1. Hiện trạng (2026-11-15)
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2c (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Không có nhánh nào đang mở. Bước tiếp theo: bước 5 ở mục 5.
+- Không có nhánh nào đang mở. Bước tiếp theo: bước 6 ở mục 5.
 - Chưa từng chạy trên máy thật: toàn bộ P2. Bộ mẫu thông báo là mẫu tổng hợp (D4).
 - DB version 7, vẫn dùng `fallbackToDestructiveMigration`: đổi schema là mất dữ liệu.
 - Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: tạo và sửa tài khoản, quản lý danh mục, dashboard.
@@ -43,7 +43,7 @@ Rà code ngày 2026-11-15. Mỗi dòng là một chỗ mà nhiều tính năng s
 |---|---|---|---|---|
 | N1 | **Một đường ghi sổ** | Xong: mọi dòng sổ chèn qua `LedgerWriter.insert`; `book` dựng `Transaction` và chạy `TransactionRules` trước khi ghi | Ghép chuyển khoản, failed-inbox, định kỳ, import, hoàn tiền, tự gán danh mục, FTS | Bước 2 |
 | N2 | **Form giao dịch dùng chung** | Sheet tạo mới Chi, Thu, Chuyển (đích, phí). Đã có chế độ sửa | Chuyển, sửa giao dịch, failed-inbox (điền sẵn từ log), hoàn tiền, nhãn, tách giao dịch | Bước 3, 4 |
-| N3 | **Bộ so khớp** (matcher) | `SettlementPlanner` gắn cứng một kiểu ghép: ngân hàng + ví, cùng chiều, 30 giây | Ghép chuyển khoản; so "ứng viên với sổ" cho bóc lại log, failed-inbox, định kỳ, import | Bước 5 (tách vị từ), bước 11 (ứng viên với sổ) |
+| N3 | **Bộ so khớp** (matcher) | Hai bộ: `SettlementPlanner` (ngân hàng + ví, cùng chiều, 30 giây, trước khi ghi) và `TransferPairing.kt` (chuyển khoản, ngược chiều, 30 phút, khi ghi dòng thứ hai) | Ghép chuyển khoản; so "ứng viên với sổ" cho bóc lại log, failed-inbox, định kỳ, import | Bước 5 (tách vị từ), bước 11 (ứng viên với sổ) |
 | N4 | **Migration thật** | Đổi schema là xóa DB | Mọi nhánh thêm bảng hoặc cột sau khi có dữ liệu thật | Bước 6 |
 | N5 | **Định danh tài khoản** | Một khóa `(bankPackageName, accountNumberMask)` trên `Account`; gộp tài khoản nối qua `mergedIntoId` | Thẻ ghi nợ, MoMo nguồn ngân hàng, màn tài khoản (liên kết 4 số cuối), thẻ tín dụng, thêm ngân hàng | Bước 10 |
 | N6 | **Lõi báo cáo** (`domain/report`) | Chưa có. Tổng thu chi trong snapshot gồm cả điều chỉnh, phí, hoàn tiền; không biết `excludeFromAnalytics` | Dashboard, ngân sách, hoàn tiền, merchant, tách giao dịch | Bước 17 |
@@ -68,7 +68,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 2 | `chore/ledger-write-path` | Nền móng N1 | | ✅ `5fd95a6` |
 | 3 | `feature/cash-transfer` | Việc tồn P1 | N1, N2 | ✅ |
 | 4 | `feature/transaction-edit` | Must-Have (CRUD giao dịch) | N1, N2 | ✅ |
-| 5 | `feature/transfer-pairing` (P2d) | Must-Have | N1, N3 | ⬜ |
+| 5 | `feature/transfer-pairing` (P2d) | Must-Have | N1, N3 | ✅ |
 | 6 | `chore/db-migrations` | Nền móng N4 | | ⬜ |
 | 7 | `chore/release-readiness` | Dọn dẹp 7 (A4, A17) | | ✅ |
 | 8 | `feature/debug-log-screen` | Công cụ (chỉ bản debug) | | ⬜ |
@@ -95,15 +95,13 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 - `postBalance` bị xóa khi đổi tài khoản hoặc ngày.
 - Lý do đặt trước dogfood: không sửa được thì không chữa được giao dịch tự bắt sai.
 
-**5. `feature/transfer-pairing` (P2d, Module 7)** — quy trình: `superpowers:brainstorming` → `writing-plans`.
-- Một trừ ở tài khoản A và một cộng ở tài khoản B, cùng số tiền, trong 1–2 phút → một `TRANSFER`, log `PAIRED_TRANSFER`.
-- Thông báo thứ hai đến muộn: log giữ `PENDING` tới hết cửa sổ, không ghi hai giao dịch rồi sửa.
-- Tách `SettlementPlanner` thành các vị từ so khớp riêng (trùng ngân hàng + ví; ghép chuyển khoản), mỗi vị từ một cửa sổ thời gian (N3).
-- Thêm cột số dư bên nhận (`toPostBalance`). Mốc số dư, số dư đầu tự động và báo lệch đọc được cả hai bên.
-- Kiểm `isUsable` trên cả hai tài khoản khi ghi.
-- Cần chốt trong thiết kế (D12): phí chuyển làm hai số tiền lệch nhau; cửa sổ chờ nới từ 30 giây làm mọi giao dịch hiện chậm hơn.
-- Đã có sẵn: mốc số dư chỉ lấy dòng có `accountId` bằng tài khoản (`findBalanceAnchor`).
-- Test: ghép đúng; không ghép khi khác số tiền; hết giờ thì giữ hai giao dịch riêng; MoMo nạp từ ngân hàng thành một `TRANSFER`.
+**5. `feature/transfer-pairing` (P2d, Module 7)** — spec `docs/superpowers/specs/2026-11-17-transfer-pairing-design.md`.
+- Ghi sổ như cũ (chờ 30 giây), rồi ghép ngay trong transaction ghi dòng thứ hai: một trừ ở tài khoản A và một cộng cùng số tiền ở tài khoản B, cách nhau tối đa 30 phút (hai chiều) → một `TRANSFER`, hai dòng gốc xóa mềm với `pairedIntoId`, log `PAIRED_TRANSFER`. Chịu được máy giữ thông báo lâu (Xiaomi).
+- Chỉ ghép khi bằng tiền, cả hai dòng từ thông báo và chưa bị sửa; không ghép thẻ tín dụng. Phí nhập tay.
+- Cột `toPostBalance`, `toTimestamp`: mốc số dư bên nhận, chỉ dùng khi thứ tự trong sổ khớp thứ tự thật (kiểm lúc đọc).
+- Nút "Không phải chuyển khoản" trong sheet sửa tách lại hai dòng gốc; hai dòng đó không bao giờ tự ghép lại. Nhãn "Tự ghép" trên list.
+- N-18: thông báo có giờ vô lý `FAILED` ngay lúc lập kế hoạch (`invalid_time`).
+- Bộ so khớp nằm ở `TransferPairing.kt` (`pairingTime` là chỗ duy nhất đổi khi đọc giờ ngân hàng).
 
 **6. `chore/db-migrations`** — bỏ `fallbackToDestructiveMigration`.
 - Schema sau bước 5 là mốc gốc. Từ đây mỗi thay đổi có migration và test migration.
@@ -204,11 +202,9 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 
 | Mã | Vấn đề | Sửa ở |
 |---|---|---|
-| T1 | `TRANSFER` chỉ có một `postBalance`: bên nhận mất mốc | Bước 5 |
 | T2 | Giao dịch ngày tương lai (tới 366 ngày) tính ngay vào số dư hiện tại | D11, trước bước 24 |
 | T3 | Tổng thu chi trong snapshot gồm điều chỉnh, phí, hoàn tiền | Bước 17 (báo cáo không đọc snapshot) |
 | T4 | Không có khóa chống trùng giữa import, định kỳ và thông báo | Bước 11 dựng hàm, bước 24, 25 dùng |
-| T5 | Cửa sổ khử trùng ngân hàng + ví chỉ 30 giây, thông báo đẩy hay trễ hơn | Bước 5 (chốt cùng cửa sổ ghép) |
 
 ### Nợ nhỏ
 
@@ -230,7 +226,10 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-15 | Hash dòng bí mật dò ngược được OTP 6 số (nợ #4 cũ); OTA một khóa ghim, chưa xoay khóa | Bước 32 |
 | N-16 | Chuỗi `ja`, `zh-rCN` do máy viết, cần người bản ngữ xem | Trước bước 33 |
 | N-17 | Mục nhỏ của audit 2026-11-10: UI không dùng (`FinoteDatePicker`, `BalanceHeroCard`), test mẫu, `toString()` của log in nội dung, dependency thừa, test dùng đồng hồ thật | Trước bước 9 |
-| N-18 | Thông báo có `postTime` ngoài khoảng của `TransactionRules` bị `book` từ chối (`SettlementError.Refused`), nằm `PENDING` tới 1 giờ rồi mới `FAILED` với lý do chung; mỗi lần chạy thử lại vô ích. Chỉ xảy ra khi đồng hồ máy sai. Sửa: `planSettlement` ra `Fail` với lý do riêng, giữ kiểm tra ở `book` làm chốt chặn | Bước 5 |
+| N-19 | Dòng gốc bị ẩn vì ghép (`pairedIntoId`) và chuyển khoản đã tách: thùng rác phải ẩn; không dọn dòng gốc khi `T` còn sống, dọn cùng `T` | Bước 26 |
+| N-20 | Ghép theo giờ thông báo đến máy; đọc giờ ngân hàng trong nội dung (nhóm `time`, định dạng từng ngân hàng, cột ở log, đổi `pairingTime`) | Sau bước 9 |
+| N-21 | Gộp tài khoản đổi `updatedAt` mọi dòng bị chuyển, nên dòng chưa sửa của tài khoản bị gộp không còn được tự ghép | Bước 10 |
+| N-22 | Tách lại bị từ chối vì tài khoản đã lưu trữ chỉ hiện lỗi lưu chung, không nói lý do (giống nút Xóa) | Bước 14 |
 
 ## 7. Quyết định
 
@@ -245,6 +244,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | D8 | Room 3, Navigation3 |
 | D9 | Ngôn ngữ: `vi` (mặc định), `en`, `zh-rCN`, `ja`. Màn chọn ngôn ngữ trong app chưa làm |
 | D10 | Mất khóa Keystore: xóa DB và khóa bọc, tạo DB rỗng. Chi tiết từng loại lỗi ở `roadmap-history.md` |
+| D12 | P2d: ghép sau khi ghi, cửa sổ 30 phút hai chiều; chỉ ghép khi bằng tiền; phí nhập tay |
 
 ### Còn mở
 
@@ -254,7 +254,6 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | D5 | XLSX cùng lúc với CSV? | CSV trước | Bước 25 |
 | D7 | Ai chạy benchmark trên máy thật? | User, khi tới bước 20 và 30 | Bước 20 |
 | D11 | Giao dịch ngày tương lai có tính vào số dư hiện tại không? | Không: số dư hiện tại chỉ tính tới bây giờ | Bước 24 |
-| D12 | P2d: cửa sổ chờ bao lâu, và xử lý phí chuyển thế nào? | 2 phút; phí ghi tay sau khi ghép | Bước 5 |
 | D13 | Định danh tài khoản: bảng riêng hay thêm cột? | Bảng riêng | Bước 10, sau mẫu thật |
 | D14 | Failed-inbox đưa vào v0.2 hay v0.3? | v0.3, để v0.2 chỉ gồm Must-Have | Bước 12 |
 

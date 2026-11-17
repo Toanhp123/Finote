@@ -6,6 +6,7 @@ import io.github.toanhp123.finote.data.database.FinoteDatabase
 import io.github.toanhp123.finote.data.database.storage
 import io.github.toanhp123.finote.data.database.storageWrite
 import io.github.toanhp123.finote.data.notification.mapper.toDomain
+import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.repository.LedgerWriter
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.notification.error.SettlementError
@@ -17,7 +18,11 @@ import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
+import io.github.toanhp123.finote.domain.transaction.service.TRANSFER_PAIR_WINDOW_MILLIS
 import io.github.toanhp123.finote.domain.transaction.service.TransactionRules
+import io.github.toanhp123.finote.domain.transaction.service.buildPairedTransfer
+import io.github.toanhp123.finote.domain.transaction.service.findTransferPartner
+import io.github.toanhp123.finote.domain.transaction.service.pairingTime
 import java.time.Clock
 import java.time.Instant
 import java.util.UUID
@@ -31,6 +36,7 @@ class NotificationSettlementRepositoryImpl
     ) : NotificationSettlementRepository {
         private val logs = db.notificationLogDao()
         private val accounts = db.accountDao()
+        private val pairs = db.transferPairDao()
         private val ledger = LedgerWriter(db, clock)
 
         override suspend fun getPendingLogs(): List<NotificationLog> =
@@ -82,16 +88,63 @@ class NotificationSettlementRepositoryImpl
                 TransactionRules
                     .check(transaction, Instant.ofEpochMilli(now), setOf(account.id), categoryType = null)
                     ?.let { return@storageWrite SettlementError.Refused(it) }
-                ledger.insert(transaction, coldStart = true)
-                settle(listOf(bank.id), NotificationStatus.CONFIRMED, transactionId)
-                    ?: decision.walletSide?.let {
-                        settle(
-                            listOf(it.id),
-                            NotificationStatus.DEDUPLICATED,
-                            transactionId,
-                        )
-                    }
+                val pair = findPair(transaction, account, now)
+                if (pair == null) {
+                    ledger.insert(transaction, coldStart = true)
+                } else {
+                    ledger.insertPaired(pair.transfer, transaction, pair.partner, now)
+                }
+                val status = if (pair == null) NotificationStatus.CONFIRMED else NotificationStatus.PAIRED_TRANSFER
+                val error =
+                    settle(listOf(bank.id), status, transactionId)
+                        ?: decision.walletSide?.let {
+                            settle(
+                                listOf(it.id),
+                                NotificationStatus.DEDUPLICATED,
+                                transactionId,
+                            )
+                        }
+                // The partner's own log is already CONFIRMED; a missing one (deleted, link cleared) needs nothing.
+                if (error == null) pair?.partner?.notificationLogId?.let { logs.markPairedTransfer(it) }
+                error
             }
+
+        private class PairedBooking(
+            val partner: Transaction,
+            val transfer: Transaction,
+        )
+
+        /** The stored row [row] pairs with and the transfer that replaces both; null books [row] alone. */
+        private suspend fun findPair(
+            row: Transaction,
+            account: AccountEntity,
+            now: Long,
+        ): PairedBooking? {
+            val window = TRANSFER_PAIR_WINDOW_MILLIS
+            val candidates =
+                pairs
+                    .getPairCandidates(row.amount, pairingTime(row) - window, pairingTime(row) + window)
+                    .map { it.toDomain() }
+            val usable = HashMap<String, Account>()
+            usable[account.id] = account.toDomain()
+            candidates.map { it.accountId }.distinct().forEach { id ->
+                accounts
+                    .getById(id)
+                    ?.toDomain()
+                    ?.takeIf { it.isUsable }
+                    ?.let { usable[id] = it }
+            }
+            val partner = findTransferPartner(row, candidates, usable) ?: return null
+            val transfer = buildPairedTransfer(row, partner, UUID.randomUUID().toString(), now)
+            val refused =
+                TransactionRules.check(
+                    transfer,
+                    Instant.ofEpochMilli(now),
+                    setOf(row.accountId, partner.accountId),
+                    categoryType = null,
+                )
+            return if (refused == null) PairedBooking(partner, transfer) else null
+        }
 
         override suspend fun fail(decision: SettlementDecision.Fail): Boolean =
             storage {

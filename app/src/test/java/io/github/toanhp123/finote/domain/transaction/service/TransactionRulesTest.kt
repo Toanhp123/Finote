@@ -9,7 +9,9 @@ import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionFields
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -51,6 +53,14 @@ class TransactionRulesTest {
     @Test
     fun `timestamp beyond 366 days ahead is InvalidTimestamp`() =
         assertEquals(TransactionError.InvalidTimestamp, check(expense(at = limit.plusMillis(1))))
+
+    @Test
+    fun `isValidTimestamp holds at both bounds`() {
+        assertTrue(TransactionRules.isValidTimestamp(TransactionRules.MIN_TIMESTAMP_MS, now))
+        assertFalse(TransactionRules.isValidTimestamp(TransactionRules.MIN_TIMESTAMP_MS - 1, now))
+        assertTrue(TransactionRules.isValidTimestamp(limit.toEpochMilli(), now))
+        assertFalse(TransactionRules.isValidTimestamp(limit.toEpochMilli() + 1, now))
+    }
 
     @Test
     fun `unusable source account is AccountUnusable`() =

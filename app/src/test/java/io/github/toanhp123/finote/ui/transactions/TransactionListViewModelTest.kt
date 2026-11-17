@@ -26,6 +26,8 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.usecase.AdjustBalanceDriftUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
+import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransferPairRepository
+import io.github.toanhp123.finote.domain.transaction.usecase.ObserveAutoPairedIdsUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -70,6 +72,7 @@ class TransactionListViewModelTest {
                 ObserveBalanceDriftUseCase(ObserveUsableAccountsUseCase(ObserveAccountsUseCase(accounts)), fakeTx),
             adjustBalanceDrift = AdjustBalanceDriftUseCase(fakeTx, FakeTransactionRunner(), clock),
             deleteTransaction = DeleteTransactionUseCase(fakeTx, FakeTransactionRunner(), clock),
+            observeAutoPairedIds = ObserveAutoPairedIdsUseCase(FakeTransferPairRepository(fakeTx)),
             clock = clock,
             isDebuggable = true,
         )
@@ -103,6 +106,19 @@ class TransactionListViewModelTest {
                 assertEquals(setOf(A, B), loaded.accountsById.keys)
                 assertEquals(setOf("cat-1"), loaded.categoriesById.keys)
             }
+        }
+
+    @Test
+    fun `a transfer made by pairing is in autoPairedIds`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val transfer = tx(TransactionType.TRANSFER, 10_000, to = B).copy(id = "t1")
+            val original = tx(TransactionType.EXPENSE, 10_000).copy(id = "o1", deletedAt = 5L, pairedIntoId = "t1")
+            fakeTx.transactionsFlow.value = listOf(transfer, original)
+
+            val vm = open()
+
+            assertEquals(setOf("t1"), vm.state.value.autoPairedIds)
         }
 
     @Test

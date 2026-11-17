@@ -195,6 +195,8 @@ private fun DayList(
             items(day.transactions, key = { it.id }) { transaction ->
                 TransactionItem(
                     transaction = transaction,
+                    isAutoPaired = transaction.id in state.autoPairedIds,
+                    modifier = Modifier.animateItem(),
                     category = transaction.categoryId?.let(state.categoriesById::get),
                     accountNames = accountNames,
                     onClick =
@@ -254,7 +256,9 @@ private fun TransactionItem(
     transaction: Transaction,
     category: Category?,
     accountNames: Map<String, String>,
+    isAutoPaired: Boolean,
     onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     val deletedLabel = stringResource(R.string.transactions_deleted_account)
     val title = category?.let { displayName(it.name, it.nameKey) } ?: stringResource(transaction.type.fallbackTitle())
@@ -267,12 +271,13 @@ private fun TransactionItem(
                 deletedLabel,
                 pendingLabel = stringResource(R.string.reimbursement_pending),
                 settledLabel = stringResource(R.string.reimbursement_settled),
+                autoPairedLabel = stringResource(R.string.transactions_auto_paired).takeIf { isAutoPaired },
             ),
         amount = transaction.amount,
         kind = moneyKindOf(transaction),
         iconRes = category?.let { iconRes(it.icon) } ?: transaction.type.fallbackIcon(),
         colorArgb = category?.color ?: FinoteTheme.scheme.onSurfaceVariant.toArgb(),
-        modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg),
+        modifier = modifier.padding(horizontal = FinoteTheme.spacing.lg),
         onClick = onClick,
     )
 }

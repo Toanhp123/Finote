@@ -23,7 +23,8 @@ import org.junit.Test
 class SettlementPlannerTest {
     private val vcb = "com.vcb"
     private val momo = "com.momo"
-    private val now = 10_000_000L
+    private val t0 = 1_800_000_000_000L // 2027-01-15, inside the allowed time range
+    private val now = t0 + 10_000_000L
     private val rules = mapOf("r-vcb" to rule("r-vcb", vcb, null), "r-momo" to rule("r-momo", momo, AccountType.WALLET))
     private var seq = 0
 
@@ -134,10 +135,10 @@ class SettlementPlannerTest {
 
     @Test
     fun `nearest pair wins`() {
-        val first = log(vcb, 0)
-        val second = log(vcb, 20_000)
-        val wallet = log(momo, 21_000)
-        val decisions = plan(first, second, wallet, at = 60_000)
+        val first = log(vcb, t0)
+        val second = log(vcb, t0 + 20_000)
+        val wallet = log(momo, t0 + 21_000)
+        val decisions = plan(first, second, wallet, at = t0 + 60_000)
         assertEquals(
             listOf(
                 Book(first, null, AccountTarget.New(vcb, null, vcb, AccountType.BANK), null, null),
@@ -149,11 +150,11 @@ class SettlementPlannerTest {
 
     @Test
     fun `losing a pair does not burn the other log`() {
-        val b1 = log(vcb, 0)
-        val b2 = log(vcb, 2_000)
-        val w1 = log(momo, 3_000)
-        val w2 = log(momo, 10_000)
-        val books = plan(b1, b2, w1, w2, at = 100_000).map { it as Book }
+        val b1 = log(vcb, t0)
+        val b2 = log(vcb, t0 + 2_000)
+        val w1 = log(momo, t0 + 3_000)
+        val w2 = log(momo, t0 + 10_000)
+        val books = plan(b1, b2, w1, w2, at = t0 + 100_000).map { it as Book }
         assertEquals(
             setOf(b2 to w1, b1 to w2),
             books.map { it.bankSide to it.walletSide }.toSet(),
@@ -163,10 +164,10 @@ class SettlementPlannerTest {
 
     @Test
     fun `equal distance picks the older bank`() {
-        val older = log(vcb, 0)
-        val wallet = log(momo, 10_000)
-        val newer = log(vcb, 20_000)
-        val books = plan(older, wallet, newer, at = 100_000).map { it as Book }
+        val older = log(vcb, t0)
+        val wallet = log(momo, t0 + 10_000)
+        val newer = log(vcb, t0 + 20_000)
+        val books = plan(older, wallet, newer, at = t0 + 100_000).map { it as Book }
         assertEquals(listOf(older to wallet, newer to null), books.map { it.bankSide to it.walletSide })
     }
 
@@ -243,10 +244,10 @@ class SettlementPlannerTest {
 
     @Test
     fun `not due repost cannot pair`() {
-        val bank = log(vcb, 0, balance = 1L, text = "same")
-        val wallet = log(momo, 10_000)
-        val again = log(vcb, 19_000, balance = 1L, text = "same")
-        val decisions = plan(bank, wallet, again, at = 40_000)
+        val bank = log(vcb, t0, balance = 1L, text = "same")
+        val wallet = log(momo, t0 + 10_000)
+        val again = log(vcb, t0 + 19_000, balance = 1L, text = "same")
+        val decisions = plan(bank, wallet, again, at = t0 + 40_000)
         assertEquals(bank, (decisions[0] as Book).bankSide)
         assertEquals(wallet, (decisions[0] as Book).walletSide)
         assertEquals(listOf(Repost(again, bank)), decisions.drop(1))
@@ -330,5 +331,26 @@ class SettlementPlannerTest {
         val decisions = plan(log(vcb, now - 3 * 3_600_000L), log(momo, now - 3 * 3_600_000L + 2_000))
         assertEquals(1, decisions.size)
         assertTrue((decisions.single() as Book).walletSide != null)
+    }
+
+    @Test
+    fun `far future post time fails at once`() {
+        val far = log(vcb, now + 400L * 86_400_000L)
+        assertEquals(listOf(Fail(far, null, FAIL_INVALID_TIME)), plan(far))
+    }
+
+    @Test
+    fun `post time before 2000 fails at once`() {
+        val ancient = log(vcb, 946_684_800_000L - 1)
+        assertEquals(listOf(Fail(ancient, null, FAIL_INVALID_TIME)), plan(ancient))
+    }
+
+    @Test
+    fun `invalid time log never pairs with a valid one`() {
+        val bank = log(vcb, old(0))
+        val wallet = log(momo, now + 400L * 86_400_000L)
+        val decisions = plan(bank, wallet)
+        assertEquals(listOf(Fail(wallet, null, FAIL_INVALID_TIME)), decisions.filterIsInstance<Fail>())
+        assertEquals(null, (decisions.single { it is Book } as Book).walletSide)
     }
 }

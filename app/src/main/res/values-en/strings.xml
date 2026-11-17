@@ -80,6 +80,9 @@
     <string name="cash_entry_delete_cd">Delete transaction</string>
     <string name="cash_entry_delete_title">Delete this transaction?</string>
     <string name="cash_entry_delete_text">The account balance will be recalculated.</string>
+    <string name="cash_entry_unpair">Not a transfer</string>
+    <string name="cash_entry_unpair_confirm_title">Split into two transactions?</string>
+    <string name="cash_entry_unpair_confirm_body">This splits it back into the original expense and income. Any changes you made to this row will be lost.</string>
     <string name="cash_entry_backspace">Delete</string>
     <string name="cash_entry_tile_label">Cash entry</string>
     <string name="cash_entry_shortcut_short">Cash entry</string>
@@ -96,6 +99,7 @@
     <string name="transactions_adjustment">Balance adjustment</string>
     <string name="transactions_uncategorized">Uncategorized</string>
     <string name="transactions_deleted_account">Deleted account</string>
+    <string name="transactions_auto_paired">Auto-paired</string>
     <string name="transactions_empty">No transactions yet</string>
     <string name="transactions_empty_account">No transactions in this account</string>
     <string name="transactions_error">Couldn\'t load transactions</string>

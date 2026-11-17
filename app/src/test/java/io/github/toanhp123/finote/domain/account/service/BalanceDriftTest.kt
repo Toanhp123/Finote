@@ -112,6 +112,19 @@ class BalanceDriftTest {
     }
 
     @Test
+    fun `receiver with rows before transfer has no drift when bank agrees`() {
+        fun rows(toPostBalance: Long) =
+            listOf(
+                tx(TransactionType.EXPENSE, 200_000, at = 1).copy(id = "e"),
+                tx(TransactionType.TRANSFER, 500_000, account = B, to = A, at = 2)
+                    .copy(id = "t", toTimestamp = 3, toPostBalance = toPostBalance),
+            )
+
+        assertNull(detectBalanceDrift(account, rows(1_300_000)))
+        assertEquals(BalanceDrift(A, 100_000), detectBalanceDrift(account, rows(1_400_000)))
+    }
+
+    @Test
     fun `ties on time are ordered by createdAt then id`() {
         val first = income("a", 500_000, 1).copy(createdAt = 1)
         val second = income("b", 100_000, 1, postBalance = 1_600_000).copy(createdAt = 2)

@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.domain.transaction.usecase
 
 import io.github.toanhp123.finote.domain.account.A
 import io.github.toanhp123.finote.domain.account.B
+import io.github.toanhp123.finote.domain.account.C
 import io.github.toanhp123.finote.domain.account.adjustment
 import io.github.toanhp123.finote.domain.account.tx
 import io.github.toanhp123.finote.domain.common.FakeTransactionRunner
@@ -163,6 +164,62 @@ class UpdateTransactionUseCaseTest {
             assertEquals(B, saved().toAccountId)
             assertEquals(1_100L, saved().feeAmount)
             assertNull(saved().categoryId)
+        }
+
+    private val storedTransfer =
+        stored.copy(
+            type = TransactionType.TRANSFER,
+            toAccountId = B,
+            toPostBalance = 9_000_000L,
+            toTimestamp = stored.timestamp + 1_000,
+        )
+
+    private fun transferEdit(to: String = B) = fieldsOf(type = TransactionType.TRANSFER, to = to)
+
+    @Test
+    fun `edit keeps receiver balance when date and both accounts stay`() =
+        runTest {
+            repo.stored["tx"] = storedTransfer
+            assertEquals(Outcome.Ok(Unit), update("tx", editOf(transferEdit(), note = "x")))
+            assertEquals(9_000_000L, saved().toPostBalance)
+            assertEquals(storedTransfer.toTimestamp, saved().toTimestamp)
+        }
+
+    @Test
+    fun `edit clears receiver balance when destination changes`() =
+        runTest {
+            val abc = FakeTransactionRepository(activeAccounts = setOf(A, B, C))
+            abc.stored["tx"] = storedTransfer
+            val result = UpdateTransactionUseCase(abc, runner, clock)("tx", editOf(transferEdit(to = C)))
+            assertEquals(Outcome.Ok(Unit), result)
+            assertNull(abc.stored.getValue("tx").toPostBalance)
+            assertNull(abc.stored.getValue("tx").toTimestamp)
+        }
+
+    @Test
+    fun `edit clears receiver balance when the date changes`() =
+        runTest {
+            repo.stored["tx"] = storedTransfer
+            assertEquals(Outcome.Ok(Unit), update("tx", editOf(transferEdit(), date = LocalDate.of(2026, 11, 10))))
+            assertNull(saved().toPostBalance)
+            assertNull(saved().toTimestamp)
+        }
+
+    @Test
+    fun `edit clears receiver balance when the type changes to expense`() =
+        runTest {
+            repo.stored["tx"] = storedTransfer
+            assertEquals(Outcome.Ok(Unit), update("tx", editOf(fieldsOf())))
+            assertNull(saved().toPostBalance)
+            assertNull(saved().toTimestamp)
+        }
+
+    @Test
+    fun `edit with a clock that has not moved still marks the row touched`() =
+        runTest {
+            repo.stored["tx"] = stored.copy(createdAt = clock.millis(), updatedAt = clock.millis())
+            assertEquals(Outcome.Ok(Unit), update("tx", editOf(note = "x")))
+            assertEquals(clock.millis() + 1, saved().updatedAt)
         }
 
     @Test

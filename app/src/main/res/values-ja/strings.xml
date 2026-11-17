@@ -80,6 +80,9 @@
     <string name="cash_entry_delete_cd">取引を削除</string>
     <string name="cash_entry_delete_title">この取引を削除しますか？</string>
     <string name="cash_entry_delete_text">口座残高は再計算されます。</string>
+    <string name="cash_entry_unpair">振替ではない</string>
+    <string name="cash_entry_unpair_confirm_title">2件の取引に分割しますか？</string>
+    <string name="cash_entry_unpair_confirm_body">元の支出と収入の2件の取引に戻します。この行に加えた変更は失われます。</string>
     <string name="cash_entry_backspace">削除</string>
     <string name="cash_entry_tile_label">現金記録</string>
     <string name="cash_entry_shortcut_short">現金記録</string>
@@ -96,6 +99,7 @@
     <string name="transactions_adjustment">残高調整</string>
     <string name="transactions_uncategorized">未分類</string>
     <string name="transactions_deleted_account">削除済みの口座</string>
+    <string name="transactions_auto_paired">自動ペア</string>
     <string name="transactions_empty">取引はまだありません</string>
     <string name="transactions_empty_account">この口座の取引はありません</string>
     <string name="transactions_error">取引を読み込めませんでした</string>

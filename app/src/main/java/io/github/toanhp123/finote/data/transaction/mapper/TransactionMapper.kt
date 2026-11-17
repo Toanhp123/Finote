@@ -24,6 +24,9 @@ fun TransactionEntity.toDomain(): Transaction =
         reimbursementStatus = reimbursementStatus,
         postBalance = postBalance,
         notificationLogId = notificationLogId,
+        toPostBalance = toPostBalance,
+        toTimestamp = toTimestamp,
+        pairedIntoId = pairedIntoId,
     )
 
 fun Transaction.toEntity(): TransactionEntity =
@@ -47,4 +50,7 @@ fun Transaction.toEntity(): TransactionEntity =
         deletedAt = deletedAt,
         postBalance = postBalance,
         notificationLogId = notificationLogId,
+        toPostBalance = toPostBalance,
+        toTimestamp = toTimestamp,
+        pairedIntoId = pairedIntoId,
     )

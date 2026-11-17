@@ -14,6 +14,7 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
+import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransferPairRepository
 import io.github.toanhp123.finote.ui.cashentry.logic.AmountResult
 import io.github.toanhp123.finote.ui.cashentry.logic.CalcKey
 import io.github.toanhp123.finote.ui.cashentry.logic.ReimbursementChoice
@@ -59,10 +60,13 @@ class CashEntryEditViewModelTest {
         ).forEach { categories.stored[it.id] = it }
     }
 
+    private val pairs = FakeTransferPairRepository(transactions)
+
     private fun TestScope.open(
         repo: TransactionRepository = transactions,
         transactionId: String? = ROW_ID,
-    ): CashEntryViewModel = cashEntryViewModel(transactionId, accounts, categories, repo, clock).also { runCurrent() }
+    ): CashEntryViewModel =
+        cashEntryViewModel(transactionId, accounts, categories, repo, clock, pairs).also { runCurrent() }
 
     private fun CashEntryViewModel.press(vararg keys: CalcKey) =
         keys.forEach { onIntent(CashEntryIntent.KeyPressed(it)) }
@@ -276,6 +280,132 @@ class CashEntryEditViewModelTest {
             assertFalse(viewModel.current.isDeleteConfirmOpen)
             assertFalse(viewModel.current.isSaving)
             assertNull(transactions.stored.getValue(ROW_ID).deletedAt)
+        }
+
+    /** Stores a soft-deleted original that an auto-pair folded into [ROW_ID]. */
+    private fun original(
+        id: String,
+        type: TransactionType,
+        account: String,
+    ) {
+        transactions.stored[id] =
+            transactions.stored.getValue(ROW_ID).copy(
+                id = id,
+                type = type,
+                accountId = account,
+                toAccountId = null,
+                deletedAt = 5L,
+                pairedIntoId = ROW_ID,
+            )
+    }
+
+    private fun paired(type: TransactionType = TransactionType.TRANSFER) {
+        if (type == TransactionType.TRANSFER) row(type, to = BANK) else row(type)
+        original("o1", TransactionType.EXPENSE, CASH)
+        original("o2", TransactionType.INCOME, BANK)
+    }
+
+    @Test
+    fun `a row with paired originals opens as auto-paired`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            paired()
+
+            assertTrue(openEdit().current.isAutoPaired)
+        }
+
+    @Test
+    fun `a paired row switched to expense is still auto-paired`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            paired()
+            val viewModel = openEdit()
+
+            viewModel.onIntent(CashEntryIntent.TypeChanged(TransactionType.EXPENSE))
+
+            assertTrue(viewModel.current.isAutoPaired)
+        }
+
+    @Test
+    fun `a paired row stored as expense opens as auto-paired`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            paired(TransactionType.EXPENSE)
+
+            assertTrue(openEdit().current.isAutoPaired)
+        }
+
+    @Test
+    fun `a manual transfer is not auto-paired`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            row(TransactionType.TRANSFER, to = BANK)
+
+            assertFalse(openEdit().current.isAutoPaired)
+        }
+
+    @Test
+    fun `unpair confirmed splits the transfer once and hides the sheet`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            paired()
+            val viewModel = openEdit()
+
+            viewModel.onIntent(CashEntryIntent.UnpairClicked)
+            assertTrue(viewModel.current.isUnpairConfirmOpen)
+            viewModel.onIntent(CashEntryIntent.UnpairDismissed)
+            assertFalse(viewModel.current.isUnpairConfirmOpen)
+            viewModel.onIntent(CashEntryIntent.UnpairClicked)
+            viewModel.onIntent(CashEntryIntent.UnpairConfirmed)
+            runCurrent()
+
+            assertEquals(1, pairs.unpairs)
+            assertNotNull(transactions.stored.getValue(ROW_ID).deletedAt)
+            assertNull(transactions.stored.getValue("o1").deletedAt)
+            assertFalse(viewModel.current.isUnpairConfirmOpen)
+            assertFalse(viewModel.current.isVisible)
+        }
+
+    @Test
+    fun `a failed unpair closes the dialog and shows the save error`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            row(TransactionType.TRANSFER, to = BANK)
+            val viewModel = openEdit()
+            viewModel.onIntent(CashEntryIntent.UnpairClicked)
+
+            viewModel.onIntent(CashEntryIntent.UnpairConfirmed)
+            runCurrent()
+
+            assertEquals(0, pairs.unpairs)
+            assertFalse(viewModel.current.isUnpairConfirmOpen)
+            assertTrue(viewModel.current.hasSaveError)
+            assertFalse(viewModel.current.isSaving)
+            assertTrue(viewModel.current.isVisible)
+        }
+
+    @Test
+    fun `unpair is ignored while saving and in create mode`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            paired()
+            val saving = openEdit()
+            saving.onIntent(CashEntryIntent.SaveClicked)
+
+            saving.onIntent(CashEntryIntent.UnpairClicked)
+            saving.onIntent(CashEntryIntent.UnpairConfirmed)
+            runCurrent()
+
+            assertFalse(saving.current.isUnpairConfirmOpen)
+            assertEquals(0, pairs.unpairs)
+
+            val create = open(transactionId = null)
+            create.onIntent(CashEntryIntent.UnpairClicked)
+            create.onIntent(CashEntryIntent.UnpairConfirmed)
+            runCurrent()
+
+            assertFalse(create.current.isUnpairConfirmOpen)
+            assertEquals(0, pairs.unpairs)
         }
 
     @Test

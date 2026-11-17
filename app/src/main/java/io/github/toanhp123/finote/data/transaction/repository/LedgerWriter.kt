@@ -32,11 +32,34 @@ internal class LedgerWriter(
         coldStart: Boolean = false,
     ) {
         transactions.insert(transaction.toEntity())
-        if (coldStart) coldStart(checkNotNull(accounts.getById(transaction.accountId)))
+        if (coldStart) coldStartAll(transaction)
         rebuild(setOfNotNull(transaction.accountId, transaction.toAccountId))
     }
 
+    /**
+     * Inserts [newOriginal] soft-deleted, soft-deletes [partner], both with `pairedIntoId = transfer.id`; inserts
+     * [transfer]; cold start for both of its accounts; rebuilds every account of the three rows. The partner keeps
+     * its other fields, `updatedAt` included.
+     */
+    suspend fun insertPaired(
+        transfer: Transaction,
+        newOriginal: Transaction,
+        partner: Transaction,
+        now: Long,
+    ) {
+        transactions.insert(newOriginal.copy(deletedAt = now, pairedIntoId = transfer.id).toEntity())
+        transactions.update(partner.copy(deletedAt = now, pairedIntoId = transfer.id).toEntity())
+        transactions.insert(transfer.toEntity())
+        coldStartAll(transfer)
+        rebuild(setOfNotNull(newOriginal.accountId, partner.accountId, transfer.accountId, transfer.toAccountId))
+    }
+
     suspend fun rebuild(accountIds: Set<String>) = rebuilder.rebuild(accountIds)
+
+    private suspend fun coldStartAll(transaction: Transaction) =
+        listOfNotNull(transaction.accountId, transaction.toAccountId).forEach {
+            coldStart(checkNotNull(accounts.getById(it)))
+        }
 
     /** The balance anchor of an uninitialized account fixes its start. A credit card has no anchor. */
     private suspend fun coldStart(account: AccountEntity) {

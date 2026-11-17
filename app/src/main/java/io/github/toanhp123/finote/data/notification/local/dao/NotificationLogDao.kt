@@ -70,4 +70,12 @@ interface NotificationLogDao {
         linkedTransactionId: String?,
         failureReason: String?,
     ): Int
+
+    /** `CONFIRMED` to `PAIRED_TRANSFER`, link unchanged; returns how many rows changed. */
+    @Query("UPDATE notification_logs SET status = 'PAIRED_TRANSFER' WHERE id = :id AND status = 'CONFIRMED'")
+    suspend fun markPairedTransfer(id: String): Int
+
+    /** `PAIRED_TRANSFER` back to `CONFIRMED`, link unchanged; returns how many rows changed. */
+    @Query("UPDATE notification_logs SET status = 'CONFIRMED' WHERE id IN (:ids) AND status = 'PAIRED_TRANSFER'")
+    suspend fun markUnpaired(ids: List<String>): Int
 }

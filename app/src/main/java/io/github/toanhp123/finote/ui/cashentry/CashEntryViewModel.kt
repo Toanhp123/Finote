@@ -21,6 +21,8 @@ import io.github.toanhp123.finote.domain.transaction.usecase.AddManualTransactio
 import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.GetLastManualChoicesUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.GetTransactionUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.IsAutoPairedUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.UnpairTransferUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.ui.cashentry.logic.AmountExpression
 import io.github.toanhp123.finote.ui.cashentry.logic.AmountResult
@@ -47,6 +49,8 @@ class CashEntryViewModel
         private val getTransaction: GetTransactionUseCase,
         private val updateTransaction: UpdateTransactionUseCase,
         private val deleteTransaction: DeleteTransactionUseCase,
+        private val unpairTransfer: UnpairTransferUseCase,
+        private val isAutoPaired: IsAutoPairedUseCase,
         private val clock: Clock,
         @IsDebuggable isDebuggable: Boolean,
     ) : BaseViewModel<CashEntryState, CashEntryIntent, CashEntryEffect>(
@@ -86,7 +90,7 @@ class CashEntryViewModel
             if (transactionId == null) {
                 Start(getLastManualChoices(), null)
             } else {
-                Start(ManualChoices(null, emptyMap()), getTransaction(transactionId))
+                Start(ManualChoices(null, emptyMap()), getTransaction(transactionId), isAutoPaired(transactionId))
             }
 
         override fun onIntent(intent: CashEntryIntent) {
@@ -144,6 +148,10 @@ class CashEntryViewModel
                 CashEntryIntent.DeleteClicked, CashEntryIntent.DeleteConfirmed, CashEntryIntent.DeleteDismissed -> {
                     onDelete(intent)
                 }
+
+                CashEntryIntent.UnpairClicked, CashEntryIntent.UnpairConfirmed, CashEntryIntent.UnpairDismissed -> {
+                    onUnpair(intent)
+                }
             }
         }
 
@@ -192,23 +200,26 @@ class CashEntryViewModel
             allCategories = categoryList
             when {
                 transactionId == null -> onCreateLists(start.choices, accountList, categoryList)
-                state.value.isLoading -> onFirstEditLists(start.row, accountList, categoryList)
+                state.value.isLoading -> onFirstEditLists(start, accountList, categoryList)
                 else -> onLaterEditLists(accountList, categoryList)
             }
         }
 
         // The row fills the form once. A row that cannot be edited, or whose account is gone, closes the screen.
         private fun onFirstEditLists(
-            row: Transaction?,
+            start: Start,
             accountList: List<Account>,
             categoryList: List<Category>,
         ) {
+            val row = start.row
             if (row == null || row.type == TransactionType.ADJUSTMENT || accountList.none { it.id == row.accountId }) {
                 sendEffect(CashEntryEffect.Close)
                 return
             }
             val category = CashEntryDefaults.pickCategory(categoryList, row.categoryId, row.type.toCategoryType())
-            setState { filledFrom(row, accountList, visible(row.type), category, clock) }
+            setState {
+                filledFrom(row, accountList, visible(row.type), category, clock).copy(isAutoPaired = start.isAutoPaired)
+            }
         }
 
         // Never picks another account: a source that left the list ends the edit. Close is sent on the visible to
@@ -333,15 +344,39 @@ class CashEntryViewModel
             }
         }
 
+        // Only the three unpair intents reach here. They do nothing in create mode or while a save runs.
+        private fun onUnpair(intent: CashEntryIntent) {
+            if (transactionId == null || state.value.isSaving) return
+            when (intent) {
+                CashEntryIntent.UnpairClicked -> setState { copy(isUnpairConfirmOpen = true) }
+                CashEntryIntent.UnpairConfirmed -> unpair(transactionId)
+                else -> setState { copy(isUnpairConfirmOpen = false) }
+            }
+        }
+
+        private fun unpair(id: String) {
+            setState { copy(isUnpairConfirmOpen = false, isSaving = true, hasSaveError = false) }
+            launchCatching(onStorageError = ::showSaveError) {
+                when (unpairTransfer(id)) {
+                    is Outcome.Ok -> setState { copy(isVisible = false) }
+                    is Outcome.Err -> showSaveError()
+                }
+            }
+        }
+
         private fun showSaveError() = setState { copy(isSaving = false, hasSaveError = true) }
 
         private fun TransactionType.toCategoryType() =
             if (this == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
 
-        /** What the first read gives: the last choices in create mode, the stored row (null if gone) in edit mode. */
+        /**
+         * What the first read gives: the last choices in create mode, the stored row (null if gone) and whether
+         * auto-pairing made it in edit mode.
+         */
         private class Start(
             val choices: ManualChoices,
             val row: Transaction?,
+            val isAutoPaired: Boolean = false,
         )
 
         companion object {

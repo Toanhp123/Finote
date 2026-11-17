@@ -9,8 +9,10 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 internal val LEDGER_ORDER: Comparator<Transaction> = compareBy({ it.timestamp }, { it.createdAt }, { it.id })
 
 /**
- * Newest live row whose own account is the account and that carries a bank balance. [ledger] is every touching row up
- * to it; [settledAfter] is the ADJUSTMENT rows of the account ordered after it.
+ * Newest live row that carries a bank balance for the account: its own row with a post balance, or a paired transfer
+ * into it with `toPostBalance` and `toTimestamp`. A candidate only counts when the ledger order agrees with the real
+ * order of the touching rows. [ledger] is every touching row up to it; [settledAfter] is the ADJUSTMENT rows of the
+ * account ordered after it.
  */
 internal data class BalanceAnchor(
     val postBalance: Long,
@@ -19,23 +21,62 @@ internal data class BalanceAnchor(
 )
 
 /**
- * Null for a credit card, or when no live row with `accountId == account.id` carries a post balance. A transfer
- * received by the account never anchors: its post balance belongs to the sender.
+ * Null for a credit card, or when no candidate row passes the order check. A transfer received by the account anchors
+ * only through its receiver balance; a plain post balance on it belongs to the sender.
  */
 internal fun findBalanceAnchor(
     account: Account,
     transactions: List<Transaction>,
 ): BalanceAnchor? {
     if (account.type == AccountType.CREDIT_CARD) return null
-    val mine = transactions.filter { it.touches(account.id) }.sortedWith(LEDGER_ORDER)
-    val p = mine.indexOfLast { it.accountId == account.id && it.postBalance != null }
-    return mine.getOrNull(p)?.let { anchor ->
+    val x = account.id
+    val mine = transactions.filter { it.touches(x) }.sortedWith(LEDGER_ORDER)
+    // shortcut: O(n) per candidate, worst case O(n²) when many candidates fail; fine per account until step 30.
+    val p = mine.indices.reversed().firstOrNull { mine[it].anchorBalance(x) != null && mine.agreesAround(mine[it], x) }
+    return p?.let {
         BalanceAnchor(
-            postBalance = checkNotNull(anchor.postBalance),
-            ledger = mine.take(p + 1),
+            postBalance = checkNotNull(mine[it].anchorBalance(x)),
+            ledger = mine.take(it + 1),
             settledAfter =
-                mine.drop(p + 1).filter { it.type == TransactionType.ADJUSTMENT && it.accountId == account.id },
+                mine.drop(it + 1).filter { row -> row.type == TransactionType.ADJUSTMENT && row.accountId == x },
         )
+    }
+}
+
+/** Receiver time of a paired transfer into [x]; null for any other row. */
+private fun Transaction.receivedAt(x: String): Long? =
+    toTimestamp.takeIf { type == TransactionType.TRANSFER && toAccountId == x }
+
+/** Time the bank applied [row] to account [x]: the receiver time of a paired transfer into x, else its timestamp. */
+private fun effectiveTime(
+    row: Transaction,
+    x: String,
+): Long = row.receivedAt(x) ?: row.timestamp
+
+private fun Transaction.anchorBalance(x: String): Long? =
+    if (accountId == x) {
+        postBalance
+    } else if (receivedAt(x) != null) {
+        toPostBalance
+    } else {
+        null
+    }
+
+/** True when ledger order and real order of every other row of the account agree around [candidate]. */
+private fun List<Transaction>.agreesAround(
+    candidate: Transaction,
+    x: String,
+): Boolean {
+    val at = effectiveTime(candidate, x)
+    return all { row ->
+        if (row === candidate) return@all true
+        val rowAt = effectiveTime(row, x)
+        if (rowAt == at) {
+            // Equal plain timestamps keep the ledger tie-break; an equal receiver time cannot be ordered.
+            candidate.receivedAt(x) == null && row.receivedAt(x) == null
+        } else {
+            (LEDGER_ORDER.compare(row, candidate) < 0) == (rowAt < at)
+        }
     }
 }
 

@@ -80,6 +80,9 @@
     <string name="cash_entry_delete_cd">删除交易</string>
     <string name="cash_entry_delete_title">删除这笔交易？</string>
     <string name="cash_entry_delete_text">账户余额将重新计算。</string>
+    <string name="cash_entry_unpair">不是转账</string>
+    <string name="cash_entry_unpair_confirm_title">拆分为两笔交易？</string>
+    <string name="cash_entry_unpair_confirm_body">将拆回原来的支出和收入两笔交易。你对这一行所做的修改将会丢失。</string>
     <string name="cash_entry_backspace">删除</string>
     <string name="cash_entry_tile_label">记现金</string>
     <string name="cash_entry_shortcut_short">记现金</string>
@@ -96,6 +99,7 @@
     <string name="transactions_adjustment">余额调整</string>
     <string name="transactions_uncategorized">未分类</string>
     <string name="transactions_deleted_account">已删除的账户</string>
+    <string name="transactions_auto_paired">自动配对</string>
     <string name="transactions_empty">暂无交易</string>
     <string name="transactions_empty_account">该账户暂无交易</string>
     <string name="transactions_error">无法加载交易</string>

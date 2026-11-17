@@ -50,7 +50,8 @@ fun moneyKindOf(transaction: Transaction): MoneyKind =
 
 /**
  * [accountName] resolves an id to a display name, null when the account is gone. A reimbursement status adds its
- * label ([pendingLabel], [settledLabel]) after the accounts and before the note.
+ * label ([pendingLabel], [settledLabel]) after the accounts and before the note. [autoPairedLabel], when not null,
+ * sits right after the accounts.
  */
 fun rowSubtitle(
     transaction: Transaction,
@@ -58,6 +59,7 @@ fun rowSubtitle(
     deletedLabel: String,
     pendingLabel: String,
     settledLabel: String,
+    autoPairedLabel: String? = null,
 ): String {
     fun name(id: String) = accountName(id) ?: deletedLabel
 
@@ -73,7 +75,12 @@ fun rowSubtitle(
             ReimbursementStatus.PENDING -> pendingLabel
             ReimbursementStatus.SETTLED -> settledLabel
         }
-    return listOfNotNull(accounts, label, transaction.note.takeIf { it.isNotBlank() }).joinToString(" · ")
+    return listOfNotNull(
+        accounts,
+        autoPairedLabel,
+        label,
+        transaction.note.takeIf { it.isNotBlank() },
+    ).joinToString(" · ")
 }
 
 /** What a day header says. Today and yesterday are words the screen takes from `strings.xml`. */

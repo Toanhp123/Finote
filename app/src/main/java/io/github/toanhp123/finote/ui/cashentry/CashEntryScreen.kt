@@ -35,6 +35,7 @@ import io.github.toanhp123.finote.ui.cashentry.component.DeleteConfirmDialog
 import io.github.toanhp123.finote.ui.cashentry.component.KeypadPage
 import io.github.toanhp123.finote.ui.cashentry.component.PickerPage
 import io.github.toanhp123.finote.ui.cashentry.component.TextPage
+import io.github.toanhp123.finote.ui.cashentry.component.UnpairConfirmDialog
 import io.github.toanhp123.finote.ui.common.ObserveEffects
 import io.github.toanhp123.finote.ui.common.component.display.FinoteEmptyState
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteBottomSheet
@@ -67,6 +68,7 @@ fun CashEntryRoute(
         CashEntryScreen(state = state, onIntent = viewModel::onIntent, onPageClose = closePage)
     }
     DeleteConfirmDialog(isVisible = state.isDeleteConfirmOpen, onIntent = viewModel::onIntent)
+    UnpairConfirmDialog(isVisible = state.isUnpairConfirmOpen, onIntent = viewModel::onIntent)
 }
 
 /**

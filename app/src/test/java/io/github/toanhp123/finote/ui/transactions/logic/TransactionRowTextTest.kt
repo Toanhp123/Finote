@@ -138,4 +138,18 @@ class TransactionRowTextTest {
             rowSubtitle(settled, names::get, deleted, pendingLabel, settledLabel),
         )
     }
+
+    @Test
+    fun `the auto-paired label follows the accounts and comes before the note`() {
+        val transfer = tx(TransactionType.TRANSFER, 1, account = A, to = B).copy(note = "note")
+
+        assertEquals(
+            "Vietcombank → MoMo · Tự ghép · note",
+            rowSubtitle(transfer, names::get, deleted, pendingLabel, settledLabel, autoPairedLabel = "Tự ghép"),
+        )
+        assertEquals(
+            "Vietcombank → MoMo · note",
+            rowSubtitle(transfer, names::get, deleted, pendingLabel, settledLabel, autoPairedLabel = null),
+        )
+    }
 }
