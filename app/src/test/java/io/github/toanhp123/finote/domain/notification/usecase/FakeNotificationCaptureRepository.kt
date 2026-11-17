@@ -5,6 +5,8 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.repository.NotificationCaptureRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
  * Copies from the real repository: rule order, a repeated `contentHash` is rejected, `getFailedLogs` filter and order.
@@ -21,6 +23,11 @@ class FakeNotificationCaptureRepository(
     /** Every call of [updateFailedOutcome], including the ones that throw. */
     var updateCount = 0
         private set
+
+    /** Backs [observeRecentLogs]; tests set it directly, it is not tied to [logs]. */
+    val recentLogs = MutableStateFlow<List<NotificationLog>>(emptyList())
+
+    override fun observeRecentLogs(limit: Int): Flow<List<NotificationLog>> = recentLogs
 
     override suspend fun getRules(packageName: String): List<ParserRule> =
         rules.filter { it.packageName == packageName }.sortedWith(compareBy({ it.priority }, { it.id }))

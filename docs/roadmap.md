@@ -7,7 +7,7 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 ## 1. Hiện trạng (2026-11-15)
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2c (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Không có nhánh nào đang mở. Bước tiếp theo: bước 8 ở mục 5.
+- Không có nhánh nào đang mở. Bước tiếp theo: bước 9 ở mục 5.
 - Chưa từng chạy trên máy thật: toàn bộ P2. Bộ mẫu thông báo là mẫu tổng hợp (D4).
 - DB version 8, có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
 - Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: tạo và sửa tài khoản, quản lý danh mục, dashboard.
@@ -71,7 +71,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 5 | `feature/transfer-pairing` (P2d) | Must-Have | N1, N3 | ✅ |
 | 6 | `chore/db-migrations` | Nền móng N4 | | ✅ |
 | 7 | `chore/release-readiness` | Dọn dẹp 7 (A4, A17) | | ✅ |
-| 8 | `feature/debug-log-screen` | Công cụ (chỉ bản debug) | | ⬜ |
+| 8 | `feature/debug-log-screen` | Công cụ (bản debug và dogfood) | | ✅ |
 | 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | ⏸ sau bước 8 |
 | 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ⏸ cần mẫu thật |
 | 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1 | ⏸ cần mẫu thật |
@@ -111,10 +111,10 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 - Kết quả: không cần thêm keep rule, bản release build qua R8. Lý do: `optimization.packageScope` chỉ gồm `androidx`, `kotlin`, `kotlinx`, nên R8 không đụng code của app, Dagger, SQLCipher. Nới `packageScope` thì phải thêm keep rule cho Room `_Impl`, Hilt và tên lớp worker trước.
 - Chưa chạy APK release trên máy thật: bước 9 xác nhận.
 
-**8. `feature/debug-log-screen`** — màn chỉ có ở bản debug, xem `notification_logs` (trạng thái, lý do lỗi, rule khớp). Nội dung vẫn không ra Logcat.
+**8. `feature/debug-log-screen`** — màn chỉ có ở bản debug và dogfood, xem `notification_logs` (trạng thái, lý do lỗi, rule khớp). Nội dung vẫn không ra Logcat.
 
 **9. Dogfood** — cài bản release lên máy thật, dùng 1 tuần. Việc phải làm:
-- Cần `signingConfig` cho bản release trước khi cài (khóa debug là đủ): `assembleRelease` hiện ra APK chưa ký, không cài được.
+- Cài bản `dogfood` (`assembleDogfood`): giống release, ký bằng khóa debug. Bản release ký khóa Play sau này không cài đè được lên bản này.
 - Gom mẫu thật (đã ẩn danh) của VCB, MB, MoMo, Techcombank vào corpus.
 - Xác nhận hoặc bác L1, L2 (mục 6) bằng mẫu thẻ ghi nợ VCB và MoMo nguồn ngân hàng.
 - Lấy mẫu thông báo cập nhật thêm dòng (A5) và nợ N-06.

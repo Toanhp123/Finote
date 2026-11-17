@@ -32,6 +32,10 @@ data object AccountsSettings : NavKey
 @Serializable
 data object NotificationCaptureSettings : NavKey
 
+/** The notification log page, pushed on top of [Settings]. Registered only when tools are enabled. */
+@Serializable
+data object NotificationLogs : NavKey
+
 /** The cash entry sheet in edit mode for the transaction [id], drawn over the list below it. */
 @Serializable
 data class EditTransaction(

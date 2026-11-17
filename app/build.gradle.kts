@@ -60,11 +60,22 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "TOOLS_ENABLED", "true")
+        }
         release {
             optimization {
                 enable = true
                 packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
             }
+            buildConfigField("boolean", "TOOLS_ENABLED", "false")
+        }
+        // Release code and R8, signed with the debug key so it installs on a phone. The tools stay on.
+        create("dogfood") {
+            initWith(getByName("release"))
+            buildConfigField("boolean", "TOOLS_ENABLED", "true")
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
         }
     }
     compileOptions {
@@ -73,6 +84,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     sourceSets {
         // MigrationTestHelper reads the exported schemas as assets. Robolectric serves only the tested

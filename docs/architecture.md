@@ -76,6 +76,8 @@ di/                  Hilt module
 
 The debug flag is `@IsDebuggable isDebuggable: Boolean` (from `ApplicationInfo.FLAG_DEBUGGABLE`, provided in `di/BuildModule`), passed to the `BaseViewModel` constructor. Each screen maps its own `Outcome.Err` to its own state or effect.
 
+`BuildConfig.TOOLS_ENABLED` is read only in `di/BuildModule.kt` and reaches code as `@ToolsEnabled`. A tool screen has no Settings row and no nav entry when it is false.
+
 Konsist rules (`ProjectRulesKonsistTest`, `LayoutKonsistTest`):
 
 - `ui does not catch broad exceptions`: no `catch (` with `IllegalArgumentException`, `IllegalStateException`, `ArithmeticException`, `RuntimeException`, `Exception`, or `Throwable` in `ui`. Exempt by path: `ui/common/BaseViewModel.kt` (defines the helpers) and `ui/cashentry/logic/AmountExpression.kt` (catches `ArithmeticException` for its own math).

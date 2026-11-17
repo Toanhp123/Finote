@@ -179,4 +179,27 @@
     <string name="accounts_snack_following">Đang theo dõi lại tài khoản</string>
     <string name="accounts_snack_transfer">Không thể gộp: có giao dịch chuyển giữa hai tài khoản</string>
     <string name="accounts_snack_failed">Không thực hiện được. Thử lại sau.</string>
+    <string name="settings_logs_title" translatable="false">Nhật ký thông báo</string>
+    <string name="settings_logs_subtitle" translatable="false">Chỉ có ở bản debug và dogfood</string>
+    <string name="logs_empty" translatable="false">Chưa có thông báo nào</string>
+    <string name="logs_copy" translatable="false">Sao chép mẫu đã che số</string>
+    <string name="logs_copy_note" translatable="false">Kiểm tra và xóa tên riêng trước khi commit.</string>
+    <string name="logs_copied" translatable="false">Đã sao chép mẫu</string>
+    <string name="logs_none" translatable="false">—</string>
+    <string name="logs_row_meta" translatable="false">%1$s · %2$s</string>
+    <string name="logs_field_status" translatable="false">Trạng thái</string>
+    <string name="logs_field_failure" translatable="false">Lý do lỗi</string>
+    <string name="logs_field_content" translatable="false">Nội dung</string>
+    <string name="logs_field_post_time" translatable="false">Giờ đăng</string>
+    <string name="logs_field_received_at" translatable="false">Giờ nhận</string>
+    <string name="logs_field_channel" translatable="false">Kênh</string>
+    <string name="logs_field_hash" translatable="false">Mã băm nội dung</string>
+    <string name="logs_field_rule" translatable="false">Luật khớp</string>
+    <string name="logs_field_amount" translatable="false">Số tiền</string>
+    <string name="logs_field_type" translatable="false">Loại</string>
+    <string name="logs_field_mask" translatable="false">Đuôi tài khoản</string>
+    <string name="logs_field_balance" translatable="false">Số dư sau</string>
+    <string name="logs_field_merchant" translatable="false">Nơi nhận</string>
+    <string name="logs_field_note" translatable="false">Ghi chú</string>
+    <string name="logs_field_transaction" translatable="false">Giao dịch liên kết</string>
 </resources>

@@ -10,6 +10,7 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParseResult
 import io.github.toanhp123.finote.domain.notification.model.ParsedFields
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -182,5 +183,26 @@ class NotificationCaptureRepositoryImplTest {
             assertEquals(0L, stored.parsedPostBalance)
             assertEquals("Shop", stored.parsedMerchant)
             assertEquals("note", stored.parsedNote)
+        }
+
+    @Test
+    fun `observeRecentLogs maps rows to domain`() =
+        runTest {
+            dbRule.db.notificationLogDao().insert(
+                notificationLogEntity(
+                    id = "a",
+                    contentHash = "h",
+                ).copy(parsedAmount = 1_500_000L, parsedType = "EXPENSE"),
+            )
+
+            assertEquals(
+                1_500_000L,
+                repo
+                    .observeRecentLogs(limit = 10)
+                    .first()
+                    .single()
+                    .parsed
+                    ?.amount,
+            )
         }
 }

@@ -5,6 +5,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.toanhp123.finote.domain.common.ToolsEnabled
 import io.github.toanhp123.finote.domain.notification.port.SettleScheduler
 import io.github.toanhp123.finote.domain.setup.repository.SetupRepository
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
@@ -20,13 +21,21 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var settleScheduler: SettleScheduler
 
+    @Inject
+    @field:ToolsEnabled
+    @JvmField
+    var isToolsEnabled: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         settleScheduler.settleNow()
         setContent {
             FinoteTheme {
-                FinoteNavHost(shouldStartAtSetup = !setupRepository.isSetupDone())
+                FinoteNavHost(
+                    shouldStartAtSetup = !setupRepository.isSetupDone(),
+                    isToolsEnabled = isToolsEnabled,
+                )
             }
         }
     }

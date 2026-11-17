@@ -6,12 +6,17 @@ import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import io.github.toanhp123.finote.data.notification.local.entity.NotificationLogEntity
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface NotificationLogDao {
     /** Returns the new row id, or -1 when a row with the same `contentHash` exists. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(log: NotificationLogEntity): Long
+
+    /** The newest [limit] logs, newest first; re-emits when the table changes. */
+    @Query("SELECT * FROM notification_logs ORDER BY receivedAt DESC, id DESC LIMIT :limit")
+    fun observeRecent(limit: Int): Flow<List<NotificationLogEntity>>
 
     @Query("SELECT * FROM notification_logs ORDER BY receivedAt ASC, id ASC")
     suspend fun getAll(): List<NotificationLogEntity>

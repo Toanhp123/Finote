@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.ui.navigation
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -21,16 +22,19 @@ import io.github.toanhp123.finote.ui.cashentry.CashEntryViewModel
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavBar
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavItem
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteScaffold
+import io.github.toanhp123.finote.ui.common.component.overlay.FinoteSnackbarState
 import io.github.toanhp123.finote.ui.common.component.overlay.rememberFinoteSnackbarState
 import io.github.toanhp123.finote.ui.settings.SettingsRoute
 import io.github.toanhp123.finote.ui.settings.accounts.AccountsSettingsRoute
 import io.github.toanhp123.finote.ui.settings.capture.NotificationCaptureSettingsRoute
+import io.github.toanhp123.finote.ui.settings.logs.NotificationLogsRoute
 import io.github.toanhp123.finote.ui.setup.SetupRoute
 import io.github.toanhp123.finote.ui.transactions.TransactionListRoute
 
 @Composable
 fun FinoteNavHost(
     shouldStartAtSetup: Boolean,
+    isToolsEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val start: NavKey = if (shouldStartAtSetup) Setup(isFromOnboarding = true) else Overview
@@ -73,6 +77,7 @@ fun FinoteNavHost(
                             viewModel = hiltViewModel(),
                             onOpenCapture = { openNotificationCaptureSettings(backStack) },
                             onOpenAccounts = { openAccountsSettings(backStack) },
+                            onOpenLogs = { openNotificationLogs(backStack) },
                             modifier = Modifier.padding(padding),
                         )
                     }
@@ -91,6 +96,7 @@ fun FinoteNavHost(
                             modifier = Modifier.padding(padding),
                         )
                     }
+                    if (isToolsEnabled) logsEntry(backStack, snackbarState, padding)
                     editorEntry(backStack)
                     entry<Setup> { key ->
                         SetupRoute(
@@ -100,6 +106,22 @@ fun FinoteNavHost(
                         )
                     }
                 },
+        )
+    }
+}
+
+/** The notification log page. Registered only when tools are enabled, so a release build has no way to reach it. */
+private fun EntryProviderScope<NavKey>.logsEntry(
+    backStack: MutableList<NavKey>,
+    snackbarState: FinoteSnackbarState,
+    padding: PaddingValues,
+) {
+    entry<NotificationLogs> {
+        NotificationLogsRoute(
+            viewModel = hiltViewModel(),
+            snackbarState = snackbarState,
+            onClose = { backStack.removeLastOrNull() },
+            modifier = Modifier.padding(padding),
         )
     }
 }
@@ -153,4 +175,9 @@ private fun NavKey.labelRes(): Int =
 /** Opens [AccountsSettings]. A second call while it is on top does nothing, so a double tap cannot stack it. */
 private fun openAccountsSettings(backStack: MutableList<NavKey>) {
     if (backStack.lastOrNull() != AccountsSettings) backStack.add(AccountsSettings)
+}
+
+/** Opens [NotificationLogs]. A second call while it is on top does nothing, so a double tap cannot stack it. */
+private fun openNotificationLogs(backStack: MutableList<NavKey>) {
+    if (backStack.lastOrNull() != NotificationLogs) backStack.add(NotificationLogs)
 }

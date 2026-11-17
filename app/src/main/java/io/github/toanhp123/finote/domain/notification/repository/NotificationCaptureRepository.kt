@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.domain.notification.repository
 import io.github.toanhp123.finote.domain.notification.model.Classification
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
+import kotlinx.coroutines.flow.Flow
 
 interface NotificationCaptureRepository {
     /** Rules of one package, sorted by `priority`, then `id`. */
@@ -22,4 +23,7 @@ interface NotificationCaptureRepository {
         id: String,
         outcome: Classification,
     ): Boolean
+
+    /** The newest [limit] logs, newest first; re-emits when the table changes. */
+    fun observeRecentLogs(limit: Int): Flow<List<NotificationLog>>
 }

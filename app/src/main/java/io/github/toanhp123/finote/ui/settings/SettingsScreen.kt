@@ -30,6 +30,7 @@ fun SettingsRoute(
     viewModel: SettingsViewModel,
     onOpenCapture: () -> Unit,
     onOpenAccounts: () -> Unit,
+    onOpenLogs: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -38,6 +39,7 @@ fun SettingsRoute(
         when (effect) {
             SettingsEffect.OpenCaptureSettings -> onOpenCapture()
             SettingsEffect.OpenAccountsSettings -> onOpenAccounts()
+            SettingsEffect.OpenNotificationLogs -> onOpenLogs()
         }
     }
     SettingsScreen(state, viewModel::onIntent, modifier)
@@ -72,6 +74,15 @@ fun SettingsScreen(
                     trailing = { RowIcon(R.drawable.ic_chevron_right, FinoteTheme.scheme.onSurfaceVariant) },
                     onClick = { onIntent(SettingsIntent.CaptureClicked) },
                 )
+                if (state.isToolsEnabled) {
+                    FinoteListRow(
+                        title = stringResource(R.string.settings_logs_title),
+                        subtitle = stringResource(R.string.settings_logs_subtitle),
+                        leading = { RowIcon(R.drawable.ic_receipt_long, FinoteTheme.scheme.primary) },
+                        trailing = { RowIcon(R.drawable.ic_chevron_right, FinoteTheme.scheme.onSurfaceVariant) },
+                        onClick = { onIntent(SettingsIntent.LogsClicked) },
+                    )
+                }
             }
         }
     }

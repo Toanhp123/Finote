@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.data.notification.repository
 
 import io.github.toanhp123.finote.data.database.FinoteDatabase
+import io.github.toanhp123.finote.data.database.mapStorageErrors
 import io.github.toanhp123.finote.data.database.storage
 import io.github.toanhp123.finote.data.notification.local.entity.NotificationLogEntity
 import io.github.toanhp123.finote.data.notification.mapper.toDomain
@@ -9,6 +10,8 @@ import io.github.toanhp123.finote.domain.notification.model.Classification
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.repository.NotificationCaptureRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class NotificationCaptureRepositoryImpl
@@ -48,6 +51,9 @@ class NotificationCaptureRepositoryImpl
                 ) == 1
             }
         }
+
+        override fun observeRecentLogs(limit: Int): Flow<List<NotificationLog>> =
+            logs.observeRecent(limit).map { list -> list.map { it.toDomain() } }.mapStorageErrors()
 
         // A FAILED row has no match, so there is nothing parsed to restore.
         private fun NotificationLogEntity.toFailedLog() =

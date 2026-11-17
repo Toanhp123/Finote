@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.ui.settings
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.toanhp123.finote.domain.common.IsDebuggable
+import io.github.toanhp123.finote.domain.common.ToolsEnabled
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import io.github.toanhp123.finote.ui.settings.logic.summarizeBanks
@@ -14,8 +15,12 @@ class SettingsViewModel
     @Inject
     constructor(
         observeRules: ObserveParserRulesUseCase,
+        @ToolsEnabled isToolsEnabled: Boolean,
         @IsDebuggable isDebuggable: Boolean,
-    ) : BaseViewModel<SettingsState, SettingsIntent, SettingsEffect>(SettingsState(), isDebuggable) {
+    ) : BaseViewModel<SettingsState, SettingsIntent, SettingsEffect>(
+            SettingsState(isToolsEnabled = isToolsEnabled),
+            isDebuggable,
+        ) {
         init {
             viewModelScope.launch {
                 observeRules()
@@ -37,6 +42,10 @@ class SettingsViewModel
 
                 SettingsIntent.AccountsClicked -> {
                     sendEffect(SettingsEffect.OpenAccountsSettings)
+                }
+
+                SettingsIntent.LogsClicked -> {
+                    sendEffect(SettingsEffect.OpenNotificationLogs)
                 }
             }
         }

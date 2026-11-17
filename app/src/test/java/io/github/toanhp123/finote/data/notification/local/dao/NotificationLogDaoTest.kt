@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.notification.notificationLogEntity
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -44,5 +45,16 @@ class NotificationLogDaoTest {
 
             assertEquals(-1L, dao.insert(notificationLogEntity(id = "log-2", contentHash = "same")))
             assertEquals(1, dao.getAll().size)
+        }
+
+    @Test
+    fun `observeRecent returns newest first and stops at the limit`() =
+        runTest {
+            val base = notificationLogEntity()
+            listOf("a" to 1L, "b" to 3L, "c" to 2L, "d" to 3L).forEach { (id, at) ->
+                dao.insert(base.copy(id = id, contentHash = id, receivedAt = at))
+            }
+
+            assertEquals(listOf("d", "b", "c"), dao.observeRecent(limit = 3).first().map { it.id })
         }
 }

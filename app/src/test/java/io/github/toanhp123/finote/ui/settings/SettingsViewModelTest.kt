@@ -47,7 +47,7 @@ class SettingsViewModelTest {
     @Test
     fun `bank count follows rules`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isDebuggable = true)
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = true, isDebuggable = true)
             runCurrent()
             assertEquals(0, vm.state.value.bankCount)
 
@@ -60,7 +60,7 @@ class SettingsViewModelTest {
     @Test
     fun `resumed updates access`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isDebuggable = true)
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = true, isDebuggable = true)
 
             vm.onIntent(SettingsIntent.Resumed(isGranted = true))
             assertTrue(vm.state.value.isAccessEnabled)
@@ -72,7 +72,7 @@ class SettingsViewModelTest {
     @Test
     fun `capture click emits OpenCaptureSettings`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isDebuggable = true)
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = true, isDebuggable = true)
 
             vm.effects.test {
                 vm.onIntent(SettingsIntent.CaptureClicked)
@@ -86,13 +86,36 @@ class SettingsViewModelTest {
     @Test
     fun `accounts click emits OpenAccountsSettings`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isDebuggable = true)
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = true, isDebuggable = true)
 
             vm.effects.test {
                 vm.onIntent(SettingsIntent.AccountsClicked)
                 runCurrent()
 
                 assertEquals(SettingsEffect.OpenAccountsSettings, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `logs row hidden when tools are off`() =
+        runTest(mainRule.dispatcher) {
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = false, isDebuggable = true)
+
+            assertFalse(vm.state.value.isToolsEnabled)
+        }
+
+    @Test
+    fun `logs click emits OpenNotificationLogs`() =
+        runTest(mainRule.dispatcher) {
+            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = true, isDebuggable = true)
+
+            assertTrue(vm.state.value.isToolsEnabled)
+            vm.effects.test {
+                vm.onIntent(SettingsIntent.LogsClicked)
+                runCurrent()
+
+                assertEquals(SettingsEffect.OpenNotificationLogs, awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
         }
