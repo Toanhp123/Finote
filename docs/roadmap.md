@@ -7,9 +7,9 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 ## 1. Hiện trạng (2026-11-15)
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2c (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Không có nhánh nào đang mở. Bước tiếp theo: bước 6 ở mục 5.
+- Không có nhánh nào đang mở. Bước tiếp theo: bước 8 ở mục 5.
 - Chưa từng chạy trên máy thật: toàn bộ P2. Bộ mẫu thông báo là mẫu tổng hợp (D4).
-- DB version 7, vẫn dùng `fallbackToDestructiveMigration`: đổi schema là mất dữ liệu.
+- DB version 8, có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
 - Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: tạo và sửa tài khoản, quản lý danh mục, dashboard.
 
 ## 2. Nguyên tắc làm việc
@@ -44,7 +44,7 @@ Rà code ngày 2026-11-15. Mỗi dòng là một chỗ mà nhiều tính năng s
 | N1 | **Một đường ghi sổ** | Xong: mọi dòng sổ chèn qua `LedgerWriter.insert`; `book` dựng `Transaction` và chạy `TransactionRules` trước khi ghi | Ghép chuyển khoản, failed-inbox, định kỳ, import, hoàn tiền, tự gán danh mục, FTS | Bước 2 |
 | N2 | **Form giao dịch dùng chung** | Sheet tạo mới Chi, Thu, Chuyển (đích, phí). Đã có chế độ sửa | Chuyển, sửa giao dịch, failed-inbox (điền sẵn từ log), hoàn tiền, nhãn, tách giao dịch | Bước 3, 4 |
 | N3 | **Bộ so khớp** (matcher) | Hai bộ: `SettlementPlanner` (ngân hàng + ví, cùng chiều, 30 giây, trước khi ghi) và `TransferPairing.kt` (chuyển khoản, ngược chiều, 30 phút, khi ghi dòng thứ hai) | Ghép chuyển khoản; so "ứng viên với sổ" cho bóc lại log, failed-inbox, định kỳ, import | Bước 5 (tách vị từ), bước 11 (ứng viên với sổ) |
-| N4 | **Migration thật** | Đổi schema là xóa DB | Mọi nhánh thêm bảng hoặc cột sau khi có dữ liệu thật | Bước 6 |
+| N4 | **Migration thật** | Xong: `applyMigrationPolicy`, test `MigrationPolicyTest` | Mọi nhánh thêm bảng hoặc cột sau khi có dữ liệu thật | Bước 6 |
 | N5 | **Định danh tài khoản** | Một khóa `(bankPackageName, accountNumberMask)` trên `Account`; gộp tài khoản nối qua `mergedIntoId` | Thẻ ghi nợ, MoMo nguồn ngân hàng, màn tài khoản (liên kết 4 số cuối), thẻ tín dụng, thêm ngân hàng | Bước 10 |
 | N6 | **Lõi báo cáo** (`domain/report`) | Chưa có. Tổng thu chi trong snapshot gồm cả điều chỉnh, phí, hoàn tiền; không biết `excludeFromAnalytics` | Dashboard, ngân sách, hoàn tiền, merchant, tách giao dịch | Bước 17 |
 | N7 | **Thông báo của app** (kênh, quyền `POST_NOTIFICATIONS`) | Chưa có | Cảnh báo ngân sách, nhắc hóa đơn định kỳ, nhắc đòi tiền chi hộ | Bước 18 |
@@ -69,7 +69,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 3 | `feature/cash-transfer` | Việc tồn P1 | N1, N2 | ✅ |
 | 4 | `feature/transaction-edit` | Must-Have (CRUD giao dịch) | N1, N2 | ✅ |
 | 5 | `feature/transfer-pairing` (P2d) | Must-Have | N1, N3 | ✅ |
-| 6 | `chore/db-migrations` | Nền móng N4 | | ⬜ |
+| 6 | `chore/db-migrations` | Nền móng N4 | | ✅ |
 | 7 | `chore/release-readiness` | Dọn dẹp 7 (A4, A17) | | ✅ |
 | 8 | `feature/debug-log-screen` | Công cụ (chỉ bản debug) | | ⬜ |
 | 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | ⏸ sau bước 8 |

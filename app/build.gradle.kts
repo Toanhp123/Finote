@@ -74,6 +74,11 @@ android {
     buildFeatures {
         compose = true
     }
+    sourceSets {
+        // MigrationTestHelper reads the exported schemas as assets. Robolectric serves only the tested
+        // variant's merged assets, not the test source set's, so they ride in the debug APK (never release).
+        getByName("debug").assets.directories.add("$projectDir/schemas")
+    }
     androidResources {
         // Lists the app languages in the Android 13+ per-app language setting.
         generateLocaleConfig = true
@@ -144,6 +149,7 @@ dependencies {
     testImplementation(libs.sqlite.framework)
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.robolectric)
+    testImplementation(libs.room3.testing)
     testImplementation(libs.konsist)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

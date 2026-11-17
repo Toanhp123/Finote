@@ -20,6 +20,9 @@ import io.github.toanhp123.finote.data.transaction.local.entity.TagEntity
 import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntity
 import io.github.toanhp123.finote.data.transaction.local.entity.TransactionTagCrossRef
 
+/** Schema version. Raising it needs a new `app/schemas/.../N.json` and a migration; see `MigrationPolicy.kt`. */
+const val DATABASE_VERSION = 8
+
 @Database(
     entities =
         [
@@ -32,7 +35,7 @@ import io.github.toanhp123.finote.data.transaction.local.entity.TransactionTagCr
             ParserRuleEntity::class,
             NotificationLogEntity::class,
         ],
-    version = 8,
+    version = DATABASE_VERSION,
     exportSchema = true,
 )
 abstract class FinoteDatabase : RoomDatabase() {

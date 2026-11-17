@@ -31,8 +31,7 @@ fun createFinoteDatabase(
     return Room
         .databaseBuilder<FinoteDatabase>(context, name)
         .setDriver(SQLCipherDriver(passphrase, null, null))
-        // shortcut: drops user data on a version change, replace with real migrations before v1.0
-        .fallbackToDestructiveMigration(dropAllTables = true)
+        .applyMigrationPolicy()
         .addCallback(SystemCategorySeeder(clock))
         .addCallback(SystemAccountSeeder(clock))
         .addCallback(ParserRuleSeeder())
