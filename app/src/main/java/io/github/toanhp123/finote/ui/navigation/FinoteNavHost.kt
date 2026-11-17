@@ -2,6 +2,11 @@ package io.github.toanhp123.finote.ui.navigation
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -24,6 +29,8 @@ import io.github.toanhp123.finote.ui.common.component.layout.FinoteNavItem
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteScaffold
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteSnackbarState
 import io.github.toanhp123.finote.ui.common.component.overlay.rememberFinoteSnackbarState
+import io.github.toanhp123.finote.ui.common.theme.FinoteMotion
+import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.settings.SettingsRoute
 import io.github.toanhp123.finote.ui.settings.accounts.AccountsSettingsRoute
 import io.github.toanhp123.finote.ui.settings.capture.NotificationCaptureSettingsRoute
@@ -40,6 +47,7 @@ fun FinoteNavHost(
     val start: NavKey = if (shouldStartAtSetup) Setup(isFromOnboarding = true) else Overview
     val backStack = rememberNavBackStack(start)
     val snackbarState = rememberFinoteSnackbarState()
+    val motion = FinoteTheme.motion
     FinoteScaffold(
         modifier = modifier,
         snackbarState = snackbarState,
@@ -59,6 +67,10 @@ fun FinoteNavHost(
                     rememberViewModelStoreNavEntryDecorator(),
                 ),
             sceneStrategies = remember { listOf(SheetSceneStrategy()) },
+            // A short fade-through replaces the default full-width slide, for tabs and pushed pages alike.
+            transitionSpec = { fadeThrough(motion) },
+            popTransitionSpec = { fadeThrough(motion) },
+            predictivePopTransitionSpec = { fadeThrough(motion) },
             entryProvider =
                 entryProvider<NavKey> {
                     entry<Overview> { ComingSoonScreen(R.string.tab_overview) }
@@ -72,30 +84,7 @@ fun FinoteNavHost(
                         )
                     }
                     entry<Budget> { ComingSoonScreen(R.string.tab_budget) }
-                    entry<Settings> {
-                        SettingsRoute(
-                            viewModel = hiltViewModel(),
-                            onOpenCapture = { openNotificationCaptureSettings(backStack) },
-                            onOpenAccounts = { openAccountsSettings(backStack) },
-                            onOpenLogs = { openNotificationLogs(backStack) },
-                            modifier = Modifier.padding(padding),
-                        )
-                    }
-                    entry<AccountsSettings> {
-                        AccountsSettingsRoute(
-                            viewModel = hiltViewModel(),
-                            snackbarState = snackbarState,
-                            onClose = { backStack.removeLastOrNull() },
-                            modifier = Modifier.padding(padding),
-                        )
-                    }
-                    entry<NotificationCaptureSettings> {
-                        NotificationCaptureSettingsRoute(
-                            viewModel = hiltViewModel(),
-                            onClose = { backStack.removeLastOrNull() },
-                            modifier = Modifier.padding(padding),
-                        )
-                    }
+                    settingsEntries(backStack, snackbarState, padding)
                     if (isToolsEnabled) logsEntry(backStack, snackbarState, padding)
                     editorEntry(backStack)
                     entry<Setup> { key ->
@@ -106,6 +95,42 @@ fun FinoteNavHost(
                         )
                     }
                 },
+        )
+    }
+}
+
+private fun fadeThrough(motion: FinoteMotion): ContentTransform =
+    fadeIn(tween(motion.pageFadeInMillis, delayMillis = motion.pageFadeOutMillis)) togetherWith
+        fadeOut(tween(motion.pageFadeOutMillis))
+
+/** The Settings tab and the pages it opens. */
+private fun EntryProviderScope<NavKey>.settingsEntries(
+    backStack: MutableList<NavKey>,
+    snackbarState: FinoteSnackbarState,
+    padding: PaddingValues,
+) {
+    entry<Settings> {
+        SettingsRoute(
+            viewModel = hiltViewModel(),
+            onOpenCapture = { openNotificationCaptureSettings(backStack) },
+            onOpenAccounts = { openAccountsSettings(backStack) },
+            onOpenLogs = { openNotificationLogs(backStack) },
+            modifier = Modifier.padding(padding),
+        )
+    }
+    entry<AccountsSettings> {
+        AccountsSettingsRoute(
+            viewModel = hiltViewModel(),
+            snackbarState = snackbarState,
+            onClose = { backStack.removeLastOrNull() },
+            modifier = Modifier.padding(padding),
+        )
+    }
+    entry<NotificationCaptureSettings> {
+        NotificationCaptureSettingsRoute(
+            viewModel = hiltViewModel(),
+            onClose = { backStack.removeLastOrNull() },
+            modifier = Modifier.padding(padding),
         )
     }
 }
