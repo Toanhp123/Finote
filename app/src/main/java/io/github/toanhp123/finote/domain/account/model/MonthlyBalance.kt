@@ -10,4 +10,7 @@ data class MonthlyBalance(
     val totalExpense: Long,
     val totalTransferIn: Long,
     val totalTransferOut: Long,
-)
+) {
+    // Balances must never reach a log or crash report.
+    override fun toString() = "MonthlyBalance(accountId=$accountId, monthYear=$monthYear)"
+}

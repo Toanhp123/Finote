@@ -30,4 +30,7 @@ data class AccountBalanceSnapshotEntity(
     val totalTransferIn: Long,
     val totalTransferOut: Long,
     val updatedAt: Long,
-)
+) {
+    // Balances must never reach a log or crash report.
+    override fun toString() = "AccountBalanceSnapshotEntity(accountId=$accountId, monthYear=$monthYear)"
+}

@@ -86,4 +86,7 @@ data class TransactionEntity(
     val toTimestamp: Long? = null,
     /** On a soft-deleted original: the TRANSFER that replaced it. */
     val pairedIntoId: String? = null,
-)
+) {
+    // Amount, balances, merchant and note must never reach a log or crash report.
+    override fun toString() = "TransactionEntity(id=$id, type=$type, source=$source)"
+}

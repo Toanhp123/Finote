@@ -4,10 +4,10 @@ Bản v2, viết lại ngày 2026-11-15 sau khi rà toàn bộ luồng tiền v�
 
 Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9; `CLAUDE.md`; `docs/git-workflow.md`; `docs/architecture.md`.
 
-## 1. Hiện trạng (2026-11-15)
+## 1. Hiện trạng (2026-11-18)
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2c (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Không có nhánh nào đang mở. Bước tiếp theo: bước 9 ở mục 5.
+- Bước 1–8 xong (2026-11-18). Đang làm: bước 9 (dogfood) ở mục 5.
 - Chưa từng chạy trên máy thật: toàn bộ P2. Bộ mẫu thông báo là mẫu tổng hợp (D4).
 - DB version 8, có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
 - Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: tạo và sửa tài khoản, quản lý danh mục, dashboard.
@@ -72,7 +72,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 6 | `chore/db-migrations` | Nền móng N4 | | ✅ |
 | 7 | `chore/release-readiness` | Dọn dẹp 7 (A4, A17) | | ✅ |
 | 8 | `feature/debug-log-screen` | Công cụ (bản debug và dogfood) | | ✅ |
-| 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | ⏸ sau bước 8 |
+| 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | 🔧 |
 | 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ⏸ cần mẫu thật |
 | 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1 | ⏸ cần mẫu thật |
 | 12 | `release/0.2.0` | | | ⬜ |
@@ -225,7 +225,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-14 | `MainActivity` inject thẳng `SetupRepository`, đọc prefs trên main thread; `settleNow()` chạy mỗi `onCreate` (nợ #6 cũ) | Bước 30 |
 | N-15 | Hash dòng bí mật dò ngược được OTP 6 số (nợ #4 cũ); OTA một khóa ghim, chưa xoay khóa | Bước 32 |
 | N-16 | Chuỗi `ja`, `zh-rCN` do máy viết, cần người bản ngữ xem | Trước bước 33 |
-| N-17 | Mục nhỏ của audit 2026-11-10: UI không dùng (`FinoteDatePicker`, `BalanceHeroCard`), test mẫu, `toString()` của log in nội dung, dependency thừa, test dùng đồng hồ thật | Trước bước 9 |
+| N-17 | Mục nhỏ của audit 2026-11-10: UI không dùng (`FinoteDatePicker`; `BalanceHeroCard` giữ cho bước 17), test mẫu, dependency thừa, test dùng đồng hồ thật | Bước 32 |
 | N-19 | Dòng gốc bị ẩn vì ghép (`pairedIntoId`) và chuyển khoản đã tách: thùng rác phải ẩn; không dọn dòng gốc khi `T` còn sống, dọn cùng `T` | Bước 26 |
 | N-20 | Ghép theo giờ thông báo đến máy; đọc giờ ngân hàng trong nội dung (nhóm `time`, định dạng từng ngân hàng, cột ở log, đổi `pairingTime`) | Sau bước 9 |
 | N-21 | Gộp tài khoản đổi `updatedAt` mọi dòng bị chuyển, nên dòng chưa sửa của tài khoản bị gộp không còn được tự ghép | Bước 10 |

@@ -18,7 +18,10 @@ internal data class BalanceAnchor(
     val postBalance: Long,
     val ledger: List<Transaction>,
     val settledAfter: List<Transaction>,
-)
+) {
+    // Balances must never reach a log or crash report.
+    override fun toString() = "BalanceAnchor(ledger=${ledger.size}, settledAfter=${settledAfter.size})"
+}
 
 /**
  * Null for a credit card, or when no candidate row passes the order check. A transfer received by the account anchors

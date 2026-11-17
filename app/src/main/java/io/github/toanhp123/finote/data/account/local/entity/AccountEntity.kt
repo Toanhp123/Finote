@@ -33,4 +33,7 @@ data class AccountEntity(
     val accountNumberMask: String?,
     /** Set when this account was merged into another; the target account id. */
     val mergedIntoId: String?,
-)
+) {
+    // Balances and mask must never reach a log or crash report.
+    override fun toString() = "AccountEntity(id=$id, type=$type)"
+}

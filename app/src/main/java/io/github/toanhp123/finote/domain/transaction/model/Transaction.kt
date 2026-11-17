@@ -48,4 +48,7 @@ data class Transaction(
     fun touches(accountId: String): Boolean =
         deletedAt == null &&
             (this.accountId == accountId || (type == TransactionType.TRANSFER && toAccountId == accountId))
+
+    // Amount, balances, merchant and note must never reach a log or crash report.
+    override fun toString() = "Transaction(id=$id, type=$type, source=$source)"
 }

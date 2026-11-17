@@ -4,4 +4,7 @@ package io.github.toanhp123.finote.domain.account.model
 data class BalanceDrift(
     val accountId: String,
     val difference: Long,
-)
+) {
+    // Balances must never reach a log or crash report.
+    override fun toString() = "BalanceDrift(accountId=$accountId)"
+}

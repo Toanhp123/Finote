@@ -34,4 +34,7 @@ data class Account(
 ) {
     /** Live, not archived, not ignored: the account can take new or edited transactions and shows in pickers. */
     val isUsable: Boolean get() = deletedAt == null && !isArchived && !isIgnored
+
+    // Balances and mask must never reach a log or crash report.
+    override fun toString() = "Account(id=$id, type=$type)"
 }
