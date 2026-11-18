@@ -37,7 +37,7 @@ di/                  Hilt module
 - Every production package is the root or sits under `domain`, `data`, `ui`, `automation`, `work`, or `di`. A stray or misspelled package fails.
 - `TileService` only opens the cash entry screen, so it lives in `ui/<feature>`.
 - Parser, dedup, pairing, and balance math live in `domain`. They test on the JVM without Robolectric.
-- `automation/` receives a notification and calls a use case. Nothing more.
+- `automation/` receives a notification and calls a use case. It may also force its own rebind on ROMs that block the system restart. Nothing more.
 
 | Layer | May depend on | Must not depend on |
 |---|---|---|

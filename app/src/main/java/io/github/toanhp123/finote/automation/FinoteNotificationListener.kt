@@ -1,6 +1,11 @@
 package io.github.toanhp123.finote.automation
 
 import android.app.Notification
+import android.content.ComponentName
+import android.content.Context
+import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+import android.content.pm.PackageManager.DONT_KILL_APP
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import dagger.hilt.android.AndroidEntryPoint
@@ -17,7 +22,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
-/** Reads a notification into a [RawNotification] and hands it to the capture use case. Nothing more. */
+/**
+ * Reads a notification into a [RawNotification] and hands it to the capture use case, and can force its own rebind
+ * on ROMs that block the system restart.
+ */
 @AndroidEntryPoint
 class FinoteNotificationListener : NotificationListenerService() {
     @Inject
@@ -34,15 +42,39 @@ class FinoteNotificationListener : NotificationListenerService() {
         scope.launch { process(sbn) }
     }
 
+    override fun onListenerDisconnected() {
+        isConnected = false
+    }
+
     override fun onListenerConnected() {
+        isConnected = true
         // Some ROMs throw from activeNotifications while the service is closing. One launch per notification, so a
         // failing one cannot stop the rest of the rescan.
         runCatching { activeNotifications }.getOrNull().orEmpty().forEach { scope.launch { process(it) } }
     }
 
     override fun onDestroy() {
+        isConnected = false
         scope.cancel()
         super.onDestroy()
+    }
+
+    companion object {
+        @Volatile
+        private var isConnected = false
+
+        /**
+         * Some ROMs (Vivo) block the system restart of a killed listener, and `requestRebind` only undoes
+         * `requestUnbind`. Toggling the component makes the system bind it again. A toggle that races the system's own
+         * bind is harmless: the rescan re-stores nothing (content hash).
+         */
+        fun rebindIfDisconnected(context: Context) {
+            if (isConnected) return
+            val component = ComponentName(context, FinoteNotificationListener::class.java)
+            val pm = context.packageManager
+            pm.setComponentEnabledSetting(component, COMPONENT_ENABLED_STATE_DISABLED, DONT_KILL_APP)
+            pm.setComponentEnabledSetting(component, COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP)
+        }
     }
 
     private suspend fun process(sbn: StatusBarNotification) {

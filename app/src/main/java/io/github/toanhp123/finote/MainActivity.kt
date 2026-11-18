@@ -5,9 +5,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.toanhp123.finote.automation.FinoteNotificationListener
 import io.github.toanhp123.finote.domain.common.ToolsEnabled
 import io.github.toanhp123.finote.domain.notification.port.SettleScheduler
 import io.github.toanhp123.finote.domain.setup.repository.SetupRepository
+import io.github.toanhp123.finote.ui.common.isNotificationListenerEnabled
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.navigation.FinoteNavHost
 import javax.inject.Inject
@@ -30,6 +32,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         settleScheduler.settleNow()
+        if (isNotificationListenerEnabled(this)) FinoteNotificationListener.rebindIfDisconnected(this)
         setContent {
             FinoteTheme {
                 FinoteNavHost(

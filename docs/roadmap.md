@@ -230,6 +230,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-20 | Ghép theo giờ thông báo đến máy; đọc giờ ngân hàng trong nội dung (nhóm `time`, định dạng từng ngân hàng, cột ở log, đổi `pairingTime`) | Sau bước 9 |
 | N-21 | Gộp tài khoản đổi `updatedAt` mọi dòng bị chuyển, nên dòng chưa sửa của tài khoản bị gộp không còn được tự ghép | Bước 10 |
 | N-22 | Tách lại bị từ chối vì tài khoản đã lưu trữ chỉ hiện lỗi lưu chung, không nói lý do (giống nút Xóa) | Bước 14 |
+| N-23 | Listener chết trên Vivo/Xiaomi khi Autostart tắt: chỉ sống lại khi mở app (`rebindIfDisconnected`). Thông báo user xóa trước lúc đó thì mất, chỉ còn báo lệch số dư bắt được. Cần: màn Capture báo listener đang dừng (không chỉ quyền), hướng dẫn bật Autostart theo hãng máy | Bước 29 |
 
 ## 7. Quyết định
 
