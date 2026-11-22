@@ -7,7 +7,9 @@ data class RawNotification(
     val title: String,
     val content: String,
     val postTime: Long,
+    /** The platform's `StatusBarNotification.key`; it names the same posting again when the app updates it. */
+    val notificationKey: String? = null,
 ) {
-    // Text stays out of logs and crash reports.
+    // Text and key stay out of logs and crash reports.
     override fun toString() = "RawNotification(packageName=$packageName, postTime=$postTime)"
 }

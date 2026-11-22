@@ -58,4 +58,5 @@ fun notificationLogEntity(
     status = status,
     failureReason = null,
     linkedTransactionId = null,
+    notificationKey = null,
 )

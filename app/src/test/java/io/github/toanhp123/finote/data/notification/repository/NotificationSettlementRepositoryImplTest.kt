@@ -27,6 +27,7 @@ import io.github.toanhp123.finote.domain.notification.service.planSettlement
 import io.github.toanhp123.finote.domain.notification.testRule
 import io.github.toanhp123.finote.domain.notification.usecase.SettlePendingLogsUseCase
 import io.github.toanhp123.finote.domain.transaction.error.TransactionError
+import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.flow.first
@@ -953,6 +954,92 @@ class NotificationSettlementRepositoryImplTest {
             assertEquals(NotificationStatus.CONFIRMED, storedLog("d").status)
             assertEquals(2, balancesBefore.size)
             assertEquals(balancesBefore, repo.getAccounts().associate { it.id to it.currentBalance })
+        }
+
+    /** Account acc-1 of [PKG], a balance row at T0+[balanceAt] and an adjustment after it at T0+200. */
+    private suspend fun insertAdjustedAccount(
+        balanceAt: Long,
+        withKey: Boolean,
+    ) {
+        dbRule.db.accountDao().insert(account(bankPackageName = PKG))
+        if (withKey) insertKey("1234", "acc-1")
+        val rows = dbRule.db.transactionDao()
+        rows.insert(transaction(id = "t-bal", timestamp = T0 + balanceAt, postBalance = 900_000L))
+        rows.insert(
+            transaction(id = "t-adj", type = TransactionType.ADJUSTMENT, timestamp = T0 + 200L)
+                .copy(adjustmentDirection = AdjustmentDirection.OUT),
+        )
+    }
+
+    @Test
+    fun `covered log is not booked`() =
+        runTest {
+            insertAdjustedAccount(balanceAt = 150L, withKey = true)
+            val bank = log("b1", postTime = 100L)
+            seed(bank)
+
+            val error = bookInTx(book(bank, target = AccountTarget.Existing("acc-1")))
+
+            assertEquals(SettlementError.AdjustedAfter, error)
+            assertTrue(liveRows().none { it.notificationLogId == "b1" })
+            assertNull(dbRule.db.transactionDao().getById("tx-1"))
+            assertEquals(1_000_000L, onlyAccount().currentBalance)
+            assertEquals(NotificationStatus.PENDING, storedLog("b1").status)
+        }
+
+    @Test
+    fun `covered log rolls back the new identifier`() =
+        runTest {
+            // No key yet, one live account of the package and type: the mask 1234 attaches to it (N-05).
+            insertAdjustedAccount(balanceAt = 150L, withKey = false)
+            val bank = log("b1", postTime = 100L)
+            seed(bank)
+
+            assertEquals(SettlementError.AdjustedAfter, bookInTx(book(bank, target = AccountTarget.Existing("acc-1"))))
+
+            assertTrue(repo.getIdentifiers().isEmpty())
+            assertEquals(listOf("acc-1"), repo.getAccounts().map { it.id })
+        }
+
+    @Test
+    fun `covered log is never paired`() =
+        runTest {
+            insertAdjustedAccount(balanceAt = 150L, withKey = true)
+            dbRule.db.accountDao().insert(account(id = "acc-2", bankPackageName = MOMO))
+            dbRule.db.transactionDao().insert(
+                transaction(
+                    id = "partner",
+                    accountId = "acc-2",
+                    type = TransactionType.INCOME,
+                    timestamp = T0 + 100L + 5 * MINUTE,
+                ).copy(source = TransactionSource.NOTIFICATION_PARSER),
+            )
+            val bank = log("b1", postTime = 100L, amount = 150_000L)
+            seed(bank)
+
+            assertEquals(SettlementError.AdjustedAfter, bookInTx(book(bank, target = AccountTarget.Existing("acc-1"))))
+
+            assertTrue(liveRows().none { it.type == TransactionType.TRANSFER })
+            assertNull(
+                dbRule.db
+                    .transactionDao()
+                    .getById("partner")!!
+                    .deletedAt,
+            )
+        }
+
+    @Test
+    fun `uncovered log books`() =
+        runTest {
+            // The last balance row (t=50) is before the log (t=100), so the adjustment at t=200 does not include it.
+            insertAdjustedAccount(balanceAt = 50L, withKey = true)
+            val bank = log("b1", postTime = 100L)
+            seed(bank)
+
+            assertNull(bookInTx(book(bank, target = AccountTarget.Existing("acc-1"))))
+
+            assertEquals("acc-1", accountOfTx("tx-1"))
+            assertEquals(NotificationStatus.CONFIRMED, storedLog("b1").status)
         }
 
     private companion object {

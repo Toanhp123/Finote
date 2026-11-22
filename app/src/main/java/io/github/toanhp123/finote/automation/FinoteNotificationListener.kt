@@ -95,6 +95,7 @@ class FinoteNotificationListener : NotificationListenerService() {
                 title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty(),
                 content = content,
                 postTime = sbn.postTime,
+                notificationKey = sbn.key,
             )
         mutex.withLock { capture(raw) }
     }

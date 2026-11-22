@@ -11,6 +11,7 @@ import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.repository.LedgerWriter
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountIdentifier
+import io.github.toanhp123.finote.domain.account.service.isCoveredByAdjustment
 import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.AccountResolution
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
@@ -75,6 +76,16 @@ class NotificationSettlementRepositoryImpl
                 val account =
                     accountFor(bank.packageName, parsed.accountMask, decision.rule, now)
                         ?: return@storageWrite SettlementError.AccountUnusable
+                // An adjustment already includes this late log; booking it would count it twice.
+                val rows = db.transactionDao().getActiveByAccount(account.id).map { it.toDomain() }
+                if (isCoveredByAdjustment(
+                        account.id,
+                        bank.postTime,
+                        rows,
+                    )
+                ) {
+                    return@storageWrite SettlementError.AdjustedAfter
+                }
                 val transaction =
                     Transaction(
                         id = transactionId,

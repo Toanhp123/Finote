@@ -23,7 +23,7 @@ import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntit
 import io.github.toanhp123.finote.data.transaction.local.entity.TransactionTagCrossRef
 
 /** Schema version. Raising it needs a new `app/schemas/.../N.json` and a migration; see `MigrationPolicy.kt`. */
-const val DATABASE_VERSION = 9
+const val DATABASE_VERSION = 10
 
 @Database(
     entities =

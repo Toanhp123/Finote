@@ -51,12 +51,12 @@ private fun Transaction.receivedAt(x: String): Long? =
     toTimestamp.takeIf { type == TransactionType.TRANSFER && toAccountId == x }
 
 /** Time the bank applied [row] to account [x]: the receiver time of a paired transfer into x, else its timestamp. */
-private fun effectiveTime(
+internal fun effectiveTime(
     row: Transaction,
     x: String,
 ): Long = row.receivedAt(x) ?: row.timestamp
 
-private fun Transaction.anchorBalance(x: String): Long? =
+internal fun Transaction.anchorBalance(x: String): Long? =
     if (accountId == x) {
         postBalance
     } else if (receivedAt(x) != null) {

@@ -62,6 +62,7 @@ fun testLog(
     matchedRuleId: String? = null,
     parsed: ParsedFields? = null,
     linkedTransactionId: String? = null,
+    notificationKey: String? = null,
 ) = NotificationLog(
     id = id,
     packageName = packageName,
@@ -76,6 +77,7 @@ fun testLog(
     matchedRuleId = matchedRuleId,
     parsed = parsed,
     linkedTransactionId = linkedTransactionId,
+    notificationKey = notificationKey,
 )
 
 fun testRaw(
@@ -84,4 +86,5 @@ fun testRaw(
     title: String = "title",
     content: String = "content",
     postTime: Long = 1_000L,
-) = RawNotification(packageName, channelId, title, content, postTime)
+    notificationKey: String? = null,
+) = RawNotification(packageName, channelId, title, content, postTime, notificationKey)

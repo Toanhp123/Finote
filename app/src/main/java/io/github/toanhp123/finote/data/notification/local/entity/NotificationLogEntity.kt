@@ -31,7 +31,8 @@ data class NotificationLogEntity(
     val status: NotificationStatus,
     val failureReason: String?,
     val linkedTransactionId: String?,
+    val notificationKey: String?,
 ) {
-    // Text, amounts, balance and mask must never reach a log or crash report.
+    // Text, key, amounts, balance and mask must never reach a log or crash report.
     override fun toString() = "NotificationLogEntity(id=$id, packageName=$packageName, status=$status)"
 }

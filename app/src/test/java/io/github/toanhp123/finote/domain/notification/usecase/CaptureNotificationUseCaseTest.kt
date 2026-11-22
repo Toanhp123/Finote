@@ -50,7 +50,8 @@ class CaptureNotificationUseCaseTest {
         content: String = "SD TK -50,000 tai quan",
         channelId: String? = "ch",
         postTime: Long = 1_000L,
-    ) = testRaw(PKG, channelId, title, content, postTime)
+        notificationKey: String? = null,
+    ) = testRaw(PKG, channelId, title, content, postTime, notificationKey)
 
     private class Env(
         val repo: FakeNotificationCaptureRepository,
@@ -274,6 +275,45 @@ class CaptureNotificationUseCaseTest {
 
             assertEquals(CaptureResult.Stored, e.useCase(raw()))
             assertEquals(CaptureResult.Duplicate, e.useCase(raw()))
+            assertEquals(1, e.repo.logs.size)
+        }
+
+    @Test
+    fun `stores the notification key`() =
+        runTest {
+            val e = env(rule())
+
+            e.useCase(raw(notificationKey = "0|pkg|1|null|10"))
+
+            assertEquals(
+                "0|pkg|1|null|10",
+                e.repo.logs
+                    .single()
+                    .notificationKey,
+            )
+        }
+
+    @Test
+    fun `blank key is stored as null`() =
+        runTest {
+            val e = env(rule())
+
+            e.useCase(raw(notificationKey = "  "))
+
+            assertNull(
+                e.repo.logs
+                    .single()
+                    .notificationKey,
+            )
+        }
+
+    @Test
+    fun `same notification twice stays one row with a key`() =
+        runTest {
+            val e = env(rule())
+
+            assertEquals(CaptureResult.Stored, e.useCase(raw(notificationKey = "k1")))
+            assertEquals(CaptureResult.Duplicate, e.useCase(raw(notificationKey = "k1")))
             assertEquals(1, e.repo.logs.size)
         }
 

@@ -324,6 +324,26 @@ class MigrationPolicyTest {
         }
 
     @Test
+    fun `v9 logs survive migration to 10 with a null key`() =
+        runTest {
+            helper.createDatabase(9).use { connection ->
+                connection.execSQL(
+                    "INSERT INTO notification_logs (id, packageName, title, content, contentHash, postTime, " +
+                        "receivedAt, status) VALUES " +
+                        "('log-9', 'fake.bank', 'Fake', 'fake content', 'fake-hash', 1, 1, 'PARSED')",
+                )
+            }
+
+            helper.runMigrationsAndValidate(10, listOf(MIGRATION_8_9, MIGRATION_9_10)).close()
+
+            assertTrue(rowExists("notification_logs", "log-9"))
+            assertEquals(
+                1L,
+                longColumn("SELECT COUNT(*) FROM notification_logs WHERE id = 'log-9' AND notificationKey IS NULL"),
+            )
+        }
+
+    @Test
     fun `migrated schema validates`() = runTest { migrateKeyedRows() }
 
     private suspend fun migrateKeyedRows() {

@@ -57,16 +57,21 @@ class SettlementPlannerTest {
         text: String = "t${seq++}",
         parsed: ParsedFields? = ParsedFields(amount, type, mask, balance, merchant, null),
         status: NotificationStatus = NotificationStatus.PENDING,
+        key: String? = null,
+        content: String = text,
+        linkedTx: String? = null,
     ) = testLog(
         id = "id${seq++}",
         packageName = pkg,
         title = text,
-        content = text,
+        content = content,
         contentHash = text,
         postTime = postTime,
         status = status,
         matchedRuleId = ruleId,
         parsed = parsed,
+        linkedTransactionId = linkedTx,
+        notificationKey = key,
     )
 
     private fun plan(
@@ -357,5 +362,165 @@ class SettlementPlannerTest {
         val decisions = plan(bank, wallet)
         assertEquals(listOf(Fail(wallet, null, FAIL_INVALID_TIME)), decisions.filterIsInstance<Fail>())
         assertEquals(null, (decisions.single { it is Book } as Book).walletSide)
+    }
+
+    private val k = "k"
+    private val min = 60_000L
+
+    private fun booked(decisions: List<SettlementDecision>) = decisions.filterIsInstance<Book>().map { it.bankSide }
+
+    private fun reposts(decisions: List<SettlementDecision>) =
+        decisions.filterIsInstance<Repost>().map { it.log to it.original }
+
+    @Test
+    fun `key repost with an extra line books once`() {
+        val a = log(vcb, old(0), balance = 1000L, key = k, text = "x")
+        val b = log(vcb, old(2_000), balance = 1000L, key = k, text = "x", content = "x\nmore")
+        val decisions = plan(a, b)
+        assertEquals(listOf(a), booked(decisions))
+        assertEquals(listOf(b to a), reposts(decisions))
+    }
+
+    @Test
+    fun `first without balance then with balance books once`() {
+        val a = log(vcb, old(0), key = k)
+        val b = log(vcb, old(2_000), balance = 1000L, key = k)
+        val decisions = plan(a, b)
+        assertEquals(listOf(a), booked(decisions))
+        assertEquals(listOf(b to a), reposts(decisions))
+    }
+
+    @Test
+    fun `no-balance repost after 3 s books once`() {
+        val a = log(vcb, old(0), key = k)
+        val b = log(vcb, old(5_000), key = k)
+        val decisions = plan(a, b)
+        assertEquals(listOf(a), booked(decisions))
+        assertEquals(listOf(b to a), reposts(decisions))
+    }
+
+    @Test
+    fun `different balances with the same key book twice`() {
+        val a = log(vcb, old(0), balance = 1000L, key = k)
+        val b = log(vcb, old(2_000), balance = 950L, key = k)
+        assertEquals(listOf(a, b), booked(plan(a, b)))
+    }
+
+    @Test
+    fun `same key after 10 min books twice`() {
+        val a = log(vcb, old(0), key = k)
+        val b = log(vcb, old(10 * min + 1), key = k)
+        assertEquals(listOf(a, b), booked(plan(a, b)))
+    }
+
+    @Test
+    fun `different amount or mask with the same key books twice`() {
+        val a = log(vcb, old(0), mask = "1234", key = k)
+        val amount = log(vcb, old(2_000), mask = "1234", amount = 60_000L, key = k)
+        val mask = log(vcb, old(4_000), mask = "9999", key = k)
+        assertEquals(listOf(a, amount, mask), booked(plan(a, amount, mask)))
+    }
+
+    @Test
+    fun `null keys use only the text rule`() {
+        val a = log(vcb, old(0))
+        val b = log(vcb, old(1_000))
+        assertEquals(listOf(a, b), booked(plan(a, b)))
+        val c = log(vcb, old(0), text = "same")
+        val d = log(vcb, old(2_000), text = "same")
+        assertEquals(listOf(d to c), reposts(plan(c, d)))
+    }
+
+    @Test
+    fun `unparsed first version is never a root`() {
+        val a = log(vcb, old(0), key = k, parsed = null, status = NotificationStatus.FAILED)
+        val b = log(vcb, old(2_000), key = k)
+        assertEquals(listOf(b), booked(plan(b, settled = listOf(a))))
+    }
+
+    @Test
+    fun `reparsed first version joins the later booked update`() {
+        val b = log(vcb, old(2_000), key = k, status = NotificationStatus.CONFIRMED, linkedTx = "tx")
+        val a = log(vcb, old(0), key = k)
+        assertEquals(listOf(Repost(a, b)), plan(a, settled = listOf(b)))
+    }
+
+    @Test
+    fun `settled same key one day later does not match`() {
+        val b = log(vcb, old(86_400_000L), key = k, status = NotificationStatus.CONFIRMED)
+        val a = log(vcb, old(0), key = k)
+        assertEquals(listOf(a), booked(plan(a, settled = listOf(b))))
+    }
+
+    @Test
+    fun `null balance does not bridge two balances`() {
+        val a = log(vcb, old(0), balance = 1000L, key = k)
+        val b = log(vcb, old(2 * min), key = k)
+        val c = log(vcb, old(4 * min), balance = 950L, key = k)
+        val decisions = plan(a, b, c)
+        assertEquals(listOf(a, c), booked(decisions))
+        assertEquals(listOf(b to a), reposts(decisions))
+    }
+
+    @Test
+    fun `window is measured from the root`() {
+        val a = log(vcb, old(0), key = k)
+        val b = log(vcb, old(8 * min), key = k)
+        val c = log(vcb, old(16 * min), key = k)
+        val decisions = plan(a, b, c)
+        assertEquals(listOf(a, c), booked(decisions))
+        assertEquals(listOf(b to a), reposts(decisions))
+    }
+
+    @Test
+    fun `nearest root wins`() {
+        val before = log(vcb, old(-5 * min), key = k, status = NotificationStatus.CONFIRMED)
+        val after = log(vcb, old(min), key = k, status = NotificationStatus.CONFIRMED)
+        val a = log(vcb, old(0), key = k)
+        assertEquals(listOf(Repost(a, after)), plan(a, settled = listOf(before, after)))
+    }
+
+    @Test
+    fun `deduplicated sibling balance blocks a conflicting update`() {
+        val root = log(vcb, old(0), key = k, status = NotificationStatus.CONFIRMED, linkedTx = "tx")
+        val sibling =
+            log(vcb, old(1_000), balance = 1000L, key = k, status = NotificationStatus.DEDUPLICATED, linkedTx = "tx")
+        val same = log(vcb, old(2_000), balance = 1000L, key = k)
+        val other = log(vcb, old(3_000), balance = 950L, key = k)
+        assertEquals(listOf(Repost(same, root)), plan(same, settled = listOf(root, sibling)))
+        assertEquals(listOf(other), booked(plan(other, settled = listOf(root, sibling))))
+    }
+
+    @Test
+    fun `update of a paired wallet notification is a repost`() {
+        val bank = log(vcb, old(0), key = "kb", status = NotificationStatus.CONFIRMED, linkedTx = "tx")
+        val wallet = log(momo, old(1_000), key = "kw", status = NotificationStatus.DEDUPLICATED, linkedTx = "tx")
+        val update = log(momo, old(2_000), key = "kw")
+        assertEquals(listOf(Repost(update, wallet)), plan(update, settled = listOf(bank, wallet)))
+    }
+
+    @Test
+    fun `window of a paired wallet cluster counts from the wallet, not its repost`() {
+        val bank = log(vcb, old(0), key = "kb", status = NotificationStatus.CONFIRMED, linkedTx = "tx")
+        val wallet = log(momo, old(0), key = "kw", status = NotificationStatus.DEDUPLICATED, linkedTx = "tx")
+        val repost = log(momo, old(8 * min), key = "kw", status = NotificationStatus.DEDUPLICATED, linkedTx = "tx")
+        val next = log(momo, old(16 * min), key = "kw")
+        // 16 min after the wallet: a new payment, even though it is 8 min after the repost.
+        assertEquals(0, reposts(plan(next, settled = listOf(bank, wallet, repost))).size)
+    }
+
+    @Test
+    fun `key repost of a deduplicated log still points at its root`() {
+        val root = log(vcb, old(0), key = k, status = NotificationStatus.CONFIRMED, linkedTx = "tx")
+        val repost = log(vcb, old(1_000), key = k, status = NotificationStatus.DEDUPLICATED, linkedTx = "tx")
+        val update = log(vcb, old(1_500), key = k)
+        assertEquals(listOf(Repost(update, root)), plan(update, settled = listOf(root, repost)))
+    }
+
+    @Test
+    fun `different keys with identical text use the text rule`() {
+        val a = log(vcb, old(0), key = "k1", text = "same")
+        val b = log(vcb, old(2_000), key = "k2", text = "same")
+        assertEquals(listOf(b to a), reposts(plan(a, b)))
     }
 }

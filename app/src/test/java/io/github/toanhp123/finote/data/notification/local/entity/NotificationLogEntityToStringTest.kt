@@ -28,6 +28,7 @@ class NotificationLogEntityToStringTest {
                 status = NotificationStatus.PENDING,
                 failureReason = "F-SECRET",
                 linkedTransactionId = "TX-SECRET",
+                notificationKey = "KEY-SECRET",
             )
 
         assertEquals("NotificationLogEntity(id=log1, packageName=pkg, status=PENDING)", entity.toString())

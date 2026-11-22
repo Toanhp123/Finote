@@ -89,5 +89,6 @@ class CaptureNotificationUseCase
             failureReason = result.failureReason,
             matchedRuleId = result.parsed?.ruleId,
             parsed = result.parsed?.fields,
+            notificationKey = raw.notificationKey?.takeIf { it.isNotBlank() },
         )
     }

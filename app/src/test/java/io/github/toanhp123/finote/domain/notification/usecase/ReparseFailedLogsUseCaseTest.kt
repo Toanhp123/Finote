@@ -58,6 +58,19 @@ class ReparseFailedLogsUseCaseTest {
         }
 
     @Test
+    fun `reparse keeps the key`() =
+        runTest {
+            val repo = FakeNotificationCaptureRepository(listOf(rule()))
+            repo.logs += failedLog("a", "SD TK -50,000 tai quan").copy(notificationKey = "K")
+
+            assertEquals(1, useCase(repo)(setOf(PKG)))
+
+            val log = repo.logs.single()
+            assertEquals(NotificationStatus.PENDING, log.status)
+            assertEquals("K", log.notificationKey)
+        }
+
+    @Test
     fun `FAILED blocked by a new keyword becomes IGNORED_SPAM and keeps text`() =
         runTest {
             val repo = FakeNotificationCaptureRepository(listOf(rule(keywords = listOf("khuyen mai"))))

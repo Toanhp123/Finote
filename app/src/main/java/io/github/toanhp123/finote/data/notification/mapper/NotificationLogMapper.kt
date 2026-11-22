@@ -25,6 +25,7 @@ fun NotificationLog.toEntity(): NotificationLogEntity =
         status = status,
         failureReason = failureReason,
         linkedTransactionId = linkedTransactionId,
+        notificationKey = notificationKey,
     )
 
 /** [ParsedFields] is restored only when amount and a known type are both stored. */
@@ -49,5 +50,6 @@ fun NotificationLogEntity.toDomain(): NotificationLog {
                 null
             },
         linkedTransactionId = linkedTransactionId,
+        notificationKey = notificationKey,
     )
 }

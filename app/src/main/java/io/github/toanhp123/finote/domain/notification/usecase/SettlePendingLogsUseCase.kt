@@ -7,6 +7,7 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.Fail
 import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
+import io.github.toanhp123.finote.domain.notification.service.FAIL_ADJUSTED_AFTER
 import io.github.toanhp123.finote.domain.notification.service.FAIL_SETTLE_ERROR
 import io.github.toanhp123.finote.domain.notification.service.REPOST_WINDOW_WITH_BALANCE_MILLIS
 import io.github.toanhp123.finote.domain.notification.service.planSettlement
@@ -29,8 +30,9 @@ class SettlePendingLogsUseCase
          * throws or comes back with a [SettlementError] (stale or refused, rolled back) is skipped and the next
          * decisions still run. Its logs stay `PENDING` and are retried, unless the log that carries it is older than
          * [STUCK_AFTER_MILLIS]: then they are written `FAILED` with [FAIL_SETTLE_ERROR] (if that write throws too,
-         * they stay `PENDING`). Returns true when `PENDING` logs remain (the worker retries). Runs one at a time in
-         * the whole process.
+         * they stay `PENDING`). A log that an adjustment already covers ([SettlementError.AdjustedAfter]) is the one
+         * exception: it is written `FAILED` with [FAIL_ADJUSTED_AFTER] at once and never retried. Returns true when
+         * `PENDING` logs remain (the worker retries). Runs one at a time in the whole process.
          */
         suspend operator fun invoke(): Boolean = lock.withLock { settle() }
 
@@ -101,12 +103,25 @@ class SettlePendingLogsUseCase
                 is SettlementDecision.Book -> {
                     val transactionId = UUID.randomUUID().toString()
                     val error = bookInTransaction(decision, transactionId, now)
-                    if (error == null) {
-                        booked[decision.bankSide.id] = transactionId
-                        decision.walletSide?.let { booked[it.id] = transactionId }
-                        written += listOfNotNull(decision.bankSide.id, decision.walletSide?.id)
+                    when (error) {
+                        null -> {
+                            booked[decision.bankSide.id] = transactionId
+                            decision.walletSide?.let { booked[it.id] = transactionId }
+                            written += listOfNotNull(decision.bankSide.id, decision.walletSide?.id)
+                            null
+                        }
+
+                        // Final: the booking rolled back, so fail the logs in their own write. Not a failIfStuck case.
+                        SettlementError.AdjustedAfter -> {
+                            repository.fail(Fail(decision.bankSide, decision.walletSide, FAIL_ADJUSTED_AFTER))
+                            written += listOfNotNull(decision.bankSide.id, decision.walletSide?.id)
+                            null
+                        }
+
+                        else -> {
+                            error
+                        }
                     }
-                    error
                 }
 
                 is SettlementDecision.Fail -> {

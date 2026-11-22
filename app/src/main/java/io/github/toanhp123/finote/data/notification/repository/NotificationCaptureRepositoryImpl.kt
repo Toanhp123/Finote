@@ -68,5 +68,6 @@ class NotificationCaptureRepositoryImpl
                 receivedAt = receivedAt,
                 status = status,
                 failureReason = failureReason,
+                notificationKey = notificationKey,
             )
     }

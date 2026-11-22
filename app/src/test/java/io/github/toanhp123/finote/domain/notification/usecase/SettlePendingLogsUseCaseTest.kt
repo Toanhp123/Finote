@@ -247,6 +247,27 @@ class SettlePendingLogsUseCaseTest {
         }
 
     @Test
+    fun `adjusted after fails both sides for good`() =
+        runTest {
+            val repository =
+                repo(
+                    // Young logs: the settle_error fallback would not fire, so only adjusted_after can fail them.
+                    log("bank", BANK, old, text = "x"),
+                    log("wallet", OTHER, old + 1_000, text = "w"),
+                )
+            repository.bookRejections["bank"] = SettlementError.AdjustedAfter
+            assertFalse(useCase(repository)())
+            assertEquals(mapOf("bank" to "adjusted_after"), repository.failed)
+            repository.logs.forEach {
+                assertEquals(NotificationStatus.FAILED, it.status)
+                assertEquals("adjusted_after", it.failureReason)
+            }
+            assertTrue(repository.booked.isEmpty())
+            assertFalse(useCase(repository)())
+            assertEquals(1, repository.failed.size)
+        }
+
+    @Test
     fun `returns false when nothing is left`() = runTest { assertFalse(useCase(repo())()) }
 
     @Test

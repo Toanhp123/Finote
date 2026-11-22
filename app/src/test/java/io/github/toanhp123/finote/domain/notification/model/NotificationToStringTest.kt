@@ -23,7 +23,14 @@ class NotificationToStringTest {
 
     @Test
     fun `raw notification hides its text`() {
-        val raw = testRaw(packageName = "pkg", title = "T-SECRET", content = "C-SECRET", postTime = 5L)
+        val raw =
+            testRaw(
+                packageName = "pkg",
+                title = "T-SECRET",
+                content = "C-SECRET",
+                postTime = 5L,
+                notificationKey = "KEY-SECRET",
+            )
 
         assertEquals("RawNotification(packageName=pkg, postTime=5)", raw.toString())
         assertNoText(raw.toString())
@@ -41,6 +48,7 @@ class NotificationToStringTest {
                 status = NotificationStatus.PENDING,
                 failureReason = "F-SECRET",
                 parsed = parsed,
+                notificationKey = "KEY-SECRET",
             )
 
         assertEquals("NotificationLog(id=log1, packageName=pkg, status=PENDING)", log.toString())

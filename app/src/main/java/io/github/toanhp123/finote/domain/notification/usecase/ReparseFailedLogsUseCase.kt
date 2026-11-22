@@ -46,7 +46,15 @@ class ReparseFailedLogsUseCase
             rules: List<ParserRule>,
         ): NotificationStatus? =
             try {
-                val raw = RawNotification(log.packageName, log.channelId, log.title, log.content, log.postTime)
+                val raw =
+                    RawNotification(
+                        log.packageName,
+                        log.channelId,
+                        log.title,
+                        log.content,
+                        log.postTime,
+                        log.notificationKey,
+                    )
                 val outcome = withContext(parseDispatcher) { classifyNotification(raw, rules) }
                 val isChanged =
                     outcome.status != NotificationStatus.FAILED && repository.updateFailedOutcome(log.id, outcome)

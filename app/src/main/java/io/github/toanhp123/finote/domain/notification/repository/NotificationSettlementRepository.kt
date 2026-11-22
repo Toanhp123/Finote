@@ -24,8 +24,10 @@ interface NotificationSettlementRepository {
     suspend fun getRulesById(): Map<String, ParserRule>
 
     /**
-     * Books the decision. Null when written. A [SettlementError] means stale data or a rule refusal; rows may already
-     * be written, so the caller must run this inside `TransactionRunner.write` and return `Err` to roll them back.
+     * Books the decision. Null when written. A [SettlementError] means stale data, a rule refusal, or
+     * [SettlementError.AdjustedAfter] (a user adjustment already covers the log; final, the caller fails the logs);
+     * rows may already be written, so the caller must run this inside `TransactionRunner.write` and return `Err` to
+     * roll them back.
      */
     suspend fun book(
         decision: SettlementDecision.Book,

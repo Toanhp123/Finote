@@ -10,7 +10,7 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 - Bước 1–8 xong (2026-11-18). Đang làm: bước 9 (dogfood) ở mục 5.
 - Mẫu thật chỉ gom được của Techcombank (2026-11-22): user không có tài khoản VCB, MB, MoMo.
 - Chưa từng chạy trên máy thật: toàn bộ P2. Bộ mẫu thông báo là mẫu tổng hợp (D4).
-- DB version 8, có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
+- DB version 10, có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
 - Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: tạo và sửa tài khoản, quản lý danh mục, dashboard.
 
 ## 2. Nguyên tắc làm việc
@@ -75,7 +75,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 8 | `feature/debug-log-screen` | Công cụ (bản debug và dogfood) | | ✅ |
 | 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | 🔧 |
 | 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ✅ N5 (L1, L2, N-06 ⏸ chờ mẫu VCB, MoMo) |
-| 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1 | ⬜ dùng mẫu Techcombank |
+| 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1, N4 | ✅ (chưa thử trên máy thật) |
 | 12 | `release/0.2.0` | | | ⬜ |
 
 **2. `chore/ledger-write-path`** — một cửa ghi cho mọi nguồn (tay, thông báo, điều chỉnh).
@@ -130,9 +130,10 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 - Màn tài khoản (bước 14) và thẻ tín dụng (bước 23) xây trên mô hình này.
 - Đã làm (spec `docs/superpowers/specs/2026-11-22-account-identity-design.md`): bảng `account_identifiers` `(packageName, kind, mask)`, migration 8 → 9, rule có `maskKind`, gộp chuyển định danh và chỉ gộp cùng loại, writer chọn lại tài khoản trong transaction ghi; N-01 (phần `parseMoney`), N-02, N-05, N-08, N-21. Còn chờ chạy `EncryptedDatabaseTest` trên máy thật để xác nhận nâng cấp SQLCipher.
 
-**11. `fix/double-booking`** (L3, L4; thay cho `fix/notification-text-lines`).
-- Nhận thông báo đăng lại theo khóa thông báo, không đòi nội dung giống hệt.
-- So "ứng viên với sổ" (N3): trước khi ghi một log cũ, kiểm đã có dòng điều chỉnh bù cho nó chưa. Bóc lại log, failed-inbox, định kỳ và import dùng chung hàm này.
+**11. `fix/double-booking`** (L3, L4; thay cho `fix/notification-text-lines`). Spec `docs/superpowers/specs/2026-11-23-double-booking-design.md`.
+- Log lưu `notificationKey` (`sbn.key`), migration 9 → 10. Cùng key, cùng số tiền, chiều, 4 số cuối, cách gốc của cụm tối đa 10 phút, số dư không mâu thuẫn → đăng lại. Số dư khác nhau luôn là hai giao dịch.
+- So "ứng viên với sổ" (N3): `isCoveredByAdjustment` — có dòng điều chỉnh sau log và một số dư ngân hàng nằm giữa hai mốc → log `FAILED` với `adjusted_after`, kiểm trong transaction ghi. Failed-inbox, định kỳ và import dùng chung hàm này.
+- Bước 13 phải hiện cặp ngân hàng + ví `adjusted_after` thành một mục.
 
 ### Đoạn B — v0.3 (đủ Must-Have, báo cáo)
 
@@ -200,8 +201,6 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 |---|---|---|---|
 | L1 | Thẻ ghi nợ VCB: rule `vcb_card` kiểu ngân hàng, lấy 4 số cuối của thẻ và đọc "Số dư khả dụng" → tạo tài khoản thứ hai có số dư đầu bằng số dư tài khoản chính; tài sản tính hai lần. Suy từ regex, cần mẫu thật | `SystemParserRule.kt`, `AccountResolver.kt` | Bước 10 |
 | L2 | MoMo trả bằng nguồn ngân hàng: 4 số cuối là của nguồn tiền → tạo ví MoMo thừa. Thông báo ngân hàng trễ quá 30 giây hoặc ngân hàng chưa có rule thì khoản chi ghi hai lần hoặc vào ví sai, không có cảnh báo. Có hai tài khoản MoMo thì thông báo nhận tiền (không có 4 số cuối) bị `ambiguous_account`. Cần mẫu thật. Ưu tiên thấp: MoMo có thể không đẩy thông báo hệ thống (D15) | `SystemParserRule.kt` (`MOMO_PAY_SOURCE`), `AccountResolver.kt` | Bước 10 |
-| L3 | A5: nhận thông báo đăng lại đòi nội dung giống hệt. Thông báo thêm dòng, hoặc không có số dư và đăng lại sau 3 giây, bị ghi hai lần | `SettlementPlanner.kt` (`sameText`, `findReposts`) | Bước 11 |
-| L4 | Bóc lại log `FAILED` sau khi user đã bấm Điều chỉnh: khoản tiền tính hai lần; báo lệch im vì có dòng điều chỉnh sau mốc | `ReparseFailedLogsUseCase.kt`, `BalanceDriftDetector.kt` | Bước 11 |
 
 ### Nợ thiết kế (phải chốt trước nhánh dùng nó)
 
@@ -209,7 +208,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 |---|---|---|
 | T2 | Giao dịch ngày tương lai (tới 366 ngày) tính ngay vào số dư hiện tại | D11, trước bước 24 |
 | T3 | Tổng thu chi trong snapshot gồm điều chỉnh, phí, hoàn tiền | Bước 17 (báo cáo không đọc snapshot) |
-| T4 | Không có khóa chống trùng giữa import, định kỳ và thông báo | Bước 11 dựng hàm, bước 24, 25 dùng |
+| T4 | Không có khóa chống trùng giữa import, định kỳ và thông báo. Bước 11 đã dựng `isCoveredByAdjustment` (log với dòng điều chỉnh); còn thiếu so ứng viên với giao dịch thường | Bước 24, 25 |
 
 ### Nợ nhỏ
 
