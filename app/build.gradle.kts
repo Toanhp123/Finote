@@ -61,6 +61,8 @@ android {
 
     buildTypes {
         debug {
+            // Own app id, so installing or uninstalling debug (device tests uninstall it) never touches dogfood.
+            applicationIdSuffix = ".debug"
             buildConfigField("boolean", "TOOLS_ENABLED", "true")
         }
         release {

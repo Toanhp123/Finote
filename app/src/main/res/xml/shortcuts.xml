@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Keep src/debug/res/xml/shortcuts.xml in step: debug installs as io.github.toanhp123.finote.debug. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
         android:icon="@drawable/ic_payments"

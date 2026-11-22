@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug copy of main/res/xml/shortcuts.xml: targetPackage takes no placeholder, and debug has its own app id. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:icon="@drawable/ic_payments"
+        android:shortcutId="cash_entry"
+        android:shortcutLongLabel="@string/cash_entry_shortcut_long"
+        android:shortcutShortLabel="@string/cash_entry_shortcut_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="io.github.toanhp123.finote.ui.cashentry.CashEntryActivity"
+            android:targetPackage="io.github.toanhp123.finote.debug" />
+    </shortcut>
+</shortcuts>
