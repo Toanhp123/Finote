@@ -42,24 +42,8 @@ interface AccountRepository {
         deletedAt: Long,
     )
 
-    /**
-     * Folds [sourceId] into [targetId], two rows of one bank account. One write transaction. The caller has already
-     * checked `AccountRules.checkMerge`.
-     */
-    suspend fun merge(
-        sourceId: String,
-        targetId: String,
-        now: Long,
-    )
-
     /** Live transactions where the account is source or transfer destination. */
     suspend fun getLiveTransactionCount(id: String): Int
-
-    /** Transfers between the two accounts in either direction, deleted ones included. */
-    suspend fun countTransfersBetween(
-        sourceId: String,
-        targetId: String,
-    ): Int
 
     /**
      * Sets `isIgnored`. When [ignored] and [shouldTrashOldTransactions], one write transaction also soft-deletes the

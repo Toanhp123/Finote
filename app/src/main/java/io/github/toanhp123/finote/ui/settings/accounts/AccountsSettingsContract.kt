@@ -15,11 +15,15 @@ data class AccountsSettingsState(
 )
 
 sealed interface AccountsDialog {
-    /** [count] is how many transactions would move from [source] to [target]. */
+    /**
+     * [count] is how many transactions would move from [source] to [target]. [droppedStart] is the start balance of
+     * [source] the merge would drop, or null when none is lost.
+     */
     data class Merge(
         val source: Account,
         val target: Account,
         val count: Int,
+        val droppedStart: Long? = null,
     ) : AccountsDialog
 
     /** [trashableCount] is what the dialog offers to trash; [shouldTrash] is the ticked option. */

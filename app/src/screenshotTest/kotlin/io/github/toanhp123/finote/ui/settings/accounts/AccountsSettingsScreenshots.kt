@@ -78,6 +78,17 @@ private fun AccountsMergeDialogPreview() =
 @PreviewTest
 @ScreenPreviews
 @Composable
+private fun AccountsMergeDroppedStartDialogPreview() =
+    Screen(
+        AccountsSettingsState(
+            accounts = listed,
+            dialog = AccountsDialog.Merge(vcb1, vcb2, count = 12, droppedStart = 5_000_000L),
+        ),
+    )
+
+@PreviewTest
+@ScreenPreviews
+@Composable
 private fun AccountsIgnoreDialogPreview() =
     Screen(
         AccountsSettingsState(

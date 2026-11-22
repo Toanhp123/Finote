@@ -22,7 +22,6 @@ fun account(
     sortOrder: Int = 0,
     deletedAt: Long? = null,
     bankPackageName: String? = null,
-    accountNumberMask: String? = null,
 ): AccountEntity =
     AccountEntity(
         id = id,
@@ -43,7 +42,6 @@ fun account(
         updatedAt = 1_700_000_000_000L,
         deletedAt = deletedAt,
         bankPackageName = bankPackageName,
-        accountNumberMask = accountNumberMask,
         mergedIntoId = null,
     )
 

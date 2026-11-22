@@ -46,6 +46,13 @@ class NotificationParserTest {
     }
 
     @Test
+    fun `parseMoney ignores a trailing sentence separator`() {
+        assertEquals(500_000L, parseMoney("500,000.00."))
+        assertEquals(1_000_000L, parseMoney("1.000.000,"))
+        assertNull(parseMoney("100.5."))
+    }
+
+    @Test
     fun `parseMoney keeps zero`() {
         assertEquals(0L, parseMoney("0 VND"))
         assertEquals(0L, parseMoney("0đ"))
@@ -56,6 +63,39 @@ class NotificationParserTest {
         assertNull(parseMoney("abc"))
         assertNull(parseMoney(""))
         assertNull(parseMoney("12345678901234567890"))
+    }
+
+    @Test
+    fun `parseMoney tells thousands groups from decimals`() {
+        mapOf(
+            "100.500" to 100_500L,
+            "100,500" to 100_500L,
+            "1.000.000" to 1_000_000L,
+            "1,000.00" to 1_000L,
+            "1.000,00" to 1_000L,
+            "100.0" to 100L,
+            "1,000.50" to null,
+            "100,50" to null,
+            "100.5" to null,
+            "abc" to null,
+        ).forEach { (input, expected) -> assertEquals(input, expected, parseMoney(input)) }
+    }
+
+    @Test
+    fun `parseMoney reads a leading minus and keeps negative zero at zero`() {
+        mapOf(
+            "-500,000" to -500_000L,
+            "- 500,000" to -500_000L,
+            "−500,000" to -500_000L,
+            "-0" to 0L,
+            "-0.00" to 0L,
+        ).forEach { (input, expected) -> assertEquals(input, expected, parseMoney(input)) }
+    }
+
+    @Test
+    fun `an amount with a non-zero decimal part rejects the rule`() {
+        val rule = rule("r1", 1, "(?<amount>[\\d,.]+) VND", TransactionType.EXPENSE)
+        assertEquals(ParseResult.NoMatch, parse("100.5 VND", rule))
     }
 
     @Test

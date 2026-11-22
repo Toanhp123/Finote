@@ -4,6 +4,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import io.github.toanhp123.finote.data.account.repository.AccountMergeRepositoryImpl
 import io.github.toanhp123.finote.data.account.repository.AccountRepositoryImpl
 import io.github.toanhp123.finote.data.category.repository.CategoryRepositoryImpl
 import io.github.toanhp123.finote.data.database.RoomTransactionRunner
@@ -13,6 +14,7 @@ import io.github.toanhp123.finote.data.notification.repository.ParserRuleReposit
 import io.github.toanhp123.finote.data.setup.repository.SetupRepositoryImpl
 import io.github.toanhp123.finote.data.transaction.repository.TransactionRepositoryImpl
 import io.github.toanhp123.finote.data.transaction.repository.TransferPairRepositoryImpl
+import io.github.toanhp123.finote.domain.account.repository.AccountMergeRepository
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
 import io.github.toanhp123.finote.domain.common.TransactionRunner
@@ -28,6 +30,9 @@ import io.github.toanhp123.finote.domain.transaction.repository.TransferPairRepo
 interface RepositoryModule {
     @Binds
     fun bindAccountRepository(impl: AccountRepositoryImpl): AccountRepository
+
+    @Binds
+    fun bindAccountMergeRepository(impl: AccountMergeRepositoryImpl): AccountMergeRepository
 
     @Binds
     fun bindCategoryRepository(impl: CategoryRepositoryImpl): CategoryRepository

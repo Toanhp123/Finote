@@ -114,9 +114,9 @@ class AccountRepositoryImplTest {
         }
 
     @Test
-    fun `update keeps type, currency, bank key, mask and initial balance`() =
+    fun `update keeps type, currency, bank key and initial balance`() =
         runTest {
-            dbRule.db.accountDao().insert(account(bankPackageName = "com.bank", accountNumberMask = "1234"))
+            dbRule.db.accountDao().insert(account(bankPackageName = "com.bank"))
             transactions.add(domainTx())
             val before = checkNotNull(rowOf("acc-1"))
 
@@ -127,7 +127,6 @@ class AccountRepositoryImplTest {
                     type = AccountType.WALLET,
                     currency = "USD",
                     bankPackageName = "com.other",
-                    accountNumberMask = "9999",
                     initialBalance = 2_000_000L,
                 ),
             )
@@ -138,7 +137,6 @@ class AccountRepositoryImplTest {
             assertEquals(before.type, after.type)
             assertEquals(before.currency, after.currency)
             assertEquals(before.bankPackageName, after.bankPackageName)
-            assertEquals(before.accountNumberMask, after.accountNumberMask)
             assertEquals(before.initialBalance, after.initialBalance)
             assertEquals(before.currentBalance, after.currentBalance)
         }

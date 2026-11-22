@@ -16,20 +16,21 @@ interface AccountMergeDao {
         b: String,
     ): Int
 
-    /** Every transaction with [from] as source, deleted ones too, so a restore lands on [to]. */
-    @Query("UPDATE transactions SET accountId = :to, updatedAt = :now WHERE accountId = :from")
+    /**
+     * Every transaction with [from] as source, deleted ones too, so a restore lands on [to]. `updatedAt` stays: a merge
+     * is not a user edit, and a touched notification row would stop being auto-pairable.
+     */
+    @Query("UPDATE transactions SET accountId = :to WHERE accountId = :from")
     suspend fun moveSource(
         from: String,
         to: String,
-        now: Long,
     ): Int
 
-    /** Every transaction with [from] as transfer destination, deleted ones too. */
-    @Query("UPDATE transactions SET toAccountId = :to, updatedAt = :now WHERE toAccountId = :from")
+    /** Every transaction with [from] as transfer destination, deleted ones too. `updatedAt` stays too. */
+    @Query("UPDATE transactions SET toAccountId = :to WHERE toAccountId = :from")
     suspend fun moveDestination(
         from: String,
         to: String,
-        now: Long,
     ): Int
 
     /** Points every row merged into [from] at [to], so a chain of merges stays one hop. */

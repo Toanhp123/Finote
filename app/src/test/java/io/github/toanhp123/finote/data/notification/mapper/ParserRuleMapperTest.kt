@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.data.notification.mapper
 
 import io.github.toanhp123.finote.data.notification.parserRuleEntity
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -62,6 +63,22 @@ class ParserRuleMapperTest {
         assertNull(parserRuleEntity(accountType = null).toDomain()!!.accountType)
         assertNull(parserRuleEntity(accountType = "SPACESHIP").toDomain())
         assertEquals("WALLET", parserRuleEntity(accountType = "WALLET").toDomain()!!.toEntity().accountType)
+    }
+
+    @Test
+    fun `maskKind round trips`() {
+        val entity = parserRuleEntity(maskKind = "CARD")
+
+        assertEquals(IdentifierKind.CARD, entity.toDomain()?.maskKind)
+        assertEquals(entity, checkNotNull(entity.toDomain()).toEntity())
+        assertNull(parserRuleEntity(maskKind = null).toDomain()!!.maskKind)
+    }
+
+    @Test
+    fun `unknown stored maskKind makes the rule unusable`() {
+        assertNull(parserRuleEntity(maskKind = "FUNDING_SOURCE").toDomain())
+        assertNull(parserRuleEntity(maskKind = "card").toDomain())
+        assertNull(parserRuleEntity(maskKind = "").toDomain())
     }
 
     @Test

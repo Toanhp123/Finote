@@ -46,7 +46,7 @@ Rà code ngày 2026-11-15. Mỗi dòng là một chỗ mà nhiều tính năng s
 | N2 | **Form giao dịch dùng chung** | Sheet tạo mới Chi, Thu, Chuyển (đích, phí). Đã có chế độ sửa | Chuyển, sửa giao dịch, failed-inbox (điền sẵn từ log), hoàn tiền, nhãn, tách giao dịch | Bước 3, 4 |
 | N3 | **Bộ so khớp** (matcher) | Hai bộ: `SettlementPlanner` (ngân hàng + ví, cùng chiều, 30 giây, trước khi ghi) và `TransferPairing.kt` (chuyển khoản, ngược chiều, 30 phút, khi ghi dòng thứ hai) | Ghép chuyển khoản; so "ứng viên với sổ" cho bóc lại log, failed-inbox, định kỳ, import | Bước 5 (tách vị từ), bước 11 (ứng viên với sổ) |
 | N4 | **Migration thật** | Xong: `applyMigrationPolicy`, test `MigrationPolicyTest` | Mọi nhánh thêm bảng hoặc cột sau khi có dữ liệu thật | Bước 6 |
-| N5 | **Định danh tài khoản** | Một khóa `(bankPackageName, accountNumberMask)` trên `Account`; gộp tài khoản nối qua `mergedIntoId` | Thẻ ghi nợ, MoMo nguồn ngân hàng, màn tài khoản (liên kết 4 số cuối), thẻ tín dụng, thêm ngân hàng | Bước 10 |
+| N5 | **Định danh tài khoản** | Xong: bảng `account_identifiers` `(packageName, kind, mask)`; gộp chuyển định danh | Thẻ ghi nợ, MoMo nguồn ngân hàng, màn tài khoản (liên kết 4 số cuối), thẻ tín dụng, thêm ngân hàng | Bước 10 |
 | N6 | **Lõi báo cáo** (`domain/report`) | Chưa có. Tổng thu chi trong snapshot gồm cả điều chỉnh, phí, hoàn tiền; không biết `excludeFromAnalytics` | Dashboard, ngân sách, hoàn tiền, merchant, tách giao dịch | Bước 17 |
 | N7 | **Thông báo của app** (kênh, quyền `POST_NOTIFICATIONS`) | Chưa có | Cảnh báo ngân sách, nhắc hóa đơn định kỳ, nhắc đòi tiền chi hộ | Bước 18 |
 | N8 | **Ghi theo lô** | Mỗi lần ghi tính lại toàn bộ tài khoản, O(số giao dịch) | Import (nghìn dòng), định kỳ, hiệu năng 50.000 giao dịch | Bước 25 (lô), bước 30 (tính lại từ tháng sửa) |
@@ -74,7 +74,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 7 | `chore/release-readiness` | Dọn dẹp 7 (A4, A17) | | ✅ |
 | 8 | `feature/debug-log-screen` | Công cụ (bản debug và dogfood) | | ✅ |
 | 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | 🔧 |
-| 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ⬜ (L1, L2, N-06 ⏸ chờ mẫu VCB, MoMo) |
+| 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ✅ N5 (L1, L2, N-06 ⏸ chờ mẫu VCB, MoMo) |
 | 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1 | ⬜ dùng mẫu Techcombank |
 | 12 | `release/0.2.0` | | | ⬜ |
 
@@ -128,6 +128,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 - Làm ngay (không cần mẫu ngân hàng khác): bảng định danh (D13), N-01, N-02, N-05, N-08, N-21. Thiết kế chốt trên mẫu Techcombank.
 - Chờ mẫu VCB, MoMo: L1, L2, N-06. Bảng định danh phải để sẵn chỗ cho số thẻ và nguồn tiền của ví. Chưa có mẫu thì làm ở nhánh sau, không chặn bước 12.
 - Màn tài khoản (bước 14) và thẻ tín dụng (bước 23) xây trên mô hình này.
+- Đã làm (spec `docs/superpowers/specs/2026-11-22-account-identity-design.md`): bảng `account_identifiers` `(packageName, kind, mask)`, migration 8 → 9, rule có `maskKind`, gộp chuyển định danh và chỉ gộp cùng loại, writer chọn lại tài khoản trong transaction ghi; N-01 (phần `parseMoney`), N-02, N-05, N-08, N-21. Còn chờ chạy `EncryptedDatabaseTest` trên máy thật để xác nhận nâng cấp SQLCipher.
 
 **11. `fix/double-booking`** (L3, L4; thay cho `fix/notification-text-lines`).
 - Nhận thông báo đăng lại theo khóa thông báo, không đòi nội dung giống hệt.
@@ -148,7 +149,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 21 | `release/0.3.0` | | | ⬜ |
 
 - **13. `failed-inbox`**: liệt kê log `FAILED`, bấm để mở form điền sẵn (N2) thành giao dịch tay. Kèm bộ dạy mẫu: bôi đen số tiền, số dư, 4 số cuối; app sinh regex `isUserCustom = true` rồi gọi `ReparseFailedLogsUseCase`. Gộp `feature/regex-sandbox` của bản cũ vào đây. Còn phải bàn: ngân hàng chưa có rule bị `NotTracked` nên không có dòng `FAILED` để dạy.
-- **14. `account-manage`**: tạo, sửa tài khoản; liên kết app ngân hàng + 4 số cuối (N5); `setInitialBalance` (đặt `isInitialized = true` và tính lại); gắn sao tài khoản chính (`isPrimary`); gợi ý gộp khi tài khoản tự tạo giống tài khoản cũ.
+- **14. `account-manage`**: tạo, sửa tài khoản; liên kết app ngân hàng + 4 số cuối (N5); `setInitialBalance` (đặt `isInitialized = true` và tính lại); gắn sao tài khoản chính (`isPrimary`); gợi ý gộp khi tài khoản tự tạo giống tài khoản cũ; nhóm tài khoản theo ngân hàng: dòng nhóm hiện tổng số dư (cộng các tài khoản cùng app, không lưu), bấm vào mở các tài khoản con, mỗi tài khoản có số dư riêng (ý user 2026-11-22).
 - **15. `category-ui`**: quản lý cây 2 cấp, biểu tượng, màu.
 - **16. `merchant-normalize`**: bảng `CategoryKeywordRule`; tự gán danh mục và chuẩn hóa tên cửa hàng ngay trên đường ghi sổ (N1). Đặt trước dashboard, vì giao dịch từ thông báo hiện không có danh mục thì biểu đồ theo danh mục vô nghĩa.
 - **17. `dashboard`**: dựng `domain/report` (N6) rồi mới vẽ. Luật thu chi: bỏ `TRANSFER`, `ADJUSTMENT`, dòng `excludeFromAnalytics`; phí tính là chi; để sẵn chỗ cho hoàn tiền giảm chi. Biểu đồ: Vico + Compose Canvas.
@@ -214,13 +215,10 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 
 | Mã | Vấn đề | Sửa ở |
 |---|---|---|
-| N-01 | `parseMoney` bỏ dấu âm của số dư (thấu chi); đọc "100.50 USD" thành 100 đồng | Bước 10 |
-| N-02 | Gộp hai tài khoản đều không có mốc thì bỏ số dư đầu của nguồn | Bước 10 |
+| N-01 | Rule hệ thống chưa đọc được số dư âm (thấu chi): `MONEY` không bắt dấu `-`. `parseMoney` đã sẵn sàng | Khi có mẫu thấu chi thật (thêm `-?` vào nhóm balance, tăng version) |
 | N-03 | Hai thông báo đến sai thứ tự gây báo lệch giả (sổ xếp theo `postTime`) | Bước 9 xem có xảy ra không |
-| N-05 | Một log có 4 số cuối và một log không có, cùng app, tạo hai tài khoản | Bước 10 |
 | N-06 | `vcb_card` có thể đọc hạn mức thẻ tín dụng thành số dư (nợ #8 cũ) | Bước 10 |
 | N-07 | Rule `isActive = false` vẫn lọc và vẫn tính để quyết định `NotTracked` | Bước 13 |
-| N-08 | Rule hệ thống vẫn `version = 1`; rule cũ chưa nhận `accountType` khi có migration thật | Bước 10 |
 | N-09 | `HttpParserRuleFeed` đọc chặn trên dispatcher của worker | Bước 30 |
 | N-10 | Màn Tài khoản gom mọi lỗi thành một snackbar; sheet không tự cập nhật khi danh sách đổi | Bước 14 |
 | N-11 | Fake `FakeRuleUpdateSettingsRepository` mặc định bật tự cập nhật (thật: tắt); `CategoryDao.observeCategories` thiếu tie-break `id`; Konsist lách được bằng tên đầy đủ và hàm top-level trong `di` | Bước 15 (DAO), còn lại khi chạm tới |
@@ -232,10 +230,10 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-17 | Mục nhỏ của audit 2026-11-10: UI không dùng (`FinoteDatePicker`; `BalanceHeroCard` giữ cho bước 17), test mẫu, dependency thừa, test dùng đồng hồ thật | Bước 32 |
 | N-19 | Dòng gốc bị ẩn vì ghép (`pairedIntoId`) và chuyển khoản đã tách: thùng rác phải ẩn; không dọn dòng gốc khi `T` còn sống, dọn cùng `T` | Bước 26 |
 | N-20 | Ghép theo giờ thông báo đến máy; đọc giờ ngân hàng trong nội dung (nhóm `time`, định dạng từng ngân hàng, cột ở log, đổi `pairingTime`) | Sau bước 9 |
-| N-21 | Gộp tài khoản đổi `updatedAt` mọi dòng bị chuyển, nên dòng chưa sửa của tài khoản bị gộp không còn được tự ghép | Bước 10 |
 | N-22 | Tách lại bị từ chối vì tài khoản đã lưu trữ chỉ hiện lỗi lưu chung, không nói lý do (giống nút Xóa) | Bước 14 |
 | N-23 | Listener chết trên Vivo/Xiaomi khi Autostart tắt: chỉ sống lại khi mở app (`rebindIfDisconnected`). Thông báo user xóa trước lúc đó thì mất, chỉ còn báo lệch số dư bắt được. Cần: màn Capture báo listener đang dừng (không chỉ quyền), hướng dẫn bật Autostart theo hãng máy | Bước 29 |
 | N-24 | Nút Copy mẫu (`masked()`) chỉ che chữ số; tên người chuyển trong ghi chú vẫn lộ. Che tên chung thì phá dạng ghi chú (chữ hoa). Tạm thời: đổi tên bằng tay trước khi đưa mẫu vào corpus | Khi có cách che theo rule |
+| N-25 | Hộp thoại gộp (`MergeDialog.kt`), `BalanceDriftBanner.kt` và `Selectors.kt` đưa số tiền vào câu bằng `formatMoney`, ngoài `MoneyText`; ẩn số dư ở bước 28 sẽ không che được | Bước 28 |
 
 ## 7. Quyết định
 
@@ -251,6 +249,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | D9 | Ngôn ngữ: `vi` (mặc định), `en`, `zh-rCN`, `ja`. Màn chọn ngôn ngữ trong app chưa làm |
 | D10 | Mất khóa Keystore: xóa DB và khóa bọc, tạo DB rỗng. Chi tiết từng loại lỗi ở `roadmap-history.md` |
 | D12 | P2d: ghép sau khi ghi, cửa sổ 30 phút hai chiều; chỉ ghép khi bằng tiền; phí nhập tay |
+| D13 | Định danh tài khoản: bảng riêng `account_identifiers` `(packageName, kind, mask)`, kind `ACCOUNT`/`CARD`/`WALLET`; rule khai `maskKind`, null thì suy từ `accountType`. Chốt 2026-11-22, spec `2026-11-22-account-identity-design.md` |
 | D15 | App không đẩy thông báo hệ thống (chỉ báo trong app, như MoMo theo quan sát của user 2026-11-22) thì user nhập tay. Không tìm cách bắt khác. Rule MoMo giữ nguyên, chưa kiểm trên mẫu thật |
 
 ### Còn mở
@@ -261,7 +260,6 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | D5 | XLSX cùng lúc với CSV? | CSV trước | Bước 25 |
 | D7 | Ai chạy benchmark trên máy thật? | User, khi tới bước 20 và 30 | Bước 20 |
 | D11 | Giao dịch ngày tương lai có tính vào số dư hiện tại không? | Không: số dư hiện tại chỉ tính tới bây giờ | Bước 24 |
-| D13 | Định danh tài khoản: bảng riêng hay thêm cột? | Bảng riêng | Bước 10, sau mẫu thật |
 | D14 | Failed-inbox đưa vào v0.2 hay v0.3? | v0.3, để v0.2 chỉ gồm Must-Have | Bước 12 |
 
 ## 8. Đã xong

@@ -3,7 +3,7 @@ package io.github.toanhp123.finote.data.transaction.repository
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import io.github.toanhp123.finote.data.account.mapper.toDomain
-import io.github.toanhp123.finote.data.account.repository.AccountRepositoryImpl
+import io.github.toanhp123.finote.data.account.repository.AccountMergeRepositoryImpl
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.database.RoomTransactionRunner
 import io.github.toanhp123.finote.data.database.account
@@ -11,6 +11,7 @@ import io.github.toanhp123.finote.data.notification.mapper.toEntity
 import io.github.toanhp123.finote.data.notification.repository.NotificationSettlementRepositoryImpl
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.account.service.detectBalanceDrift
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
@@ -91,9 +92,10 @@ class TransferPairRepositoryImplTest {
         SettlementDecision.Book(
             bank,
             wallet,
-            AccountTarget.New(PKG, bank.parsed?.accountMask, "Vietcombank", AccountType.BANK),
+            AccountTarget.New(PKG, bank.parsed?.accountMask, "Vietcombank", AccountType.BANK, IdentifierKind.ACCOUNT),
             merchant = "Shop",
             note = null,
+            rule = null,
         ),
         transactionId,
         NOW,
@@ -115,7 +117,10 @@ class TransferPairRepositoryImplTest {
 
     private suspend fun row(id: String) = checkNotNull(dbRule.db.transactionDao().getById(id))
 
-    private suspend fun accountOf(mask: String) = settlement.getAccounts().single { it.accountNumberMask == mask }
+    private suspend fun accountOf(mask: String) =
+        settlement.getIdentifiers().single { it.mask == mask }.let { key ->
+            settlement.getAccounts().single { it.id == key.accountId }
+        }
 
     private suspend fun balanceOf(id: String) = checkNotNull(dbRule.db.accountDao().getById(id)).currentBalance
 
@@ -226,9 +231,9 @@ class TransferPairRepositoryImplTest {
             val transferId = pair()
             val b = accountOf("2222")
             dbRule.db.accountDao().insert(
-                account(id = "acc-d", currentBalance = 200_000L, bankPackageName = PKG, accountNumberMask = "9999"),
+                account(id = "acc-d", currentBalance = 200_000L, bankPackageName = PKG),
             )
-            AccountRepositoryImpl(dbRule.db, clock).merge(b.id, "acc-d", NOW)
+            AccountMergeRepositoryImpl(dbRule.db, clock).merge(b.id, "acc-d", NOW)
             assertEquals("acc-d", row("tx-2").accountId)
 
             pairs.unpair(transferId, UNPAIR_NOW)
@@ -238,6 +243,27 @@ class TransferPairRepositoryImplTest {
             assertEquals(700_000L, balanceOf("acc-d"))
             assertEquals(1_500_000L, balanceOf(accountOf("1111").id))
             assertNoDrift("acc-d")
+        }
+
+    @Test
+    fun `moved notification rows still auto-pair after merge`() =
+        runTest {
+            seed(debit(), credit())
+            book(debit(), "tx-1")
+            dbRule.db.accountDao().insert(
+                account(id = "acc-d", currentBalance = 2_000_000L, bankPackageName = PKG),
+            )
+            // A merge time after the booking time, so an updatedAt bump would show.
+            AccountMergeRepositoryImpl(dbRule.db, clock).merge(accountOf("1111").id, "acc-d", NOW + 1)
+            assertEquals("acc-d", row("tx-1").accountId)
+            assertEquals(row("tx-1").createdAt, row("tx-1").updatedAt)
+
+            book(credit(), "tx-2")
+
+            val transfer = liveRows().single()
+            assertEquals(TransactionType.TRANSFER, transfer.type)
+            assertEquals("acc-d", transfer.accountId)
+            assertEquals(accountOf("2222").id, transfer.toAccountId)
         }
 
     @Test

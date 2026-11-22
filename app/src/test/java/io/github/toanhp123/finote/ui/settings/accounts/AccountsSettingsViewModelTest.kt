@@ -3,11 +3,15 @@ package io.github.toanhp123.finote.ui.settings.accounts
 import app.cash.turbine.test
 import io.github.toanhp123.finote.domain.account.error.MergeRejection
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.repository.AccountMergeRepository
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.account.usecase.CountMergeMovesUseCase
 import io.github.toanhp123.finote.domain.account.usecase.CountTrashableTransactionsUseCase
+import io.github.toanhp123.finote.domain.account.usecase.FakeAccountMergeRepository
 import io.github.toanhp123.finote.domain.account.usecase.FakeAccountRepository
+import io.github.toanhp123.finote.domain.account.usecase.GetMergeDroppedStartUseCase
 import io.github.toanhp123.finote.domain.account.usecase.MergeAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.SetAccountIgnoredUseCase
@@ -20,6 +24,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.time.Clock
@@ -33,10 +38,10 @@ class AccountsSettingsViewModelTest {
 
     private val clock = Clock.fixed(Instant.ofEpochMilli(5_000L), ZoneOffset.UTC)
 
-    private class RejectingRepository(
-        fake: FakeAccountRepository,
+    private class RejectingMergeRepository(
+        fake: FakeAccountMergeRepository,
         private val failure: Exception? = null,
-    ) : AccountRepository by fake {
+    ) : AccountMergeRepository by fake {
         override suspend fun merge(
             sourceId: String,
             targetId: String,
@@ -51,19 +56,27 @@ class AccountsSettingsViewModelTest {
         pkg: String? = "vcb",
         sortOrder: Int = 0,
         isIgnored: Boolean = false,
-    ) = testAccount(id = id, name = id).copy(bankPackageName = pkg, sortOrder = sortOrder, isIgnored = isIgnored)
+        type: AccountType = AccountType.BANK,
+    ) = testAccount(id = id, name = id).copy(
+        bankPackageName = pkg,
+        sortOrder = sortOrder,
+        isIgnored = isIgnored,
+        type = type,
+    )
 
     private fun viewModel(
         repo: AccountRepository,
         vararg accounts: Account,
+        mergeRepo: AccountMergeRepository = FakeAccountMergeRepository(),
         seed: FakeAccountRepository? = repo as? FakeAccountRepository,
     ): AccountsSettingsViewModel {
         seed?.let { fake -> accounts.forEach { fake.stored[it.id] = it } }
         return AccountsSettingsViewModel(
             ObserveAccountsUseCase(repo),
             CountMergeMovesUseCase(repo),
+            GetMergeDroppedStartUseCase(mergeRepo),
             CountTrashableTransactionsUseCase(repo),
-            MergeAccountsUseCase(repo, FakeTransactionRunner(), clock),
+            MergeAccountsUseCase(repo, mergeRepo, FakeTransactionRunner(), clock),
             SetAccountIgnoredUseCase(repo, FakeTransactionRunner(), clock),
             isDebuggable = true,
         )
@@ -129,6 +142,28 @@ class AccountsSettingsViewModelTest {
         }
 
     @Test
+    fun `merge targets exclude other types`() =
+        runTest(mainRule.dispatcher) {
+            val vm =
+                viewModel(
+                    FakeAccountRepository(),
+                    bank("src"),
+                    bank("same"),
+                    bank("card", type = AccountType.CREDIT_CARD),
+                )
+            runCurrent()
+
+            vm.onIntent(AccountsSettingsIntent.AccountClicked("src"))
+            runCurrent()
+
+            assertEquals(
+                listOf("same"),
+                vm.state.value.mergeTargets
+                    .map { it.id },
+            )
+        }
+
+    @Test
     fun `sheet dismissed keeps merge targets until another account opens`() =
         runTest(mainRule.dispatcher) {
             val vm =
@@ -183,10 +218,25 @@ class AccountsSettingsViewModelTest {
         }
 
     @Test
+    fun `merge dialog carries dropped start`() =
+        runTest(mainRule.dispatcher) {
+            val mergeRepo = FakeAccountMergeRepository().apply { droppedStarts["src" to "dst"] = 2_000_000L }
+            val vm = viewModel(FakeAccountRepository(), bank("src"), bank("dst"), mergeRepo = mergeRepo)
+            runCurrent()
+            vm.onIntent(AccountsSettingsIntent.AccountClicked("src"))
+            runCurrent()
+
+            vm.onIntent(AccountsSettingsIntent.MergeTargetPicked("dst"))
+            runCurrent()
+
+            assertEquals(2_000_000L, (vm.state.value.dialog as AccountsDialog.Merge).droppedStart)
+        }
+
+    @Test
     fun `confirm merge calls the use case and emits Merged`() =
         runTest(mainRule.dispatcher) {
-            val repo = FakeAccountRepository()
-            val vm = viewModel(repo, bank("src"), bank("dst"))
+            val mergeRepo = FakeAccountMergeRepository()
+            val vm = viewModel(FakeAccountRepository(), bank("src"), bank("dst"), mergeRepo = mergeRepo)
             runCurrent()
             vm.onIntent(AccountsSettingsIntent.AccountClicked("src"))
             vm.onIntent(AccountsSettingsIntent.MergeTargetPicked("dst"))
@@ -199,7 +249,7 @@ class AccountsSettingsViewModelTest {
                 assertEquals(AccountsSettingsEffect.Merged, awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
-            assertEquals(listOf(Triple("src", "dst", 5_000L)), repo.merges)
+            assertEquals(listOf(Triple("src", "dst", 5_000L)), mergeRepo.merges)
             assertNull(vm.state.value.selected)
             assertNull(vm.state.value.dialog)
         }
@@ -216,6 +266,24 @@ class AccountsSettingsViewModelTest {
                 assertEquals(AccountsSettingsEffect.MergeBlockedByTransfer, awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
+        }
+
+    @Test
+    fun `type rejection emits ActionFailed`() =
+        runTest(mainRule.dispatcher) {
+            val fake = FakeAccountRepository()
+            val mergeFake = FakeAccountMergeRepository()
+            val vm = mergeDialogViewModel(reason = MergeRejection.DIFFERENT_TYPE, fake = fake, mergeFake = mergeFake)
+
+            vm.effects.test {
+                vm.onIntent(AccountsSettingsIntent.MergeConfirmed)
+                runCurrent()
+
+                assertEquals(AccountsSettingsEffect.ActionFailed, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertTrue(mergeFake.merges.isEmpty())
+            assertEquals(0, fake.writes)
         }
 
     @Test
@@ -257,8 +325,8 @@ class AccountsSettingsViewModelTest {
     @Test
     fun `double tap on merge confirm merges once`() =
         runTest(mainRule.dispatcher) {
-            val repo = FakeAccountRepository()
-            val vm = viewModel(repo, bank("src"), bank("dst"))
+            val mergeRepo = FakeAccountMergeRepository()
+            val vm = viewModel(FakeAccountRepository(), bank("src"), bank("dst"), mergeRepo = mergeRepo)
             runCurrent()
             vm.onIntent(AccountsSettingsIntent.AccountClicked("src"))
             vm.onIntent(AccountsSettingsIntent.MergeTargetPicked("dst"))
@@ -273,7 +341,7 @@ class AccountsSettingsViewModelTest {
                 expectNoEvents()
                 cancelAndIgnoreRemainingEvents()
             }
-            assertEquals(1, repo.merges.size)
+            assertEquals(1, mergeRepo.merges.size)
         }
 
     @Test
@@ -335,17 +403,18 @@ class AccountsSettingsViewModelTest {
     private fun TestScope.mergeDialogViewModel(
         reason: MergeRejection? = null,
         failure: Exception? = null,
+        fake: FakeAccountRepository = FakeAccountRepository(),
+        mergeFake: FakeAccountMergeRepository = FakeAccountMergeRepository(),
     ): AccountsSettingsViewModel {
-        val fake = FakeAccountRepository()
-        val repo = RejectingRepository(fake, failure)
-        val vm = viewModel(repo, bank("src"), bank("dst"), seed = fake)
+        val vm = viewModel(fake, bank("src"), bank("dst"), mergeRepo = RejectingMergeRepository(mergeFake, failure))
         runCurrent()
         vm.onIntent(AccountsSettingsIntent.AccountClicked("src"))
         vm.onIntent(AccountsSettingsIntent.MergeTargetPicked("dst"))
         runCurrent()
         when (reason) {
-            MergeRejection.HAS_TRANSFER -> fake.transferCounts[setOf("src", "dst")] = 1
+            MergeRejection.HAS_TRANSFER -> mergeFake.transferCounts[setOf("src", "dst")] = 1
             MergeRejection.ACCOUNT_GONE -> fake.stored["dst"] = bank("dst").copy(deletedAt = 1L)
+            MergeRejection.DIFFERENT_TYPE -> fake.stored["dst"] = bank("dst", type = AccountType.CREDIT_CARD)
             else -> Unit
         }
         return vm

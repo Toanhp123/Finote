@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.notification.repository
 
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.model.AccountIdentifier
 import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
@@ -16,6 +17,9 @@ interface NotificationSettlementRepository {
 
     /** Every account row that has a `bankPackageName`. */
     suspend fun getAccounts(): List<Account>
+
+    /** Every identifier of those accounts. An identifier whose owner is deleted is free. */
+    suspend fun getIdentifiers(): List<AccountIdentifier>
 
     suspend fun getRulesById(): Map<String, ParserRule>
 

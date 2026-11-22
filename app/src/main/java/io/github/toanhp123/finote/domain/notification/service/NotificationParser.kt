@@ -6,7 +6,8 @@ import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 
 private val GROUP_NAME = Regex("\\(\\?<([a-zA-Z][a-zA-Z0-9]*)>")
-private val DECIMAL_TAIL = Regex("[.,]\\d{2}$")
+private val DECIMAL_TAIL = Regex("[.,](\\d{1,2})$")
+private val NEGATIVE = Regex("^\\s*[-−]")
 
 /**
  * Runs the active [rules] over title and content, highest priority first (then by id).
@@ -73,13 +74,25 @@ private fun resolveType(
         else -> null
     }
 
-/** Reads a VND amount such as `1.500.000đ` or `1,500,000.00 VND`. Null when there is no digit or it overflows. */
+/**
+ * Reads a VND amount such as `1.500.000đ`, `1,500,000.00 VND` or `-500,000`.
+ * A leading `-` or U+2212 (spaces allowed after it) makes it negative.
+ * After the last separator, three digits are a thousands group; one or two digits are a decimal part,
+ * dropped when all zero. A non-zero decimal part, no digit, or an overflow gives null.
+ */
 fun parseMoney(raw: String): Long? {
-    val kept = raw.filter { it.isDigit() || it == '.' || it == ',' }
-    // VND groups are three digits, so a separator plus two digits at the end is a decimal part.
-    return kept
-        .replace(DECIMAL_TAIL, "")
-        .filter(Char::isDigit)
-        .ifEmpty { null }
-        ?.toLongOrNull()
+    // A sentence-ending dot or comma is not a decimal mark.
+    val kept = raw.filter { it.isDigit() || it == '.' || it == ',' }.trimEnd('.', ',')
+    val decimals =
+        DECIMAL_TAIL
+            .find(kept)
+            ?.groupValues
+            ?.get(1)
+            .orEmpty()
+    val value = kept.replace(DECIMAL_TAIL, "").filter(Char::isDigit).toLongOrNull()
+    return when {
+        value == null || decimals.any { it != '0' } -> null
+        NEGATIVE.containsMatchIn(raw) -> -value
+        else -> value
+    }
 }

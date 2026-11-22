@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.account.usecase
 
 import io.github.toanhp123.finote.domain.account.error.AccountError
+import io.github.toanhp123.finote.domain.account.repository.AccountMergeRepository
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.account.service.AccountRules
 import io.github.toanhp123.finote.domain.common.Outcome
@@ -12,6 +13,7 @@ class MergeAccountsUseCase
     @Inject
     constructor(
         private val repository: AccountRepository,
+        private val mergeRepository: AccountMergeRepository,
         private val tx: TransactionRunner,
         private val clock: Clock,
     ) {
@@ -27,12 +29,12 @@ class MergeAccountsUseCase
                         targetId,
                         repository.getAccount(sourceId),
                         repository.getAccount(targetId),
-                        repository.countTransfersBetween(sourceId, targetId),
+                        mergeRepository.countTransfersBetween(sourceId, targetId),
                     )
                 if (rejection != null) {
                     Outcome.Err(AccountError.MergeRejected(rejection))
                 } else {
-                    repository.merge(sourceId, targetId, clock.millis())
+                    mergeRepository.merge(sourceId, targetId, clock.millis())
                     Outcome.Ok(Unit)
                 }
             }

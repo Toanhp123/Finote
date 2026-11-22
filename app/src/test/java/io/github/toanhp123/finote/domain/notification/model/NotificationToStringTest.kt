@@ -1,6 +1,8 @@
 package io.github.toanhp123.finote.domain.notification.model
 
+import io.github.toanhp123.finote.domain.account.model.AccountIdentifier
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.notification.testLog
 import io.github.toanhp123.finote.domain.notification.testRaw
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
@@ -54,15 +56,25 @@ class NotificationToStringTest {
     @Test
     fun `settlement decision book hides merchant, note and mask`() {
         val log = testLog(id = "log1", title = "T-SECRET", content = "C-SECRET", parsed = parsed)
-        val target = AccountTarget.New("pkg", "M-SECRET", "Bank", AccountType.BANK)
-        val book = SettlementDecision.Book(log, null, target, merchant = "MER-SECRET", note = "N-SECRET")
+        val target = AccountTarget.New("pkg", "M-SECRET", "Bank", AccountType.BANK, IdentifierKind.ACCOUNT)
+        val book = SettlementDecision.Book(log, null, target, merchant = "MER-SECRET", note = "N-SECRET", rule = null)
 
         assertEquals(
             "Book(bankSide=NotificationLog(id=log1, packageName=pkg, status=PENDING), walletSide=null, " +
-                "account=New(packageName=pkg, bankName=Bank, type=BANK, hasMask=true))",
+                "account=New(packageName=pkg, bankName=Bank, type=BANK, kind=ACCOUNT, hasMask=true))",
             book.toString(),
         )
         assertNoText(book.toString())
+    }
+
+    @Test
+    fun `identifier and attaching target hide the mask`() {
+        val identifier = AccountIdentifier("pkg", IdentifierKind.CARD, "M-SECRET", "acc-1")
+        val target = AccountTarget.Existing("acc-1", attach = identifier)
+
+        assertEquals("AccountIdentifier(packageName=pkg, kind=CARD, accountId=acc-1)", identifier.toString())
+        assertEquals("Existing(accountId=acc-1, hasAttach=true)", target.toString())
+        assertNoText(identifier.toString() + target.toString())
     }
 
     private fun assertNoText(text: String) {

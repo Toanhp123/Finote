@@ -5,5 +5,6 @@ enum class MergeRejection {
     SAME_ACCOUNT,
     ACCOUNT_GONE,
     DIFFERENT_BANK,
+    DIFFERENT_TYPE,
     HAS_TRANSFER,
 }

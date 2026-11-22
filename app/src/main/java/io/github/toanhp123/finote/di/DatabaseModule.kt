@@ -8,6 +8,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.toanhp123.finote.data.account.local.dao.AccountBalanceSnapshotDao
 import io.github.toanhp123.finote.data.account.local.dao.AccountDao
+import io.github.toanhp123.finote.data.account.local.dao.AccountIdentifierDao
 import io.github.toanhp123.finote.data.account.local.dao.AccountMergeDao
 import io.github.toanhp123.finote.data.category.local.dao.CategoryDao
 import io.github.toanhp123.finote.data.database.FinoteDatabase
@@ -32,6 +33,9 @@ object DatabaseModule {
 
     @Provides
     fun provideAccountDao(db: FinoteDatabase): AccountDao = db.accountDao()
+
+    @Provides
+    fun provideAccountIdentifierDao(db: FinoteDatabase): AccountIdentifierDao = db.accountIdentifierDao()
 
     @Provides
     fun provideAccountMergeDao(db: FinoteDatabase): AccountMergeDao = db.accountMergeDao()

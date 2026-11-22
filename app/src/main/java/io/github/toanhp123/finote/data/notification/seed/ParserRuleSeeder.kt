@@ -9,7 +9,7 @@ import io.github.toanhp123.finote.data.notification.local.entity.ParserRuleEntit
 private const val UPSERT_SQL =
     "INSERT OR REPLACE INTO parser_rules (id, packageName, bankName, channelIdAllowlist, ignoreKeywords, " +
         "priority, isUserCustom, version, regexPattern, fallbackTransactionType, dateFormatPattern, isActive, " +
-        "updatedAt, accountType) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "updatedAt, accountType, maskKind) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
 /**
  * Keeps [SystemParserRules] in the database, rule by rule. Unlike the category seeder it runs on every open:
@@ -38,7 +38,7 @@ class ParserRuleSeeder : RoomDatabase.Callback() {
             }
         }
 
-    private fun write(
+    internal fun write(
         connection: SQLiteConnection,
         rules: List<ParserRuleEntity>,
     ) {
@@ -67,6 +67,7 @@ class ParserRuleSeeder : RoomDatabase.Callback() {
         bindLong(++index, if (rule.isActive) 1L else 0L)
         bindLong(++index, rule.updatedAt)
         bindOptionalText(++index, rule.accountType)
+        bindOptionalText(++index, rule.maskKind)
     }
 
     private fun SQLiteStatement.bindOptionalText(

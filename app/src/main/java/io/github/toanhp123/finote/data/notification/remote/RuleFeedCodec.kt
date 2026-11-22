@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.data.notification.remote
 
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.service.regexGroupNames
@@ -43,6 +44,7 @@ private class RuleDto(
     val dateFormatPattern: String?,
     val isActive: Boolean,
     val accountType: String? = null,
+    val maskKind: String? = null,
 )
 
 // The payload is signed, so extra fields are trusted; an additive field must not make old installs reject the feed.
@@ -75,7 +77,7 @@ fun decodeRuleFeed(
     if (payload.schemaVersion != SCHEMA_VERSION || payload.rules.isEmpty()) invalid("bad_schema")
 
     val seenIds = HashSet<String>()
-    return payload.rules.map { dto ->
+    return payload.rules.mapNotNull { dto ->
         if (!seenIds.add(dto.id)) invalid("bad_rule")
         dto.toRule()
     }
@@ -133,7 +135,8 @@ private fun RuleDto.checkRegex(fallback: TransactionType?) {
     if ("amount" !in groups || ("sign" !in groups && fallback == null)) invalid("bad_rule")
 }
 
-private fun RuleDto.toRule(): ParserRule {
+/** Null only for an unknown `maskKind`: that rule is skipped, so one newer kind cannot block the whole feed. */
+private fun RuleDto.toRule(): ParserRule? {
     checkFields()
     val fallback = fallbackTransactionType?.let { name -> TransactionType.entries.firstOrNull { it.name == name } }
     if (fallbackTransactionType != null && fallback != TransactionType.INCOME && fallback != TransactionType.EXPENSE) {
@@ -142,6 +145,8 @@ private fun RuleDto.toRule(): ParserRule {
     // An unknown value (a newer feed) falls back to BANK (null) instead of rejecting the whole feed.
     val type = accountType?.let { name -> AccountType.entries.firstOrNull { it.name == name } }
     checkRegex(fallback)
+    val kind = maskKind?.let { name -> IdentifierKind.entries.firstOrNull { it.name == name } }
+    if (maskKind != null && kind == null) return null
     return ParserRule(
         id = id,
         packageName = packageName,
@@ -157,5 +162,6 @@ private fun RuleDto.toRule(): ParserRule {
         isActive = isActive,
         updatedAt = 0L,
         accountType = type,
+        maskKind = kind,
     )
 }

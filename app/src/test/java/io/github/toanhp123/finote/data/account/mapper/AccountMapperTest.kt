@@ -27,10 +27,9 @@ class AccountMapperTest {
 
     @Test
     fun `bank key round trips`() {
-        val entity = account(bankPackageName = "com.VCB", accountNumberMask = "1234")
+        val entity = account(bankPackageName = "com.VCB")
         val account = entity.toDomain()
         assertEquals("com.VCB", account.bankPackageName)
-        assertEquals("1234", account.accountNumberMask)
         assertEquals(entity, account.toEntity())
     }
 

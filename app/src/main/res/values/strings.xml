@@ -168,6 +168,7 @@
         <item quantity="other">%d giao dịch sẽ chuyển sang. Không thể hoàn tác.</item>
     </plurals>
     <string name="accounts_merge_confirm">Gộp</string>
+    <string name="accounts_merge_drops_start">Số dư đầu %1$s của %2$s sẽ bị bỏ. Có thể chỉnh lại bằng Điều chỉnh.</string>
     <string name="accounts_ignore_dialog_title">Bỏ qua tài khoản này?</string>
     <string name="accounts_ignore_dialog_text">Sẽ không ghi giao dịch mới nào cho tài khoản này.</string>
     <plurals name="accounts_ignore_trash">

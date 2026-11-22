@@ -7,6 +7,7 @@ import io.github.toanhp123.finote.domain.account.error.MergeRejection
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.usecase.CountMergeMovesUseCase
 import io.github.toanhp123.finote.domain.account.usecase.CountTrashableTransactionsUseCase
+import io.github.toanhp123.finote.domain.account.usecase.GetMergeDroppedStartUseCase
 import io.github.toanhp123.finote.domain.account.usecase.MergeAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.SetAccountIgnoredUseCase
@@ -18,10 +19,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AccountsSettingsViewModel
+    @Suppress("LongParameterList") // why: Hilt injects one collaborator per use case; grouping them would hide the deps
     @Inject
     constructor(
         observeAccounts: ObserveAccountsUseCase,
         private val countMergeMoves: CountMergeMovesUseCase,
+        private val getDroppedStart: GetMergeDroppedStartUseCase,
         private val countTrashable: CountTrashableTransactionsUseCase,
         private val mergeAccounts: MergeAccountsUseCase,
         private val setIgnored: SetAccountIgnoredUseCase,
@@ -86,7 +89,10 @@ class AccountsSettingsViewModel
             val account = state.value.accounts.firstOrNull { it.id == id }
             // An account without a bank key (cash) has no action to offer.
             val bank = account?.bankPackageName ?: return
-            val targets = state.value.accounts.filter { it.id != id && it.bankPackageName == bank }
+            val targets =
+                state.value.accounts.filter {
+                    it.id != id && it.bankPackageName == bank && it.type == account.type
+                }
             setState { copy(selected = account, mergeTargets = targets) }
         }
 
@@ -95,9 +101,10 @@ class AccountsSettingsViewModel
             val target = state.value.mergeTargets.firstOrNull { it.id == targetId } ?: return
             launchCatching(onStorageError = ::sendActionFailed) {
                 val count = countMergeMoves(source.id)
+                val droppedStart = getDroppedStart(source.id, target.id)
                 // The sheet may have closed while the count loaded.
                 if (state.value.selected?.id != source.id) return@launchCatching
-                setState { copy(dialog = AccountsDialog.Merge(source, target, count)) }
+                setState { copy(dialog = AccountsDialog.Merge(source, target, count, droppedStart)) }
             }
         }
 

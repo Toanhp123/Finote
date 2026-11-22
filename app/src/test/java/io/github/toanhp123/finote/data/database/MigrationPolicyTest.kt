@@ -12,8 +12,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.toanhp123.finote.data.account.seed.SystemAccountSeeder
 import io.github.toanhp123.finote.data.category.seed.SystemCategorySeeder
+import io.github.toanhp123.finote.data.notification.repository.NotificationSettlementRepositoryImpl
 import io.github.toanhp123.finote.data.notification.seed.ParserRuleSeeder
 import io.github.toanhp123.finote.data.notification.seed.SystemParserRules
+import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
+import io.github.toanhp123.finote.domain.notification.model.AccountResolution
+import io.github.toanhp123.finote.domain.notification.model.AccountTarget
+import io.github.toanhp123.finote.domain.notification.service.resolveAccount
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -58,6 +64,82 @@ private fun insertAccountSql(id: String) =
     "INSERT INTO accounts (id, name, type, initialBalance, currentBalance, currency, icon, color, sortOrder, " +
         "excludeFromNetWorth, isArchived, isIgnored, isInitialized, createdAt, updatedAt) " +
         "VALUES ('$id', 'Fake', 'BANK', 0, 0, 'VND', 'bank', 0, 0, 0, 0, 0, 0, 1, 1)"
+
+private const val PKG = "fake.bank"
+private const val MASKLESS_PKG = "fake.maskless"
+
+// why: one named default per v8 account column the identity rows vary.
+@Suppress("LongParameterList")
+private fun keyedAccountSql(
+    id: String,
+    mask: String? = null,
+    pkg: String? = PKG,
+    type: String = "BANK",
+    isArchived: Boolean = false,
+    createdAt: Long = 1,
+    deletedAt: Long? = null,
+    mergedIntoId: String? = null,
+): String {
+    fun text(value: String?) = value?.let { "'$it'" } ?: "NULL"
+    return "INSERT INTO accounts (id, name, type, initialBalance, currentBalance, currency, icon, color, sortOrder, " +
+        "excludeFromNetWorth, isArchived, isIgnored, isInitialized, createdAt, updatedAt, deletedAt, " +
+        "bankPackageName, accountNumberMask, mergedIntoId) VALUES ('$id', 'Fake', '$type', 0, 0, 'VND', 'bank', 0, " +
+        "0, 0, ${if (isArchived) 1 else 0}, 0, 0, $createdAt, 1, ${deletedAt ?: "NULL"}, ${text(pkg)}, " +
+        "${text(mask)}, ${text(mergedIntoId)})"
+}
+
+/** Every shape of v8 bank key. Ids and insert order are chosen so neither can fake the expected owner. */
+private val V8_KEYED_ROWS =
+    listOf(
+        keyedAccountSql("live-1", "1111"),
+        keyedAccountSql("merged-dst", "2223"),
+        keyedAccountSql("merged-src", "2222", deletedAt = 10, mergedIntoId = "merged-dst"),
+        keyedAccountSql("deleted-1", "3333", deletedAt = 5),
+        // Two live accounts on one key: the non-archived one wins although it is newer and sorts later.
+        keyedAccountSql("dup-a", "4444", isArchived = true),
+        keyedAccountSql("dup-b", "4444", createdAt = 2),
+        // A live row beats a merged row on the same key.
+        keyedAccountSql("s5-a", "5555", deletedAt = 10, mergedIntoId = "live-1"),
+        keyedAccountSql("s5-b", "5555"),
+        // Two merged rows on one key: the later merge wins.
+        keyedAccountSql("m6-a", "6666", deletedAt = 10, mergedIntoId = "live-1"),
+        keyedAccountSql("m6-b", "6666", deletedAt = 20, mergedIntoId = "merged-dst"),
+        // The merge target was deleted later: the key is free.
+        keyedAccountSql("gone-dst", "7778", deletedAt = 30),
+        keyedAccountSql("gone-src", "7777", deletedAt = 10, mergedIntoId = "gone-dst"),
+        // A live row owns its key even with a stale mergedIntoId.
+        keyedAccountSql("stale-live", "8888", mergedIntoId = "live-1"),
+        // The merge target is missing: no identifier, so the foreign key cannot break.
+        keyedAccountSql("dangling", "6060", deletedAt = 10, mergedIntoId = "missing"),
+        keyedAccountSql("wallet-1", "9999", pkg = "fake.wallet", type = "WALLET"),
+        keyedAccountSql("card-1", "9999", pkg = "fake.card", type = "CREDIT_CARD"),
+        keyedAccountSql("no-mask", pkg = MASKLESS_PKG),
+        keyedAccountSql("cash", pkg = null, type = "CASH"),
+        keyedAccountSql("empty-mask", "", pkg = "fake.empty"),
+        keyedAccountSql("empty-pkg", "1212", pkg = ""),
+        "INSERT INTO transactions (id, amount, type, accountId, timestamp, note, source, excludeFromAnalytics, " +
+            "createdAt, updatedAt) VALUES ('tx-k', 250000, 'EXPENSE', 'merged-src', 1, '', 'NOTIFICATION_PARSER', " +
+            "0, 1, 1)",
+        "INSERT INTO account_balance_snapshots (id, accountId, monthYear, openingBalance, closingBalance, " +
+            "totalIncome, totalExpense, totalTransferIn, totalTransferOut, updatedAt) VALUES ('snap-k', " +
+            "'merged-dst', '2026-11', 0, -250000, 0, 250000, 0, 0, 1)",
+    )
+
+/** What the v8 resolver gave for each key of [PKG]: the live owner, else the latest merge's live target, else null. */
+private val V8_OWNERS =
+    mapOf(
+        "1111" to "live-1",
+        "2222" to "merged-dst",
+        "2223" to "merged-dst",
+        "3333" to null,
+        "4444" to "dup-b",
+        "5555" to "s5-b",
+        "6666" to "merged-dst",
+        "7777" to null,
+        "7778" to null,
+        "8888" to "stale-live",
+        "6060" to null,
+    )
 
 @RunWith(AndroidJUnit4::class)
 class MigrationPolicyTest {
@@ -137,6 +219,117 @@ class MigrationPolicyTest {
             )
             assertEquals(1L, longColumn("SELECT COUNT(*) FROM transaction_tag_cross_ref WHERE transactionId = 'tx-1'"))
         }
+
+    @Test
+    fun `every v8 key resolves to the same account after migration`() =
+        runTest {
+            migrateKeyedRows()
+            val db = openWithPolicy()
+            val repo = NotificationSettlementRepositoryImpl(db, clock)
+            val accounts = repo.getAccounts()
+            val identifiers = repo.getIdentifiers()
+            db.close()
+
+            V8_OWNERS.forEach { (mask, owner) ->
+                val expected =
+                    owner?.let { AccountTarget.Existing(it) }
+                        ?: AccountTarget.New(PKG, mask, PKG, AccountType.BANK, IdentifierKind.ACCOUNT)
+                assertEquals(
+                    mask,
+                    AccountResolution.Resolved(expected),
+                    resolveAccount(PKG, mask, null, accounts, identifiers),
+                )
+            }
+            assertEquals(
+                AccountResolution.Resolved(AccountTarget.Existing("no-mask")),
+                resolveAccount(MASKLESS_PKG, null, null, accounts, identifiers),
+            )
+            assertEquals(IdentifierKind.WALLET, identifiers.single { it.accountId == "wallet-1" }.kind)
+            assertEquals(IdentifierKind.CARD, identifiers.single { it.accountId == "card-1" }.kind)
+        }
+
+    @Test
+    fun `migration keeps transactions and snapshots`() =
+        runTest {
+            migrateKeyedRows()
+
+            assertEquals(250_000L, longColumn("SELECT amount FROM transactions WHERE accountId = 'merged-src'"))
+            assertEquals(
+                -250_000L,
+                longColumn("SELECT closingBalance FROM account_balance_snapshots WHERE accountId = 'merged-dst'"),
+            )
+            // Every account row survives; the last two rows are the transaction and the snapshot.
+            assertEquals(V8_KEYED_ROWS.size - 2L, longColumn("SELECT COUNT(*) FROM accounts"))
+        }
+
+    @Test
+    fun `merged row with a missing target gets no identifier`() =
+        runTest {
+            migrateKeyedRows()
+
+            assertEquals(0L, longColumn("SELECT COUNT(*) FROM account_identifiers WHERE mask = '6060'"))
+            assertEquals(0L, longColumn("SELECT COUNT(*) FROM pragma_foreign_key_check('account_identifiers')"))
+        }
+
+    @Test
+    fun `empty mask gets no identifier`() =
+        runTest {
+            migrateKeyedRows()
+
+            assertEquals(
+                0L,
+                longColumn(
+                    "SELECT COUNT(*) FROM account_identifiers " +
+                        "WHERE accountId IN ('empty-mask', 'empty-pkg', 'no-mask', 'cash')",
+                ),
+            )
+        }
+
+    @Test
+    fun `accounts has no accountNumberMask column`() =
+        runTest {
+            migrateKeyedRows()
+
+            assertEquals(
+                0L,
+                longColumn("SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = 'accountNumberMask'"),
+            )
+        }
+
+    @Test
+    fun `after migration and seeding every system rule has its accountType`() =
+        runTest {
+            // A v8 file whose only system rule is stale: no accountType, older than the seed. The rest are missing.
+            val stale = SystemParserRules.first { it.accountType != null }
+            helper.createDatabase(8).use { connection ->
+                connection.execSQL(
+                    "INSERT INTO parser_rules (id, packageName, bankName, ignoreKeywords, priority, isUserCustom, " +
+                        "version, regexPattern, isActive, updatedAt) VALUES ('${stale.id}', 'fake.bank', 'Fake', '', " +
+                        "0, 0, 0, 'fake-pattern', 1, 1)",
+                )
+            }
+            helper.runMigrationsAndValidate(9, listOf(MIGRATION_8_9)).close()
+
+            val db = openWithPolicy()
+            val stored =
+                SystemParserRules.map { it.packageName }.distinct().flatMap { db.parserRuleDao().getByPackage(it) }
+            db.close()
+
+            assertEquals(SystemParserRules.size, stored.size)
+            val byId = stored.associateBy { it.id }
+            SystemParserRules.forEach { seed ->
+                val row = byId.getValue(seed.id)
+                assertEquals(seed.id, seed.accountType, row.accountType)
+            }
+        }
+
+    @Test
+    fun `migrated schema validates`() = runTest { migrateKeyedRows() }
+
+    private suspend fun migrateKeyedRows() {
+        helper.createDatabase(8).use { connection -> V8_KEYED_ROWS.forEach(connection::execSQL) }
+        helper.runMigrationsAndValidate(9, listOf(MIGRATION_8_9)).close()
+    }
 
     private suspend fun openWithPolicy(): FinoteDatabase {
         val db =

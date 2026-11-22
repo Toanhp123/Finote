@@ -25,4 +25,6 @@ data class ParserRuleEntity(
     val updatedAt: Long,
     /** `AccountType.name` of the account this rule's notifications belong to. Null means `BANK`. */
     val accountType: String?,
+    /** `IdentifierKind.name` of the mask this rule reads. Null means the default kind of [accountType]. */
+    val maskKind: String?,
 )

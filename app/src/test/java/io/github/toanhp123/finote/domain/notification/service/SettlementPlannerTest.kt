@@ -1,7 +1,9 @@
 package io.github.toanhp123.finote.domain.notification.service
 
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.model.AccountIdentifier
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
@@ -17,6 +19,7 @@ import io.github.toanhp123.finote.domain.notification.testLog
 import io.github.toanhp123.finote.domain.notification.testRule
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -26,6 +29,7 @@ class SettlementPlannerTest {
     private val t0 = 1_800_000_000_000L // 2027-01-15, inside the allowed time range
     private val now = t0 + 10_000_000L
     private val rules = mapOf("r-vcb" to rule("r-vcb", vcb, null), "r-momo" to rule("r-momo", momo, AccountType.WALLET))
+    private val newBank = AccountTarget.New(vcb, null, vcb, AccountType.BANK, IdentifierKind.ACCOUNT)
     private var seq = 0
 
     private fun rule(
@@ -69,9 +73,10 @@ class SettlementPlannerTest {
         vararg pending: NotificationLog,
         settled: List<NotificationLog> = emptyList(),
         accounts: List<Account> = emptyList(),
+        identifiers: List<AccountIdentifier> = emptyList(),
         at: Long = now,
         ruleMap: Map<String, ParserRule> = rules,
-    ) = planSettlement(pending.toList(), settled, accounts, ruleMap, at)
+    ) = planSettlement(pending.toList(), settled, accounts, identifiers, ruleMap, at)
 
     private fun old(offset: Long = 0) = now - 3 * 3_600_000L + offset
 
@@ -141,8 +146,8 @@ class SettlementPlannerTest {
         val decisions = plan(first, second, wallet, at = t0 + 60_000)
         assertEquals(
             listOf(
-                Book(first, null, AccountTarget.New(vcb, null, vcb, AccountType.BANK), null, null),
-                Book(second, wallet, AccountTarget.New(vcb, null, vcb, AccountType.BANK), null, null),
+                Book(first, null, newBank, null, null, rules["r-vcb"]),
+                Book(second, wallet, newBank, null, null, rules["r-vcb"]),
             ),
             decisions,
         )
@@ -257,15 +262,14 @@ class SettlementPlannerTest {
     fun `pair with unmappable bank fails both`() {
         val accounts =
             listOf("a", "b").map {
-                testAccount(id = it).copy(bankPackageName = vcb, accountNumberMask = null)
+                testAccount(id = it).copy(bankPackageName = vcb)
             }
         val bank = log(vcb, old(0))
         val wallet = log(momo, old(1_000))
         assertEquals(listOf(Fail(bank, wallet, FAIL_AMBIGUOUS_ACCOUNT)), plan(bank, wallet, accounts = accounts))
     }
 
-    private fun ignoredAccount() =
-        testAccount(id = "ign").copy(bankPackageName = vcb, accountNumberMask = "1234", isIgnored = true)
+    private fun ignoredAccount() = testAccount(id = "ign").copy(bankPackageName = vcb, isIgnored = true)
 
     @Test
     fun `ignored account gives Ignore`() {
@@ -323,7 +327,8 @@ class SettlementPlannerTest {
     fun `missing rule books as bank named after the package`() {
         val log = log(vcb, old(0), ruleId = null)
         val book = plan(log, ruleMap = emptyMap()).single() as Book
-        assertEquals(AccountTarget.New(vcb, null, vcb, AccountType.BANK), book.account)
+        assertEquals(newBank, book.account)
+        assertNull(book.rule)
     }
 
     @Test

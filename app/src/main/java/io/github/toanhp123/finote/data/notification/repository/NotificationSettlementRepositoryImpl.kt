@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.data.notification.repository
 
 import io.github.toanhp123.finote.data.account.local.entity.AccountEntity
 import io.github.toanhp123.finote.data.account.mapper.toDomain
+import io.github.toanhp123.finote.data.account.mapper.toEntity
 import io.github.toanhp123.finote.data.database.FinoteDatabase
 import io.github.toanhp123.finote.data.database.storage
 import io.github.toanhp123.finote.data.database.storageWrite
@@ -9,13 +10,16 @@ import io.github.toanhp123.finote.data.notification.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.repository.LedgerWriter
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.model.AccountIdentifier
 import io.github.toanhp123.finote.domain.notification.error.SettlementError
+import io.github.toanhp123.finote.domain.notification.model.AccountResolution
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
+import io.github.toanhp123.finote.domain.notification.service.resolveAccount
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.service.TRANSFER_PAIR_WINDOW_MILLIS
@@ -36,6 +40,7 @@ class NotificationSettlementRepositoryImpl
     ) : NotificationSettlementRepository {
         private val logs = db.notificationLogDao()
         private val accounts = db.accountDao()
+        private val identifiers = db.accountIdentifierDao()
         private val pairs = db.transferPairDao()
         private val ledger = LedgerWriter(db, clock)
 
@@ -46,6 +51,9 @@ class NotificationSettlementRepositoryImpl
             storage { logs.getSettledSince(since).map { it.toDomain() } }
 
         override suspend fun getAccounts(): List<Account> = storage { accounts.getWithBankKey().map { it.toDomain() } }
+
+        override suspend fun getIdentifiers(): List<AccountIdentifier> =
+            storage { identifiers.getAll().map { it.toDomain() } }
 
         override suspend fun getRulesById(): Map<String, ParserRule> =
             storage {
@@ -65,7 +73,8 @@ class NotificationSettlementRepositoryImpl
                 val bank = decision.bankSide
                 val parsed = checkNotNull(bank.parsed) { "bank side has no parsed fields" }
                 val account =
-                    resolveAccount(decision.account, now) ?: return@storageWrite SettlementError.AccountUnusable
+                    accountFor(bank.packageName, parsed.accountMask, decision.rule, now)
+                        ?: return@storageWrite SettlementError.AccountUnusable
                 val transaction =
                     Transaction(
                         id = transactionId,
@@ -172,23 +181,48 @@ class NotificationSettlementRepositoryImpl
         ): Boolean =
             storage { logs.markSettled(listOf(logId), NotificationStatus.DEDUPLICATED, linkedTransactionId, null) == 1 }
 
-        private suspend fun resolveAccount(
-            target: AccountTarget,
+        /**
+         * Resolves the account again on the rows this write transaction sees: the plan of one settle run goes stale
+         * as earlier decisions book. Null when the account is ignored or rejected now.
+         */
+        private suspend fun accountFor(
+            packageName: String,
+            mask: String?,
+            rule: ParserRule?,
             now: Long,
         ): AccountEntity? {
-            val account =
+            val resolution =
+                resolveAccount(
+                    packageName,
+                    mask,
+                    rule,
+                    accounts.getWithBankKey().map { it.toDomain() },
+                    identifiers.getByPackage(packageName).map { it.toDomain() },
+                )
+            val target = (resolution as? AccountResolution.Resolved)?.target ?: return null
+            val (account, key) =
                 when (target) {
                     is AccountTarget.Existing -> {
-                        accounts.getById(target.accountId)
+                        checkNotNull(accounts.getById(target.accountId)) to target.attach
                     }
 
                     is AccountTarget.New -> {
-                        accounts.getByBankKey(target.packageName, target.mask)
-                            ?: newAccount(target, now)
+                        val created = newAccount(target, now)
+                        created to target.mask?.let { AccountIdentifier(packageName, target.kind, it, created.id) }
                     }
                 }
-            // The planner's check can be stale by now.
-            return account?.takeIf { it.toDomain().isUsable }
+            key?.let { attach(it) }
+            return account
+        }
+
+        /** Stores [key] unless a live account holds it; a key whose owner is deleted is free and moves over. */
+        private suspend fun attach(key: AccountIdentifier) {
+            val current = identifiers.get(key.packageName, key.kind, key.mask)
+            if (current == null) {
+                identifiers.insert(key.toEntity())
+            } else if (accounts.getById(current.accountId)?.deletedAt != null) {
+                identifiers.repoint(key.packageName, key.kind, key.mask, key.accountId)
+            }
         }
 
         private suspend fun newAccount(
@@ -215,7 +249,6 @@ class NotificationSettlementRepositoryImpl
                     updatedAt = now,
                     deletedAt = null,
                     bankPackageName = target.packageName,
-                    accountNumberMask = target.mask,
                     mergedIntoId = null,
                 )
             accounts.insert(account)

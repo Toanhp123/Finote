@@ -168,6 +168,7 @@
         <item quantity="other">%d 笔交易将转移过去。此操作无法撤销。</item>
     </plurals>
     <string name="accounts_merge_confirm">合并</string>
+    <string name="accounts_merge_drops_start">%2$s的初始余额 %1$s 将被丢弃。可通过“调整”重新修正。</string>
     <string name="accounts_ignore_dialog_title">忽略此账户？</string>
     <string name="accounts_ignore_dialog_text">不会再为此账户记录新交易。</string>
     <plurals name="accounts_ignore_trash">

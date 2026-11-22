@@ -1,7 +1,9 @@
 package io.github.toanhp123.finote.data.notification.repository
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.toanhp123.finote.data.account.local.entity.AccountIdentifierEntity
 import io.github.toanhp123.finote.data.account.mapper.toDomain
+import io.github.toanhp123.finote.data.account.repository.AccountMergeRepositoryImpl
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.database.RoomTransactionRunner
 import io.github.toanhp123.finote.data.database.account
@@ -11,6 +13,8 @@ import io.github.toanhp123.finote.data.notification.mapper.toEntity
 import io.github.toanhp123.finote.data.notification.parserRuleEntity
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
+import io.github.toanhp123.finote.domain.account.model.defaultKind
 import io.github.toanhp123.finote.domain.account.service.detectBalanceDrift
 import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.notification.error.SettlementError
@@ -20,6 +24,7 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParsedFields
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.service.planSettlement
+import io.github.toanhp123.finote.domain.notification.testRule
 import io.github.toanhp123.finote.domain.notification.usecase.SettlePendingLogsUseCase
 import io.github.toanhp123.finote.domain.transaction.error.TransactionError
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
@@ -84,13 +89,24 @@ class NotificationSettlementRepositoryImplTest {
     private fun newAccount(
         type: AccountType = AccountType.BANK,
         mask: String? = "1234",
-    ) = AccountTarget.New(PKG, mask, "Vietcombank", type)
+    ) = AccountTarget.New(PKG, mask, "Vietcombank", type, type.defaultKind())
 
+    /** The writer resolves the account again from the rule, so a New target also names the rule behind it. */
     private fun book(
         bank: NotificationLog,
         wallet: NotificationLog? = null,
         target: AccountTarget = newAccount(),
-    ) = SettlementDecision.Book(bank, wallet, target, merchant = "Shop", note = null)
+    ): SettlementDecision.Book {
+        val new = target as? AccountTarget.New
+        val rule =
+            testRule(
+                id = "rule",
+                packageName = new?.packageName ?: PKG,
+                bankName = new?.bankName ?: "Vietcombank",
+                accountType = new?.type ?: AccountType.BANK,
+            )
+        return SettlementDecision.Book(bank, wallet, target, merchant = "Shop", note = null, rule = rule)
+    }
 
     /** Books the way the use case does: an error rolls the whole write back. */
     private suspend fun bookInTx(
@@ -228,7 +244,7 @@ class NotificationSettlementRepositoryImplTest {
     fun `cold start then drift is null on equal timestamps`() =
         runTest {
             dbRule.db.accountDao().insert(
-                account(bankPackageName = PKG, accountNumberMask = "1234").copy(isInitialized = false),
+                account(bankPackageName = PKG).copy(isInitialized = false),
             )
             // Same timestamp as the booked row; it is created later, so the shared order puts it after the anchor.
             dbRule.db.transactionDao().insert(transaction(id = "manual", accountId = "acc-1", timestamp = T0 + 1_000L))
@@ -264,7 +280,7 @@ class NotificationSettlementRepositoryImplTest {
     @Test
     fun `user-initialized account keeps its balance`() =
         runTest {
-            dbRule.db.accountDao().insert(account(bankPackageName = PKG, accountNumberMask = "1234"))
+            dbRule.db.accountDao().insert(account(bankPackageName = PKG))
             val bank = log("b1", postBalance = 123L)
             seed(bank)
 
@@ -292,7 +308,7 @@ class NotificationSettlementRepositoryImplTest {
     private suspend fun insertArchivedAccount() =
         dbRule.db
             .accountDao()
-            .insert(account(bankPackageName = PKG, accountNumberMask = "1234").copy(isArchived = true))
+            .insert(account(bankPackageName = PKG).copy(isArchived = true))
 
     private suspend fun assertBookRollsBack(
         bank: NotificationLog,
@@ -326,18 +342,27 @@ class NotificationSettlementRepositoryImplTest {
         }
 
     @Test
-    fun `Existing account that is gone is not booked into`() =
+    fun `a stale Existing target is not read and the fresh answer books`() =
         runTest {
             val bank = log("b1")
             seed(bank)
 
-            assertBookRollsBack(bank, AccountTarget.Existing("missing"))
+            assertNull(bookInTx(book(bank, target = AccountTarget.Existing("missing"))))
+
+            assertEquals(
+                onlyAccount().id,
+                dbRule.db
+                    .transactionDao()
+                    .getById("tx-1")
+                    ?.accountId,
+            )
+            assertEquals(onlyAccount().id, ownerOf("1234"))
         }
 
     @Test
     fun `book into an account ignored after planning rolls back`() =
         runTest {
-            dbRule.db.accountDao().insert(account(bankPackageName = PKG, accountNumberMask = "1234"))
+            dbRule.db.accountDao().insert(account(bankPackageName = PKG))
             val bank = log("b1")
             seed(bank)
             val planned = book(bank, target = AccountTarget.Existing("acc-1"))
@@ -355,38 +380,50 @@ class NotificationSettlementRepositoryImplTest {
         }
 
     @Test
-    fun `book into an account merged away after planning rolls back`() =
+    fun `book into an account merged away after planning lands on the merge target`() =
         runTest {
             val accountDao = dbRule.db.accountDao()
-            accountDao.insert(account(id = "b", bankPackageName = PKG, accountNumberMask = "1234"))
-            accountDao.insert(account(id = "c", bankPackageName = PKG, accountNumberMask = "9999"))
+            val identifierDao = dbRule.db.accountIdentifierDao()
+            accountDao.insert(account(id = "b", bankPackageName = PKG))
+            accountDao.insert(account(id = "c", bankPackageName = PKG))
+            identifierDao.insert(AccountIdentifierEntity(PKG, IdentifierKind.ACCOUNT, "1234", "b"))
+            identifierDao.insert(AccountIdentifierEntity(PKG, IdentifierKind.ACCOUNT, "9999", "c"))
             val bank = log("b1")
             seed(bank)
             val planned = book(bank, target = AccountTarget.Existing("b"))
-            accountDao.update(accountDao.getById("b")!!.copy(deletedAt = NOW, mergedIntoId = "c"))
+            AccountMergeRepositoryImpl(dbRule.db, Clock.fixed(Instant.parse("2026-11-03T00:00:00Z"), ZoneOffset.UTC))
+                .merge("b", "c", NOW)
 
-            assertEquals(SettlementError.AccountUnusable, bookInTx(planned))
-            assertNull(dbRule.db.transactionDao().getById("tx-1"))
-            assertEquals(NotificationStatus.PENDING, storedLog("b1").status)
+            assertNull(bookInTx(planned))
 
-            val replanned =
-                planSettlement(
-                    repo.getPendingLogs(),
-                    emptyList(),
-                    repo.getAccounts(),
-                    repo.getRulesById(),
-                    T0 + 1_000_000L,
-                )
-            val decision = replanned.single() as SettlementDecision.Book
-            assertEquals(AccountTarget.Existing("c"), decision.account)
-            repo.book(decision, "tx-2", NOW)
             assertEquals(
                 "c",
                 dbRule.db
                     .transactionDao()
-                    .getById("tx-2")!!
-                    .accountId,
+                    .getById("tx-1")
+                    ?.accountId,
             )
+            assertEquals(NotificationStatus.CONFIRMED, storedLog("b1").status)
+        }
+
+    @Test
+    fun `source mask lands on target after merge`() =
+        runTest {
+            val accountDao = dbRule.db.accountDao()
+            accountDao.insert(account(id = "b", bankPackageName = PKG))
+            accountDao.insert(account(id = "c", bankPackageName = PKG))
+            insertKey("1234", "b")
+            insertKey("9999", "c")
+            AccountMergeRepositoryImpl(dbRule.db, Clock.fixed(Instant.parse("2026-11-03T00:00:00Z"), ZoneOffset.UTC))
+                .merge("b", "c", NOW)
+            val bank = log("b1")
+            seed(bank)
+
+            assertNull(bookInTx(book(bank, target = newAccount())))
+
+            assertEquals("c", accountOfTx("tx-1"))
+            assertEquals("c", ownerOf("1234"))
+            assertEquals(listOf("c"), repo.getAccounts().filter { it.deletedAt == null }.map { it.id })
         }
 
     @Test
@@ -410,10 +447,10 @@ class NotificationSettlementRepositoryImplTest {
     @Test
     fun `two New with a null mask make one account named by the bank`() =
         runTest {
-            val a = log("a")
-            val b = log("b", postTime = 2_000L)
+            val a = log("a", mask = null)
+            val b = log("b", postTime = 2_000L, mask = null)
             seed(a, b)
-            val target = AccountTarget.New(PKG, null, "Momo", AccountType.WALLET)
+            val target = AccountTarget.New(PKG, null, "Momo", AccountType.WALLET, IdentifierKind.WALLET)
 
             repo.book(book(a, target = target), "tx-a", NOW)
             repo.book(book(b, target = target), "tx-b", NOW)
@@ -492,7 +529,10 @@ class NotificationSettlementRepositoryImplTest {
             assertEquals(setOf("good"), repo.getRulesById().keys)
         }
 
-    private suspend fun accountOf(mask: String) = repo.getAccounts().single { it.accountNumberMask == mask }
+    private suspend fun accountOf(mask: String) =
+        repo.getIdentifiers().single { it.mask == mask }.let { key ->
+            repo.getAccounts().single { it.id == key.accountId }
+        }
 
     private suspend fun liveRows() =
         dbRule.db
@@ -622,6 +662,126 @@ class NotificationSettlementRepositoryImplTest {
         return SettlePendingLogsUseCase(repo, RoomTransactionRunner(dbRule.db), clock)()
     }
 
+    private suspend fun insertKey(
+        mask: String,
+        accountId: String,
+    ) = dbRule.db.accountIdentifierDao().insert(AccountIdentifierEntity(PKG, IdentifierKind.ACCOUNT, mask, accountId))
+
+    private suspend fun ownerOf(mask: String) = repo.getIdentifiers().single { it.mask == mask }.accountId
+
+    private suspend fun accountOfTx(id: String) =
+        dbRule.db
+            .transactionDao()
+            .getById(id)
+            ?.accountId
+
+    /** Plans the pending logs against one snapshot, as the use case does before it books. */
+    private suspend fun planPending() =
+        planSettlement(
+            repo.getPendingLogs(),
+            emptyList(),
+            repo.getAccounts(),
+            repo.getIdentifiers(),
+            repo.getRulesById(),
+            T0 + 1_000_000L,
+        )
+
+    @Test
+    fun `two masks planned onto one N-05 account attach only the first`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(bankPackageName = PKG))
+            seed(dueLog("d1", 40, TransactionType.EXPENSE, "1111"), dueLog("d2", 35, TransactionType.EXPENSE, "3333"))
+
+            assertFalse(runSettlement())
+
+            assertEquals("acc-1", ownerOf("1111"))
+            val second = ownerOf("3333")
+            assertTrue(second != "acc-1")
+            assertEquals(setOf("acc-1", second), liveRows().map { it.accountId }.toSet())
+            assertEquals(2, repo.getAccounts().size)
+        }
+
+    @Test
+    fun `two mask-less logs planned New make one account`() =
+        runTest {
+            seed(dueLog("d1", 40, TransactionType.EXPENSE, null), dueLog("d2", 35, TransactionType.EXPENSE, null))
+
+            assertFalse(runSettlement())
+
+            val only = onlyAccount()
+            assertEquals(listOf(only.id, only.id), liveRows().map { it.accountId })
+            assertTrue(repo.getIdentifiers().isEmpty())
+        }
+
+    @Test
+    fun `free identifier is re-pointed through New`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(id = "old", bankPackageName = PKG, deletedAt = 1L))
+            insertKey("1111", "old")
+            seed(dueLog("d", 40, TransactionType.EXPENSE, "1111"))
+
+            assertFalse(runSettlement())
+
+            val created = ownerOf("1111")
+            assertTrue(created != "old")
+            assertEquals(created, liveRows().single().accountId)
+            assertEquals(NotificationStatus.CONFIRMED, storedLog("d").status)
+        }
+
+    @Test
+    fun `free identifier is re-pointed through N-05`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(id = "old", bankPackageName = PKG, deletedAt = 1L))
+            dbRule.db.accountDao().insert(account(id = "live", bankPackageName = PKG))
+            insertKey("1111", "old")
+            seed(dueLog("d", 40, TransactionType.EXPENSE, "1111"))
+
+            assertFalse(runSettlement())
+
+            assertEquals("live", ownerOf("1111"))
+            assertEquals("live", liveRows().single().accountId)
+        }
+
+    @Test
+    fun `account archived after planning stays pending`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(bankPackageName = PKG))
+            insertKey("1234", "acc-1")
+            seed(log("b1"))
+            val planned = planPending().single() as SettlementDecision.Book
+            dbRule.db.accountDao().update(
+                dbRule.db
+                    .accountDao()
+                    .getById("acc-1")!!
+                    .copy(isArchived = true),
+            )
+
+            assertEquals(SettlementError.AccountUnusable, bookInTx(planned))
+
+            assertNull(accountOfTx("tx-1"))
+            assertEquals(NotificationStatus.PENDING, storedLog("b1").status)
+        }
+
+    @Test
+    fun `account ignored after planning stays pending`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(bankPackageName = PKG))
+            insertKey("1234", "acc-1")
+            seed(log("b1"))
+            val planned = planPending().single() as SettlementDecision.Book
+            dbRule.db.accountDao().update(
+                dbRule.db
+                    .accountDao()
+                    .getById("acc-1")!!
+                    .copy(isIgnored = true),
+            )
+
+            assertEquals(SettlementError.AccountUnusable, bookInTx(planned))
+
+            assertNull(accountOfTx("tx-1"))
+            assertEquals(NotificationStatus.PENDING, storedLog("b1").status)
+        }
+
     @Test
     fun `same worker run pairs`() =
         runTest {
@@ -648,7 +808,11 @@ class NotificationSettlementRepositoryImplTest {
             seed(bank, wallet)
 
             repo.book(book(bank, target = newAccount(mask = "1111")), "tx-1", NOW)
-            repo.book(book(wallet, target = AccountTarget.New(MOMO, null, "MoMo", AccountType.WALLET)), "tx-2", NOW)
+            repo.book(
+                book(wallet, target = AccountTarget.New(MOMO, null, "MoMo", AccountType.WALLET, IdentifierKind.WALLET)),
+                "tx-2",
+                NOW,
+            )
 
             val transfer = liveRows().single()
             assertEquals(TransactionType.TRANSFER, transfer.type)
@@ -709,16 +873,17 @@ class NotificationSettlementRepositoryImplTest {
     fun `uninitialized receiver gets its start from toPostBalance`() =
         runTest {
             dbRule.db.accountDao().insert(
-                account(id = "acc-b", currentBalance = 0L, bankPackageName = PKG, accountNumberMask = "2222")
+                account(id = "acc-b", currentBalance = 0L, bankPackageName = PKG)
                     .copy(isInitialized = false),
             )
+            insertKey("2222", "acc-b")
             seed(debit(), credit())
             repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
 
             repo.book(book(credit(), target = AccountTarget.Existing("acc-b")), "tx-2", NOW)
 
             assertEquals(TransactionType.TRANSFER, liveRows().single().type)
-            val b = accountOf("2222")
+            val b = repo.getAccounts().single { it.id == "acc-b" }
             assertTrue(b.isInitialized)
             assertEquals(200_000L, b.initialBalance)
             assertEquals(700_000L, b.currentBalance)
@@ -729,9 +894,10 @@ class NotificationSettlementRepositoryImplTest {
         runTest {
             // The receiver starts at 230_000: with the late 30_000 expense the books match the bank's 700_000.
             dbRule.db.accountDao().insert(
-                account(id = "acc-b", currentBalance = 230_000L, bankPackageName = PKG, accountNumberMask = "2222"),
+                account(id = "acc-b", currentBalance = 230_000L, bankPackageName = PKG),
             )
             val late = log("late", 200_000L, 1_000L + 2 * MINUTE, amount = 30_000L, mask = "2222")
+            insertKey("2222", "acc-b")
             seed(debit(), credit(), late)
             repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
             repo.book(book(credit(), target = AccountTarget.Existing("acc-b")), "tx-2", NOW)
@@ -739,7 +905,7 @@ class NotificationSettlementRepositoryImplTest {
             repo.book(book(late, target = AccountTarget.Existing("acc-b")), "tx-3", NOW)
 
             assertEquals(setOf(TransactionType.TRANSFER, TransactionType.EXPENSE), liveRows().map { it.type }.toSet())
-            val b = accountOf("2222")
+            val b = repo.getAccounts().single { it.id == "acc-b" }
             assertEquals(700_000L, b.currentBalance)
             val rows =
                 dbRule.db
@@ -754,8 +920,9 @@ class NotificationSettlementRepositoryImplTest {
     fun `failure while pairing rolls back the new row`() =
         runTest {
             dbRule.db.accountDao().insert(
-                account(id = "acc-b", currentBalance = 200_000L, bankPackageName = PKG, accountNumberMask = "2222"),
+                account(id = "acc-b", currentBalance = 200_000L, bankPackageName = PKG),
             )
+            insertKey("2222", "acc-b")
             seed(debit(), credit())
             repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
             val balancesBefore = repo.getAccounts().associate { it.id to it.currentBalance }

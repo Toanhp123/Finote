@@ -173,6 +173,7 @@
         <item quantity="other">%d transactions move over. This cannot be undone.</item>
     </plurals>
     <string name="accounts_merge_confirm">Merge</string>
+    <string name="accounts_merge_drops_start">The starting balance %1$s of %2$s will be dropped. You can correct it with Adjust.</string>
     <string name="accounts_ignore_dialog_title">Ignore this account?</string>
     <string name="accounts_ignore_dialog_text">No new transactions will be recorded for this account.</string>
     <plurals name="accounts_ignore_trash">

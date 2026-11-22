@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.domain.account.service
 import io.github.toanhp123.finote.domain.account.error.AccountError
 import io.github.toanhp123.finote.domain.account.error.MergeRejection
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.testAccount
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -13,7 +14,8 @@ class AccountRulesTest {
         id: String,
         pkg: String? = "vcb",
         deletedAt: Long? = null,
-    ) = testAccount(id = id).copy(bankPackageName = pkg, deletedAt = deletedAt)
+        type: AccountType = AccountType.BANK,
+    ) = testAccount(id = id).copy(bankPackageName = pkg, deletedAt = deletedAt, type = type)
 
     // checkNew
 
@@ -91,11 +93,23 @@ class AccountRulesTest {
     }
 
     @Test
+    fun `merge of different types is DIFFERENT_TYPE`() {
+        assertEquals(
+            MergeRejection.DIFFERENT_TYPE,
+            checkMerge(target = bank("b", type = AccountType.CREDIT_CARD)),
+        )
+        assertEquals(
+            MergeRejection.DIFFERENT_TYPE,
+            checkMerge(source = bank("a", type = AccountType.WALLET)),
+        )
+    }
+
+    @Test
     fun `merge with a transfer between the two is HAS_TRANSFER`() =
         assertEquals(MergeRejection.HAS_TRANSFER, checkMerge(transfersBetween = 1))
 
     @Test
-    fun `merge rejection order is same, gone, bank, transfer`() {
+    fun `merge rejection order is same, gone, bank, type, transfer`() {
         val gone = bank("a", pkg = "x", deletedAt = 5L)
 
         assertEquals(MergeRejection.SAME_ACCOUNT, checkMerge("a", "a", gone, null, 1))
@@ -105,7 +119,11 @@ class AccountRulesTest {
         )
         assertEquals(
             MergeRejection.DIFFERENT_BANK,
-            checkMerge(target = bank("b", pkg = "y"), transfersBetween = 1),
+            checkMerge(target = bank("b", pkg = "y", type = AccountType.CREDIT_CARD), transfersBetween = 1),
+        )
+        assertEquals(
+            MergeRejection.DIFFERENT_TYPE,
+            checkMerge(target = bank("b", type = AccountType.CREDIT_CARD), transfersBetween = 1),
         )
     }
 }

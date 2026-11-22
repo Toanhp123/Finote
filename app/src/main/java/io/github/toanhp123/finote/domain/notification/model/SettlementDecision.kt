@@ -6,9 +6,12 @@ sealed interface SettlementDecision {
     data class Book(
         val bankSide: NotificationLog,
         val walletSide: NotificationLog?,
+        /** The planner's view of the account; the writer resolves the account again inside its transaction. */
         val account: AccountTarget,
         val merchant: String?,
         val note: String?,
+        /** The rule of [bankSide]; the writer resolves the account again with it. */
+        val rule: ParserRule?,
     ) : SettlementDecision {
         // Merchant and note stay out of logs and crash reports.
         override fun toString() = "Book(bankSide=$bankSide, walletSide=$walletSide, account=$account)"

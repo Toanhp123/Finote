@@ -23,7 +23,6 @@ fun AccountEntity.toDomain(): Account =
         updatedAt = updatedAt,
         deletedAt = deletedAt,
         bankPackageName = bankPackageName,
-        accountNumberMask = accountNumberMask,
         mergedIntoId = mergedIntoId,
     )
 
@@ -47,6 +46,5 @@ fun Account.toEntity(): AccountEntity =
         updatedAt = updatedAt,
         deletedAt = deletedAt,
         bankPackageName = bankPackageName,
-        accountNumberMask = accountNumberMask,
         mergedIntoId = mergedIntoId,
     )

@@ -54,7 +54,6 @@ class SystemAccountSeederTest {
                     updatedAt = SEED_TIME,
                     deletedAt = null,
                     bankPackageName = null,
-                    accountNumberMask = null,
                     mergedIntoId = null,
                 )
             assertEquals(expected, row)

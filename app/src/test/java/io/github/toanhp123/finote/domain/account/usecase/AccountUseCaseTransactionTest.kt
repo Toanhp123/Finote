@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.account.usecase
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.toanhp123.finote.data.account.repository.AccountMergeRepositoryImpl
 import io.github.toanhp123.finote.data.account.repository.AccountRepositoryImpl
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.database.RoomTransactionRunner
@@ -29,6 +30,7 @@ class AccountUseCaseTransactionTest {
     private val accounts get() = dbRule.db.accountDao()
     private val transactions get() = dbRule.db.transactionDao()
     private val repo by lazy { AccountRepositoryImpl(dbRule.db, clock) }
+    private val mergeRepo by lazy { AccountMergeRepositoryImpl(dbRule.db, clock) }
     private val runner by lazy { RoomTransactionRunner(dbRule.db) }
 
     @Test
@@ -39,7 +41,7 @@ class AccountUseCaseTransactionTest {
             transactions.insert(transaction(id = "tx-1", accountId = "src"))
             val before = checkNotNull(accounts.getById("src"))
 
-            val result = MergeAccountsUseCase(repo, runner, clock)("src", "dst")
+            val result = MergeAccountsUseCase(repo, mergeRepo, runner, clock)("src", "dst")
 
             assertEquals(Outcome.Err(AccountError.MergeRejected(MergeRejection.DIFFERENT_BANK)), result)
             assertEquals(before, accounts.getById("src"))

@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.map
 /**
  * Copies from the real repository: `observeAccounts` hides deleted rows and sorts by sortOrder, createdAt, id;
  * `update` keeps only display fields.
- * Does not copy: merge and trash effects. Business rules live in `AccountRules`, not in the repository.
+ * Does not copy: trash effects. Business rules live in `AccountRules`, not in the repository.
  */
 class FakeAccountRepository : AccountRepository {
     val stored = mutableMapOf<String, Account>()
@@ -78,30 +78,10 @@ class FakeAccountRepository : AccountRepository {
         notifyChanged()
     }
 
-    /** Each merge call as (sourceId, targetId, now). The fake moves nothing. */
-    val merges = mutableListOf<Triple<String, String, Long>>()
-
     /** What [getLiveTransactionCount] answers per account id; 0 when absent. */
     val liveCounts = mutableMapOf<String, Int>()
 
-    override suspend fun merge(
-        sourceId: String,
-        targetId: String,
-        now: Long,
-    ) {
-        writes++
-        merges += Triple(sourceId, targetId, now)
-    }
-
     override suspend fun getLiveTransactionCount(id: String): Int = liveCounts[id] ?: 0
-
-    /** What [countTransfersBetween] answers per unordered pair of ids; 0 when absent. */
-    val transferCounts = mutableMapOf<Set<String>, Int>()
-
-    override suspend fun countTransfersBetween(
-        sourceId: String,
-        targetId: String,
-    ): Int = transferCounts[setOf(sourceId, targetId)] ?: 0
 
     data class IgnoreCall(
         val id: String,

@@ -76,6 +76,28 @@ class ParserRuleSeederTest {
         }
 
     @Test
+    fun `seeder writes the maskKind of a rule`() =
+        runTest {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val file = context.getDatabasePath("parser-seed-mask.db").apply { parentFile?.mkdirs() }
+            file.delete()
+            try {
+                // Room opens lazily: a query makes it create the schema and seed the system rules.
+                withDb(context, file) { it.parserRuleDao().getByPackage(seed("vcb_account_v1").packageName) }
+                // No system seed carries a kind yet, so drive the writer with one that does.
+                val rule = seed("vcb_account_v1").copy(maskKind = "CARD")
+                AndroidSQLiteDriver().open(file.path).use { ParserRuleSeeder().write(it, listOf(rule)) }
+
+                withDb(context, file) { db ->
+                    val stored = db.parserRuleDao().getByPackage(rule.packageName)
+                    assertEquals("CARD", stored.first { it.id == rule.id }.maskKind)
+                }
+            } finally {
+                file.delete()
+            }
+        }
+
+    @Test
     fun `outdatedRules keeps user rules and same versions`() {
         val vcb = seed("vcb_account_v1")
         val mb = seed("mb_account_v1")

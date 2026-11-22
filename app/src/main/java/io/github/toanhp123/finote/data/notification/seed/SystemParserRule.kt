@@ -123,6 +123,7 @@ private class Bank(
         isActive = true,
         updatedAt = 0L,
         accountType = accountType,
+        maskKind = null,
     )
 }
 

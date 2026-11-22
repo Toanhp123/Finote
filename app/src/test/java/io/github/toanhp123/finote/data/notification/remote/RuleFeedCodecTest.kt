@@ -1,8 +1,10 @@
 package io.github.toanhp123.finote.data.notification.remote
 
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.notification.error.RuleFeedError
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
+import io.github.toanhp123.finote.domain.notification.service.identifierKind
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -103,6 +105,76 @@ class RuleFeedCodecTest {
                 JsonObject(payload + ("rules" to JsonArray(edited)))
             }
         assertEquals(listOf(null), decodeRuleFeed(envelope, keys.public).map { it.accountType })
+    }
+
+    @Test
+    fun `feed rule without maskKind loads with derived kind`() {
+        val envelope =
+            resigned(listOf(good.copy(accountType = AccountType.CREDIT_CARD))) { payload ->
+                val rules = payload.getValue("rules") as JsonArray
+                val stripped = rules.map { JsonObject((it as JsonObject).filterKeys { key -> key != "maskKind" }) }
+                JsonObject(payload + ("rules" to JsonArray(stripped)))
+            }
+        val rule = decodeRuleFeed(envelope, keys.public).single()
+
+        assertEquals(null, rule.maskKind)
+        assertEquals(IdentifierKind.CARD, rule.identifierKind())
+    }
+
+    @Test
+    fun `feed with maskKind decodes it`() {
+        val rules = decodeRuleFeed(feed(good.copy(maskKind = IdentifierKind.WALLET)), keys.public)
+        assertEquals(IdentifierKind.WALLET, rules.single().maskKind)
+    }
+
+    @Test
+    fun `unknown maskKind skips only that rule`() {
+        listOf("FUNDING_SOURCE", "card", "").forEach { bad ->
+            val envelope =
+                resigned(listOf(good, good.copy(id = "bad"), good.copy(id = "last"))) { payload ->
+                    val rules = (payload.getValue("rules") as JsonArray).map { it as JsonObject }
+                    val edited =
+                        rules.map {
+                            if (it.text("id") ==
+                                "bad"
+                            ) {
+                                JsonObject(it + ("maskKind" to JsonPrimitive(bad)))
+                            } else {
+                                it
+                            }
+                        }
+                    JsonObject(payload + ("rules" to JsonArray(edited)))
+                }
+
+            assertEquals(bad, listOf("vcb_account_v1", "last"), decodeRuleFeed(envelope, keys.public).map { it.id })
+        }
+    }
+
+    @Test
+    fun `skipped rule still counts for the duplicate id check`() {
+        val envelope =
+            resigned(listOf(good, good.copy(id = "dup"), good.copy(id = "dup"))) { payload ->
+                val rules = (payload.getValue("rules") as JsonArray).map { it as JsonObject }
+                val edited =
+                    rules.mapIndexed { i, r ->
+                        if (i ==
+                            1
+                        ) {
+                            JsonObject(r + ("maskKind" to JsonPrimitive("x")))
+                        } else {
+                            r
+                        }
+                    }
+                JsonObject(payload + ("rules" to JsonArray(edited)))
+            }
+        assertInvalid(envelope)
+    }
+
+    @Test
+    fun `bad regex still refuses the feed`() {
+        val envelope =
+            resigned(listOf(good, good.copy(id = "bad", regexPattern = "(?<sign>[+-])(?<amount>\\d+"))) { it }
+        assertInvalid(envelope)
     }
 
     @Test

@@ -2,7 +2,9 @@ package io.github.toanhp123.finote.data.account.local.dao
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.account.local.entity.AccountEntity
+import io.github.toanhp123.finote.data.account.local.entity.AccountIdentifierEntity
 import io.github.toanhp123.finote.data.account.mapper.toDomain
+import io.github.toanhp123.finote.data.account.repository.AccountMergeRepositoryImpl
 import io.github.toanhp123.finote.data.account.repository.AccountRepositoryImpl
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.database.account
@@ -12,6 +14,7 @@ import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntit
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.repository.TransactionRepositoryImpl
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.account.service.detectBalanceDrift
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.test.runTest
@@ -35,10 +38,12 @@ class AccountMergeTest {
     // Fixed clock: "this month" is 2026-11.
     private val clock = Clock.fixed(Instant.parse("2026-11-15T00:00:00Z"), ZoneOffset.UTC)
     private lateinit var repo: AccountRepositoryImpl
+    private lateinit var mergeRepo: AccountMergeRepositoryImpl
 
     @Before
     fun setUp() {
         repo = AccountRepositoryImpl(dbRule.db, clock)
+        mergeRepo = AccountMergeRepositoryImpl(dbRule.db, clock)
     }
 
     private fun at(day: String) = Instant.parse("2026-$day").toEpochMilli()
@@ -57,7 +62,6 @@ class AccountMergeTest {
                 type = type,
                 currentBalance = balance,
                 bankPackageName = pkg,
-                accountNumberMask = id.takeLast(4),
                 deletedAt = deletedAt,
             ).copy(isInitialized = initialized)
         dbRule.db.accountDao().insert(row)
@@ -88,6 +92,13 @@ class AccountMergeTest {
         dbRule.db.transactionDao().insert(row)
         return row
     }
+
+    private suspend fun key(
+        accountId: String,
+        mask: String,
+        kind: IdentifierKind = IdentifierKind.ACCOUNT,
+        pkg: String = PKG,
+    ) = dbRule.db.accountIdentifierDao().insert(AccountIdentifierEntity(pkg, kind, mask, accountId))
 
     private suspend fun rowOf(id: String) = checkNotNull(dbRule.db.accountDao().getById(id))
 
@@ -126,16 +137,52 @@ class AccountMergeTest {
             )
             tx("other", "acc-c", "11-01T00:00:00Z")
 
-            repo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-a", "acc-b", NOW)
 
             assertEquals("acc-b", txOf("live").accountId)
             assertEquals("acc-b", txOf("gone").accountId)
             assertEquals("acc-b", txOf("in-live").toAccountId)
             assertEquals("acc-b", txOf("in-gone").toAccountId)
             assertEquals("acc-b", txOf("out-gone").accountId)
-            assertEquals(NOW, txOf("live").updatedAt)
-            assertEquals(NOW, txOf("in-gone").updatedAt)
             assertEquals(1_700_000_000_000L, txOf("other").updatedAt)
+        }
+
+    @Test
+    fun `merge keeps moved rows' updatedAt`() =
+        runTest {
+            bank("acc-a")
+            bank("acc-b")
+            bank("acc-c", pkg = "other")
+            val source = tx("live", "acc-a", "11-01T00:00:00Z")
+            val destination =
+                tx("in", "acc-c", "11-01T00:00:00Z", type = TransactionType.TRANSFER, toAccountId = "acc-a")
+
+            mergeRepo.merge("acc-a", "acc-b", NOW)
+
+            assertEquals(source.updatedAt, txOf("live").updatedAt)
+            assertEquals(destination.updatedAt, txOf("in").updatedAt)
+        }
+
+    @Test
+    fun `merge moves identifiers to target`() =
+        runTest {
+            bank("acc-a")
+            bank("acc-b")
+            bank("acc-c", pkg = "other")
+            key("acc-a", "1111")
+            key("acc-a", "2222", IdentifierKind.CARD)
+            key("acc-b", "3333")
+            key("acc-c", "4444", pkg = "other")
+
+            mergeRepo.merge("acc-a", "acc-b", NOW)
+
+            assertEquals(
+                mapOf("1111" to "acc-b", "2222" to "acc-b", "3333" to "acc-b", "4444" to "acc-c"),
+                dbRule.db
+                    .accountIdentifierDao()
+                    .getAll()
+                    .associate { it.mask to it.accountId },
+            )
         }
 
     @Test
@@ -146,10 +193,63 @@ class AccountMergeTest {
             tx("b1", "acc-b", "11-05T00:00:00Z", postBalance = 10_000_000L)
             tx("a1", "acc-a", "11-03T00:00:00Z", amount = 200_000L)
 
-            repo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-a", "acc-b", NOW)
 
             assertEquals(10_000_000L, rowOf("acc-b").currentBalance)
             assertEquals(10_300_000L, rowOf("acc-b").initialBalance)
+        }
+
+    @Test
+    fun `dropped start when both initialized without anchor`() =
+        runTest {
+            bank("acc-a", balance = 5_000_000L)
+            bank("acc-b", balance = 7_000_000L)
+            tx("a1", "acc-a", "11-03T00:00:00Z")
+            tx("b1", "acc-b", "11-05T00:00:00Z")
+
+            assertEquals(5_000_000L, mergeRepo.getMergeDroppedStart("acc-a", "acc-b"))
+            // The read writes nothing: the source is still live and its rows stay put.
+            assertNull(rowOf("acc-a").deletedAt)
+            assertEquals("acc-a", txOf("a1").accountId)
+        }
+
+    @Test
+    fun `dropped start is null when the merged rows carry a bank balance`() =
+        runTest {
+            bank("acc-a", balance = 5_000_000L)
+            bank("acc-b", balance = 7_000_000L)
+            tx("a1", "acc-a", "11-03T00:00:00Z", postBalance = 4_900_000L)
+            tx("b1", "acc-b", "11-05T00:00:00Z")
+
+            assertNull(mergeRepo.getMergeDroppedStart("acc-a", "acc-b"))
+        }
+
+    @Test
+    fun `dropped start is null when the source start is zero`() =
+        runTest {
+            bank("acc-a", balance = 0L)
+            bank("acc-b", balance = 7_000_000L)
+            tx("a1", "acc-a", "11-03T00:00:00Z")
+
+            assertNull(mergeRepo.getMergeDroppedStart("acc-a", "acc-b"))
+        }
+
+    @Test
+    fun `dropped start is null when only the source is initialized`() =
+        runTest {
+            bank("acc-a", balance = 5_000_000L)
+            bank("acc-b", balance = 7_000_000L, initialized = false)
+
+            assertNull(mergeRepo.getMergeDroppedStart("acc-a", "acc-b"))
+        }
+
+    @Test
+    fun `dropped start is null when only the target is initialized`() =
+        runTest {
+            bank("acc-a", balance = 5_000_000L, initialized = false)
+            bank("acc-b", balance = 7_000_000L)
+
+            assertNull(mergeRepo.getMergeDroppedStart("acc-a", "acc-b"))
         }
 
     @Test
@@ -168,7 +268,7 @@ class AccountMergeTest {
             )
             tx("a2", "acc-a", "11-08T00:00:00Z", amount = 10_000L)
 
-            repo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-a", "acc-b", NOW)
 
             val target = rowOf("acc-b")
             assertTrue(target.isInitialized)
@@ -184,7 +284,7 @@ class AccountMergeTest {
             tx("b1", "acc-b", "11-01T00:00:00Z", postBalance = 800_000L)
             TransactionRepositoryImpl(dbRule.db, clock).adjustDrift("adj-1", "acc-b", clock.millis())
 
-            repo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-a", "acc-b", NOW)
 
             val target = rowOf("acc-b")
             assertEquals(800_000L, target.currentBalance)
@@ -213,7 +313,7 @@ class AccountMergeTest {
                 postBalance = 9_999L,
             )
 
-            repo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-a", "acc-b", NOW)
 
             assertEquals(100_500L, rowOf("acc-b").initialBalance)
             assertEquals(100_500L, rowOf("acc-b").currentBalance)
@@ -226,7 +326,7 @@ class AccountMergeTest {
             bank("acc-b", type = AccountType.CREDIT_CARD, balance = -500_000L)
             tx("b1", "acc-b", "11-05T00:00:00Z", postBalance = 123L)
 
-            repo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-a", "acc-b", NOW)
 
             assertEquals(-500_000L, rowOf("acc-b").initialBalance)
             assertEquals(-600_000L, rowOf("acc-b").currentBalance)
@@ -239,7 +339,7 @@ class AccountMergeTest {
             bank("acc-b", balance = 1_000_000L, initialized = false)
             tx("a1", "acc-a", "11-03T00:00:00Z")
 
-            repo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-a", "acc-b", NOW)
 
             assertTrue(rowOf("acc-b").isInitialized)
             assertEquals(3_000_000L, rowOf("acc-b").initialBalance)
@@ -253,7 +353,7 @@ class AccountMergeTest {
             bank("acc-b", balance = 1_000_000L)
             tx("a1", "acc-a", "11-03T00:00:00Z")
 
-            repo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-a", "acc-b", NOW)
 
             assertEquals(1_000_000L, rowOf("acc-b").initialBalance)
             assertEquals(900_000L, rowOf("acc-b").currentBalance)
@@ -272,7 +372,7 @@ class AccountMergeTest {
                 snapshot(id = "snap-b", accountId = "acc-b", monthYear = "2026-01"),
             )
 
-            repo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-a", "acc-b", NOW)
 
             assertTrue(snapshotMonths("acc-a").isEmpty())
             assertEquals(listOf("2026-01", "2026-09", "2026-10", "2026-11"), snapshotMonths("acc-b"))
@@ -288,7 +388,7 @@ class AccountMergeTest {
                 snapshot(id = "snap-a", accountId = "acc-a", monthYear = "2026-09"),
             )
 
-            val failure = runCatching { repo.merge("acc-a", "acc-b", NOW) }.exceptionOrNull()
+            val failure = runCatching { mergeRepo.merge("acc-a", "acc-b", NOW) }.exceptionOrNull()
 
             // The rebuild overflows after the transactions were moved.
             assertTrue(failure.toString(), failure is ArithmeticException)
@@ -305,7 +405,7 @@ class AccountMergeTest {
             bank("acc-a")
             bank("acc-b")
 
-            repo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-a", "acc-b", NOW)
 
             val source = rowOf("acc-a")
             assertEquals(NOW, source.deletedAt)
@@ -322,8 +422,8 @@ class AccountMergeTest {
             bank("acc-b")
             bank("acc-c")
 
-            repo.merge("acc-a", "acc-b", NOW)
-            repo.merge("acc-b", "acc-c", NOW + 1)
+            mergeRepo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-b", "acc-c", NOW + 1)
 
             assertEquals("acc-c", rowOf("acc-a").mergedIntoId)
             assertEquals("acc-c", rowOf("acc-b").mergedIntoId)
@@ -338,15 +438,15 @@ class AccountMergeTest {
             bank("acc-b")
             bank("acc-c")
             tx("none", "acc-a", "11-01T00:00:00Z")
-            assertEquals(0, repo.countTransfersBetween("acc-a", "acc-b"))
+            assertEquals(0, mergeRepo.countTransfersBetween("acc-a", "acc-b"))
 
             tx("t1", "acc-b", "11-01T00:00:00Z", type = TransactionType.TRANSFER, toAccountId = "acc-a")
             tx("t2", "acc-a", "11-02T00:00:00Z", type = TransactionType.TRANSFER, toAccountId = "acc-b", deletedAt = 3L)
             tx("t3", "acc-a", "11-03T00:00:00Z", type = TransactionType.TRANSFER, toAccountId = "acc-c")
 
-            assertEquals(2, repo.countTransfersBetween("acc-a", "acc-b"))
-            assertEquals(2, repo.countTransfersBetween("acc-b", "acc-a"))
-            assertEquals(1, repo.countTransfersBetween("acc-a", "acc-c"))
+            assertEquals(2, mergeRepo.countTransfersBetween("acc-a", "acc-b"))
+            assertEquals(2, mergeRepo.countTransfersBetween("acc-b", "acc-a"))
+            assertEquals(1, mergeRepo.countTransfersBetween("acc-a", "acc-c"))
         }
 
     @Test

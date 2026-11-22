@@ -10,11 +10,11 @@ import org.junit.Test
 
 class MoneyToStringTest {
     private val accountRow =
-        account(name = "N-SECRET", currentBalance = 987_654L, bankPackageName = "pkg", accountNumberMask = "M-SECRET")
+        account(name = "N-SECRET", currentBalance = 987_654L, bankPackageName = "pkg")
     private val transactionRow = transaction(postBalance = 123_456L)
 
     @Test
-    fun `accounts hide balances, name and mask`() {
+    fun `accounts hide balances and name`() {
         assertEquals("AccountEntity(id=acc-1, type=BANK)", accountRow.toString())
         assertEquals("Account(id=acc-1, type=BANK)", accountRow.toDomain().toString())
         assertNoMoney(accountRow.toString(), accountRow.toDomain().toString())

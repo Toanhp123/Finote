@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.notification.service
 
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.model.AccountIdentifier
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.notification.model.AccountResolution.Ignored
 import io.github.toanhp123.finote.domain.notification.model.AccountResolution.Rejected
@@ -45,12 +46,13 @@ fun planSettlement(
     pending: List<NotificationLog>,
     settled: List<NotificationLog>,
     accounts: List<Account>,
+    identifiers: List<AccountIdentifier>,
     rulesById: Map<String, ParserRule>,
     now: Long,
 ): List<SettlementDecision> {
     val ordered = pending.sortedWith(LOG_ORDER)
     val originals = findReposts(ordered, settled)
-    val planned = Planner(accounts, rulesById, now).settle(ordered.filter { it.id !in originals })
+    val planned = Planner(accounts, identifiers, rulesById, now).settle(ordered.filter { it.id !in originals })
     val known = settled.map { it.id }.toSet() + planned.flatMap { it.logIds() }
     val reposts =
         ordered.mapNotNull { log ->
@@ -95,6 +97,7 @@ private fun NotificationLog.sameText(other: NotificationLog) =
 
 private class Planner(
     private val accounts: List<Account>,
+    private val identifiers: List<AccountIdentifier>,
     private val rulesById: Map<String, ParserRule>,
     private val now: Long,
 ) {
@@ -171,7 +174,16 @@ private class Planner(
         wallet: NotificationLog?,
     ): SettlementDecision {
         val rule = rulesById[bank.matchedRuleId]
-        return when (val resolution = resolveAccount(bank.packageName, bank.parsed?.accountMask, rule, accounts)) {
+        return when (
+            val resolution =
+                resolveAccount(
+                    bank.packageName,
+                    bank.parsed?.accountMask,
+                    rule,
+                    accounts,
+                    identifiers,
+                )
+        ) {
             is Rejected -> {
                 Fail(bank, wallet, resolution.reason)
             }
@@ -187,6 +199,7 @@ private class Planner(
                     account = resolution.target,
                     merchant = wallet?.parsed?.merchant ?: bank.parsed?.merchant,
                     note = wallet?.parsed?.note ?: bank.parsed?.note,
+                    rule = rule,
                 )
             }
         }

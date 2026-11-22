@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.notification.model
 
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 
 /** One regex of a bank, plus the filters (keywords and channels) that every rule of the bank carries. */
@@ -24,4 +25,6 @@ data class ParserRule(
     val updatedAt: Long,
     /** Type of the account created for this rule's notifications. Null means [AccountType.BANK]. */
     val accountType: AccountType? = null,
+    /** What the `mask` group names. Null means it follows [accountType]. */
+    val maskKind: IdentifierKind? = null,
 )

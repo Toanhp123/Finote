@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.notification
 
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParsedFields
@@ -26,6 +27,7 @@ fun testRule(
     isActive: Boolean = true,
     updatedAt: Long = 0L,
     accountType: AccountType? = null,
+    maskKind: IdentifierKind? = null,
 ) = ParserRule(
     id = id,
     packageName = packageName,
@@ -41,6 +43,7 @@ fun testRule(
     isActive = isActive,
     updatedAt = updatedAt,
     accountType = accountType,
+    maskKind = maskKind,
 )
 
 // why: test builders, every parameter is one knob of the model

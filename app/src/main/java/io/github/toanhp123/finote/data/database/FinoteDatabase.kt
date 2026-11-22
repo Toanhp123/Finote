@@ -4,9 +4,11 @@ import androidx.room3.Database
 import androidx.room3.RoomDatabase
 import io.github.toanhp123.finote.data.account.local.dao.AccountBalanceSnapshotDao
 import io.github.toanhp123.finote.data.account.local.dao.AccountDao
+import io.github.toanhp123.finote.data.account.local.dao.AccountIdentifierDao
 import io.github.toanhp123.finote.data.account.local.dao.AccountMergeDao
 import io.github.toanhp123.finote.data.account.local.entity.AccountBalanceSnapshotEntity
 import io.github.toanhp123.finote.data.account.local.entity.AccountEntity
+import io.github.toanhp123.finote.data.account.local.entity.AccountIdentifierEntity
 import io.github.toanhp123.finote.data.category.local.dao.CategoryDao
 import io.github.toanhp123.finote.data.category.local.entity.CategoryEntity
 import io.github.toanhp123.finote.data.notification.local.dao.NotificationLogDao
@@ -21,12 +23,13 @@ import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntit
 import io.github.toanhp123.finote.data.transaction.local.entity.TransactionTagCrossRef
 
 /** Schema version. Raising it needs a new `app/schemas/.../N.json` and a migration; see `MigrationPolicy.kt`. */
-const val DATABASE_VERSION = 8
+const val DATABASE_VERSION = 9
 
 @Database(
     entities =
         [
             AccountEntity::class,
+            AccountIdentifierEntity::class,
             AccountBalanceSnapshotEntity::class,
             CategoryEntity::class,
             TransactionEntity::class,
@@ -40,6 +43,8 @@ const val DATABASE_VERSION = 8
 )
 abstract class FinoteDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
+
+    abstract fun accountIdentifierDao(): AccountIdentifierDao
 
     abstract fun accountMergeDao(): AccountMergeDao
 

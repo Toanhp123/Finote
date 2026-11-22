@@ -22,7 +22,7 @@ object AccountRules {
 
     /**
      * [source] and [target] are the stored rows found by id, null when missing. [transfersBetween] counts transfers in
-     * either direction, deleted ones included. Both rows are one real bank account, so the bank key must match.
+     * either direction, deleted ones included. Both rows are one real bank account, so bank key and type must match.
      */
     fun checkMerge(
         sourceId: String,
@@ -42,6 +42,10 @@ object AccountRules {
 
             source.bankPackageName == null || source.bankPackageName != target.bankPackageName -> {
                 MergeRejection.DIFFERENT_BANK
+            }
+
+            source.type != target.type -> {
+                MergeRejection.DIFFERENT_TYPE
             }
 
             transfersBetween > 0 -> {

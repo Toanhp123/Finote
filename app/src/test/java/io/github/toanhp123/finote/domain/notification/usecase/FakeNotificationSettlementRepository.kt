@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.notification.usecase
 
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.model.AccountIdentifier
 import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
@@ -15,6 +16,7 @@ import io.github.toanhp123.finote.domain.notification.repository.NotificationSet
 class FakeNotificationSettlementRepository(
     val logs: MutableList<NotificationLog> = mutableListOf(),
     private val accounts: List<Account> = emptyList(),
+    private val identifiers: List<AccountIdentifier> = emptyList(),
     private val rules: Map<String, ParserRule> = emptyMap(),
 ) : NotificationSettlementRepository {
     /** Bank side log id -> error thrown by [book] before anything is written. */
@@ -53,6 +55,8 @@ class FakeNotificationSettlementRepository(
             }.sortedWith(compareBy({ it.postTime }, { it.id }))
 
     override suspend fun getAccounts(): List<Account> = accounts
+
+    override suspend fun getIdentifiers(): List<AccountIdentifier> = identifiers
 
     override suspend fun getRulesById(): Map<String, ParserRule> = rules
 

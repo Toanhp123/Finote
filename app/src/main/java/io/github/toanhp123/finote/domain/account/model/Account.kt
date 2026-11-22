@@ -23,10 +23,8 @@ data class Account(
     val createdAt: Long,
     val updatedAt: Long,
     val deletedAt: Long?,
-    /** Package of the bank or wallet app that feeds this account; with [accountNumberMask] it is the match key. */
+    /** Package of the bank or wallet app that feeds this account. Its masked numbers are [AccountIdentifier]s. */
     val bankPackageName: String? = null,
-    /** Last four digits of the account number, as the notifications show them. */
-    val accountNumberMask: String? = null,
     /** Set when this account was merged into another; the target account id. */
     val mergedIntoId: String? = null,
     /** True when notifications for this account are dropped instead of recorded. */
@@ -35,6 +33,6 @@ data class Account(
     /** Live, not archived, not ignored: the account can take new or edited transactions and shows in pickers. */
     val isUsable: Boolean get() = deletedAt == null && !isArchived && !isIgnored
 
-    // Balances and mask must never reach a log or crash report.
+    // Balances must never reach a log or crash report.
     override fun toString() = "Account(id=$id, type=$type)"
 }

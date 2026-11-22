@@ -44,6 +44,7 @@ class SettlePendingLogsUseCase
                     pending = pending,
                     settled = repository.getSettledLogsSince(since),
                     accounts = repository.getAccounts(),
+                    identifiers = repository.getIdentifiers(),
                     rulesById = repository.getRulesById(),
                     now = now,
                 )

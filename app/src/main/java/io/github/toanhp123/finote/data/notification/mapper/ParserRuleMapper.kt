@@ -2,14 +2,15 @@ package io.github.toanhp123.finote.data.notification.mapper
 
 import io.github.toanhp123.finote.data.notification.local.entity.ParserRuleEntity
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
- * Null when the row is unusable: bad JSON, an unknown account type, or a fallback type that is not exactly `INCOME`
- * or `EXPENSE`.
+ * Null when the row is unusable: bad JSON, an unknown account type or mask kind, or a fallback type that is not
+ * exactly `INCOME` or `EXPENSE`.
  * The repository drops such a row, so one bad rule cannot hide the rest of its package.
  * An empty allowlist becomes null, so a bad row cannot block a whole bank.
  */
@@ -19,7 +20,11 @@ fun ParserRuleEntity.toDomain(): ParserRule? {
             listOf(TransactionType.INCOME, TransactionType.EXPENSE).firstOrNull { it.name == raw }
         }
     val type = accountType?.let { raw -> AccountType.entries.firstOrNull { it.name == raw } }
-    val isUnusable = (fallbackTransactionType != null && fallback == null) || (accountType != null && type == null)
+    val kind = maskKind?.let { raw -> IdentifierKind.entries.firstOrNull { it.name == raw } }
+    val isUnusable =
+        (fallbackTransactionType != null && fallback == null) ||
+            (accountType != null && type == null) ||
+            (maskKind != null && kind == null)
     if (isUnusable) return null
     return runCatching {
         ParserRule(
@@ -37,6 +42,7 @@ fun ParserRuleEntity.toDomain(): ParserRule? {
             isActive = isActive,
             updatedAt = updatedAt,
             accountType = type,
+            maskKind = kind,
         )
     }.getOrNull()
 }
@@ -57,4 +63,5 @@ fun ParserRule.toEntity(): ParserRuleEntity =
         isActive = isActive,
         updatedAt = updatedAt,
         accountType = accountType?.name,
+        maskKind = maskKind?.name,
     )
