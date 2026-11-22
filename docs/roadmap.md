@@ -8,6 +8,7 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2c (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
 - Bước 1–8 xong (2026-11-18). Đang làm: bước 9 (dogfood) ở mục 5.
+- Mẫu thật chỉ gom được của Techcombank (2026-11-22): user không có tài khoản VCB, MB, MoMo.
 - Chưa từng chạy trên máy thật: toàn bộ P2. Bộ mẫu thông báo là mẫu tổng hợp (D4).
 - DB version 8, có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
 - Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: tạo và sửa tài khoản, quản lý danh mục, dashboard.
@@ -73,8 +74,8 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 7 | `chore/release-readiness` | Dọn dẹp 7 (A4, A17) | | ✅ |
 | 8 | `feature/debug-log-screen` | Công cụ (bản debug và dogfood) | | ✅ |
 | 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | 🔧 |
-| 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ⏸ cần mẫu thật |
-| 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1 | ⏸ cần mẫu thật |
+| 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ⬜ (L1, L2, N-06 ⏸ chờ mẫu VCB, MoMo) |
+| 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1 | ⬜ dùng mẫu Techcombank |
 | 12 | `release/0.2.0` | | | ⬜ |
 
 **2. `chore/ledger-write-path`** — một cửa ghi cho mọi nguồn (tay, thông báo, điều chỉnh).
@@ -115,15 +116,18 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 
 **9. Dogfood** — cài bản release lên máy thật, dùng 1 tuần. Việc phải làm:
 - Cài bản `dogfood` (`assembleDogfood`): giống release, ký bằng khóa debug. Bản release ký khóa Play sau này không cài đè được lên bản này.
-- Gom mẫu thật (đã ẩn danh) của VCB, MB, MoMo, Techcombank vào corpus.
-- Xác nhận hoặc bác L1, L2 (mục 6) bằng mẫu thẻ ghi nợ VCB và MoMo nguồn ngân hàng.
-- Lấy mẫu thông báo cập nhật thêm dòng (A5) và nợ N-06.
+- Gom mẫu thật (đã ẩn danh) của Techcombank vào corpus. User không có tài khoản VCB, MB, MoMo.
+- Mẫu Techcombank kiểm: L3 (thông báo đăng lại, thêm dòng; A5), N-03, N-05, N-20, N-23, APK release trên máy thật.
+- L1, L2, N-06 không kiểm được bằng Techcombank. Xin mẫu VCB (thẻ ghi nợ) và MoMo (nguồn ngân hàng) từ người quen, dạng ảnh chụp, che số tài khoản. Không có thì để mở, không chặn v0.2.
+- App không đẩy thông báo ra ngoài thì nhập tay (D15).
 - Lưu ý: bản cài ngoài Play trên Android 13+ cần "Allow restricted settings" mới cấp được quyền đọc thông báo.
 
 **10. `fix/account-identity`** (L1, L2, nợ N-01, N-02, N-05, N-06, N-08; N5).
 - Một tài khoản có nhiều định danh: số tài khoản, số thẻ, số ví. Đề xuất bảng định danh riêng thay cho một cặp cột trên `Account`; gộp tài khoản thành chuyển định danh (D13).
 - Rule nói rõ 4 số cuối là của ai: tài khoản, thẻ, hay nguồn tiền của ví.
-- Thiết kế chốt sau khi có mẫu thật. Màn tài khoản (bước 14) và thẻ tín dụng (bước 23) xây trên mô hình này.
+- Làm ngay (không cần mẫu ngân hàng khác): bảng định danh (D13), N-01, N-02, N-05, N-08, N-21. Thiết kế chốt trên mẫu Techcombank.
+- Chờ mẫu VCB, MoMo: L1, L2, N-06. Bảng định danh phải để sẵn chỗ cho số thẻ và nguồn tiền của ví. Chưa có mẫu thì làm ở nhánh sau, không chặn bước 12.
+- Màn tài khoản (bước 14) và thẻ tín dụng (bước 23) xây trên mô hình này.
 
 **11. `fix/double-booking`** (L3, L4; thay cho `fix/notification-text-lines`).
 - Nhận thông báo đăng lại theo khóa thông báo, không đòi nội dung giống hệt.
@@ -194,7 +198,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | Mã | Vấn đề | Chỗ | Sửa ở |
 |---|---|---|---|
 | L1 | Thẻ ghi nợ VCB: rule `vcb_card` kiểu ngân hàng, lấy 4 số cuối của thẻ và đọc "Số dư khả dụng" → tạo tài khoản thứ hai có số dư đầu bằng số dư tài khoản chính; tài sản tính hai lần. Suy từ regex, cần mẫu thật | `SystemParserRule.kt`, `AccountResolver.kt` | Bước 10 |
-| L2 | MoMo trả bằng nguồn ngân hàng: 4 số cuối là của nguồn tiền → tạo ví MoMo thừa. Thông báo ngân hàng trễ quá 30 giây hoặc ngân hàng chưa có rule thì khoản chi ghi hai lần hoặc vào ví sai, không có cảnh báo. Có hai tài khoản MoMo thì thông báo nhận tiền (không có 4 số cuối) bị `ambiguous_account`. Cần mẫu thật | `SystemParserRule.kt` (`MOMO_PAY_SOURCE`), `AccountResolver.kt` | Bước 10 |
+| L2 | MoMo trả bằng nguồn ngân hàng: 4 số cuối là của nguồn tiền → tạo ví MoMo thừa. Thông báo ngân hàng trễ quá 30 giây hoặc ngân hàng chưa có rule thì khoản chi ghi hai lần hoặc vào ví sai, không có cảnh báo. Có hai tài khoản MoMo thì thông báo nhận tiền (không có 4 số cuối) bị `ambiguous_account`. Cần mẫu thật. Ưu tiên thấp: MoMo có thể không đẩy thông báo hệ thống (D15) | `SystemParserRule.kt` (`MOMO_PAY_SOURCE`), `AccountResolver.kt` | Bước 10 |
 | L3 | A5: nhận thông báo đăng lại đòi nội dung giống hệt. Thông báo thêm dòng, hoặc không có số dư và đăng lại sau 3 giây, bị ghi hai lần | `SettlementPlanner.kt` (`sameText`, `findReposts`) | Bước 11 |
 | L4 | Bóc lại log `FAILED` sau khi user đã bấm Điều chỉnh: khoản tiền tính hai lần; báo lệch im vì có dòng điều chỉnh sau mốc | `ReparseFailedLogsUseCase.kt`, `BalanceDriftDetector.kt` | Bước 11 |
 
@@ -240,12 +244,13 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 |---|---|
 | D2 | Khóa SQLCipher: 32 byte ngẫu nhiên, bọc bằng Android Keystore (AES-GCM), không bắt sinh trắc học. DB và khóa bọc loại khỏi Auto Backup |
 | D3 | `targetSdk` 37 (spec ghi 35) |
-| D4 | Corpus tổng hợp ~60 mẫu làm baseline; chỉ tiêu 98% thật đo trên mẫu dogfood, chỉ tính VCB, MB, MoMo |
+| D4 | Corpus tổng hợp ~60 mẫu làm baseline; chỉ tiêu 98% thật đo trên mẫu dogfood Techcombank (sửa 2026-11-22: không có mẫu VCB, MB, MoMo). Ghi chú v0.2: rule VCB, MB, MoMo chưa kiểm trên mẫu thật |
 | D6 | Hilt |
 | D8 | Room 3, Navigation3 |
 | D9 | Ngôn ngữ: `vi` (mặc định), `en`, `zh-rCN`, `ja`. Màn chọn ngôn ngữ trong app chưa làm |
 | D10 | Mất khóa Keystore: xóa DB và khóa bọc, tạo DB rỗng. Chi tiết từng loại lỗi ở `roadmap-history.md` |
 | D12 | P2d: ghép sau khi ghi, cửa sổ 30 phút hai chiều; chỉ ghép khi bằng tiền; phí nhập tay |
+| D15 | App không đẩy thông báo hệ thống (chỉ báo trong app, như MoMo theo quan sát của user 2026-11-22) thì user nhập tay. Không tìm cách bắt khác. Rule MoMo giữ nguyên, chưa kiểm trên mẫu thật |
 
 ### Còn mở
 
