@@ -235,6 +235,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-21 | Gộp tài khoản đổi `updatedAt` mọi dòng bị chuyển, nên dòng chưa sửa của tài khoản bị gộp không còn được tự ghép | Bước 10 |
 | N-22 | Tách lại bị từ chối vì tài khoản đã lưu trữ chỉ hiện lỗi lưu chung, không nói lý do (giống nút Xóa) | Bước 14 |
 | N-23 | Listener chết trên Vivo/Xiaomi khi Autostart tắt: chỉ sống lại khi mở app (`rebindIfDisconnected`). Thông báo user xóa trước lúc đó thì mất, chỉ còn báo lệch số dư bắt được. Cần: màn Capture báo listener đang dừng (không chỉ quyền), hướng dẫn bật Autostart theo hãng máy | Bước 29 |
+| N-24 | Nút Copy mẫu (`masked()`) chỉ che chữ số; tên người chuyển trong ghi chú vẫn lộ. Che tên chung thì phá dạng ghi chú (chữ hoa). Tạm thời: đổi tên bằng tay trước khi đưa mẫu vào corpus | Khi có cách che theo rule |
 
 ## 7. Quyết định
 

@@ -113,6 +113,27 @@ class NotificationParserCorpusTest {
             assertEquals(emptyList<String>(), wrong)
         }
 
+    // Real dogfood samples (`real_` ids): digits masked to 1 on the device, sender names replaced by hand (N-24).
+    // Unlike the synthetic ones, each must parse.
+    @Test
+    fun `real techcombank samples parse every labelled field`() =
+        runTest {
+            val items =
+                NotificationCorpusFixtures.byPackage(techcombank).filter {
+                    it.id.startsWith("real_") && !it.expected.shouldIgnore
+                }
+
+            assertTrue("no real samples", items.isNotEmpty())
+            assertEquals(emptyList<String>(), failures(items))
+        }
+
+    @Test
+    fun `techcombank alert with a cut balance is not parsed`() {
+        val result = seededParse(techcombank, "+ VND 50,000", "Account: 19031234567890\nBalance: VND 3,0…")
+
+        assertEquals(ParseResult.NoMatch, result)
+    }
+
     // Capture only runs the rules of the posting package; so does this.
     private fun seededParse(
         packageName: String,

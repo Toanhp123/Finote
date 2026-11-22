@@ -1228,5 +1228,125 @@
       "reference": null,
       "transactionType": null
     }
+  },
+  {
+    "id": "real_8a55d4d3",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1794973982996,
+    "channelId": "TCBNotificationChannelId",
+    "title": "- VND 11,111",
+    "content": "Account: 11111111111111\nBalance: VND 11,111,111\nGD THE TREN INTERNET SO THE 111111...1111 NGAY 11/11/1111 TAI MOMO HO CHI MINH VN APPCODE 11111",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "-",
+      "amount": 11111,
+      "accountMask": "1111",
+      "postBalance": null,
+      "merchant": "MOMO HO CHI MINH",
+      "note": "GD THE TREN INTERNET SO THE 111111...1111 NGAY 11/11/1111 TAI MOMO HO CHI MINH VN APPCODE 11111",
+      "reference": null,
+      "transactionType": "EXPENSE"
+    }
+  },
+  {
+    "id": "real_6decf262",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1795088285296,
+    "channelId": "TCBNotificationChannelId",
+    "title": "+ VND 111,111",
+    "content": "Account: 11111111111111\nBalance: VND 11,111,111\nNGUYEN VAN A chuyen tien",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 111111,
+      "accountMask": "1111",
+      "postBalance": null,
+      "merchant": null,
+      "note": "NGUYEN VAN A chuyen tien",
+      "reference": null,
+      "transactionType": "INCOME"
+    }
+  },
+  {
+    "id": "real_29f59edc",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1795321436663,
+    "channelId": "TCBNotificationChannelId",
+    "title": "+ VND 11,111",
+    "content": "Account: 11111111111111\nBalance: VND 11,111,111\nNGUYEN VAN A chuyen tien",
+    "expected": {
+      "shouldIgnore": false,
+      "ignoreReason": null,
+      "sign": "+",
+      "amount": 11111,
+      "accountMask": "1111",
+      "postBalance": 11111111,
+      "merchant": null,
+      "note": "NGUYEN VAN A chuyen tien",
+      "reference": null,
+      "transactionType": "INCOME"
+    }
+  },
+  {
+    "id": "real_2fcf8bd4",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1795256657346,
+    "channelId": "TCBNotificationChannelId",
+    "title": "Sao kê thẻ tín dụng kỳ 11/11/1111 đã sẵn sàng",
+    "content": "Bảng sao kê điện tử cho thẻ tín dụng số 1 … 1111 hiện đã có trên ứng dụng Techcombank.",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "NOTIFICATION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "real_2b6da69d",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1795146276357,
+    "channelId": "TCBNotificationChannelId",
+    "title": "🎁 Cơ hội nhận tới 1 triệu U-Point!",
+    "content": "Nhận ngay cơ hội trúng thưởng 1 triệu U-Point khi làm khảo sát Bạn chia sẻ, Techcombank lắng nghe",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
+  },
+  {
+    "id": "real_0a312dd4",
+    "packageName": "vn.com.techcombank.bb.app",
+    "postTime": 1795059047988,
+    "channelId": "TCBNotificationChannelId",
+    "title": "Đặt món, gọi xe rẻ hơn đến 11K",
+    "content": "Tặng riêng bạn mã giảm đến 11K mọi chuyến Grab, Green SM, Be trưa nay. Số lượng có hạn. Bấm vào nhận ngay!",
+    "expected": {
+      "shouldIgnore": true,
+      "ignoreReason": "PROMOTION",
+      "sign": null,
+      "amount": null,
+      "accountMask": null,
+      "postBalance": null,
+      "merchant": null,
+      "note": null,
+      "reference": null,
+      "transactionType": null
+    }
   }
 ]

@@ -49,6 +49,9 @@ private val TCB_KEYWORDS =
             "đổi quà ngay",
             "sinh lời mỗi ngày",
             "nhắc hạn thanh toán",
+            "bảng sao kê điện tử",
+            "khi làm khảo sát",
+            "mã giảm đến",
         )
 
 // Regex building blocks. The parser reads named groups only: sign, amount, mask, balance, merchant, note.
@@ -71,7 +74,10 @@ private fun noteGroup(
 private val VCB_NOTE =
     noteGroup("Thanh toan QR tai |NAP TIEN VAO |(?=\\S+ thanh toan don hang)", "(?i: thanh toan don hang)")
 private val MB_NOTE = noteGroup("THANH TOAN HOA DON TIEN DIEN ", " MA KH| THANG \\d")
-private val TCB_NOTE = noteGroup("Thanh toan QR tai |Thanh toan hoa don Internet ", " thang \\d")
+
+// A card line reads `GD THE … TAI <merchant> <city> VN APPCODE …`; the city stays in the merchant.
+private val TCB_NOTE =
+    noteGroup("Thanh toan QR tai |Thanh toan hoa don Internet |GD THE .*? TAI ", " thang \\d| [A-Z]{2} APPCODE")
 
 // MoMo wallet or source in brackets: `(090***1234)` or `(***4567)`.
 private const val MOMO_MASK = """\((?:\d*\*+)?(?<mask>\d{4})\)"""
@@ -91,6 +97,7 @@ private class Bank(
     private val bankName: String,
     keywords: List<String>,
     private val accountType: String? = null,
+    private val version: Int = 1,
 ) {
     private val keywordsJson = Json.encodeToString(keywords)
 
@@ -109,7 +116,7 @@ private class Bank(
         ignoreKeywords = keywordsJson,
         priority = 0,
         isUserCustom = false,
-        version = 1,
+        version = version,
         regexPattern = pattern,
         fallbackTransactionType = fallbackType,
         dateFormatPattern = null,
@@ -122,7 +129,9 @@ private class Bank(
 private val vcb = Bank("vcb", "com.VCB", "Vietcombank", VCB_KEYWORDS)
 private val mb = Bank("mb", "com.mbmobile", "MB Bank", MB_KEYWORDS)
 private val momo = Bank("momo", "com.mservice.momotransfer", "MoMo", MOMO_KEYWORDS, accountType = "WALLET")
-private val tcb = Bank("tcb", "vn.com.techcombank.bb.app", "Techcombank", TCB_KEYWORDS)
+
+// Version 2: keywords and note phrases from the dogfood samples.
+private val tcb = Bank("tcb", "vn.com.techcombank.bb.app", "Techcombank", TCB_KEYWORDS, version = 2)
 
 private val vcbRules =
     listOf(
@@ -201,6 +210,13 @@ private val momoRules =
 
 private val tcbRules =
     listOf(
+        // The shape the app really posts (dogfood): title `+ VND 50,000`, then `Account: …`, `Balance: VND …`, note.
+        tcb.rule(
+            "alert",
+            """\A(?<sign>[+-]) VND (?<amount>$MONEY)\nAccount: $ACCOUNT_MASK\nBalance: VND (?<balance>$MONEY)""" +
+                // A balance cut by "…" is no match: a cut number is never a balance.
+                """(?=\n|\s*\z)(?:\n$TCB_NOTE)?""",
+        ),
         // Two phrasings of one shape: `Giao dịch thành công: TK …` and `TK … GD: …`.
         tcb.rule(
             "account",
