@@ -4,12 +4,12 @@ Bản v2, viết lại ngày 2026-11-15 sau khi rà toàn bộ luồng tiền v�
 
 Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9; `CLAUDE.md`; `docs/git-workflow.md`; `docs/architecture.md`.
 
-## 1. Hiện trạng (2026-11-18)
+## 1. Hiện trạng (2026-11-23)
 
-- Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2c (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Bước 1–8 xong (2026-11-18). Đang làm: bước 9 (dogfood) ở mục 5.
-- Mẫu thật chỉ gom được của Techcombank (2026-11-22): user không có tài khoản VCB, MB, MoMo.
-- Chưa từng chạy trên máy thật: toàn bộ P2. Bộ mẫu thông báo là mẫu tổng hợp (D4).
+- Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2d (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản, ghép chuyển khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
+- Bước 1–11b xong (2026-11-23). Đang làm: bước 12 (`release/0.2.0`). Tiếp theo: đoạn B, bắt đầu bước 13.
+- Dogfood đóng 2026-11-23 (chỉ Techcombank): APK dogfood (R8) chạy ổn trên máy thật; `EncryptedDatabaseTest` qua trên máy thật; chưa gặp báo lệch số dư; luồng bình thường của bản sửa N-03 đã thử trên máy Vivo.
+- Mẫu thật chỉ gom được của Techcombank (2026-11-22): user không có tài khoản VCB, MB, MoMo. Rule VCB, MB, MoMo chỉ kiểm trên mẫu tổng hợp (D4).
 - DB version 10, có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
 - Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: tạo và sửa tài khoản, quản lý danh mục, dashboard.
 
@@ -73,11 +73,11 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 6 | `chore/db-migrations` | Nền móng N4 | | ✅ |
 | 7 | `chore/release-readiness` | Dọn dẹp 7 (A4, A17) | | ✅ |
 | 8 | `feature/debug-log-screen` | Công cụ (bản debug và dogfood) | | ✅ |
-| 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | 🔧 |
+| 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | ✅ 2026-11-23 (chỉ Techcombank) |
 | 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ✅ N5 (L1, L2, N-06 ⏸ chờ mẫu VCB, MoMo) |
-| 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1, N4 | ✅ (chưa thử trên máy thật) |
+| 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1, N4 | ✅ `6de7196` |
 | 11b | `fix/ledger-order` | Sửa lỗi tiền N-03 | N1, N3 | ✅ |
-| 12 | `release/0.2.0` | | | ⬜ |
+| 12 | `release/0.2.0` | | | 🔧 |
 
 **2. `chore/ledger-write-path`** — một cửa ghi cho mọi nguồn (tay, thông báo, điều chỉnh).
 - `book` của settlement dựng `Transaction` domain và đi qua cùng rule và cùng hàm ghi với nhập tay. Không tự dựng `TransactionEntity`.
@@ -129,7 +129,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 - Làm ngay (không cần mẫu ngân hàng khác): bảng định danh (D13), N-01, N-02, N-05, N-08, N-21. Thiết kế chốt trên mẫu Techcombank.
 - Chờ mẫu VCB, MoMo: L1, L2, N-06. Bảng định danh phải để sẵn chỗ cho số thẻ và nguồn tiền của ví. Chưa có mẫu thì làm ở nhánh sau, không chặn bước 12.
 - Màn tài khoản (bước 14) và thẻ tín dụng (bước 23) xây trên mô hình này.
-- Đã làm (spec `docs/superpowers/specs/2026-11-22-account-identity-design.md`): bảng `account_identifiers` `(packageName, kind, mask)`, migration 8 → 9, rule có `maskKind`, gộp chuyển định danh và chỉ gộp cùng loại, writer chọn lại tài khoản trong transaction ghi; N-01 (phần `parseMoney`), N-02, N-05, N-08, N-21. Còn chờ chạy `EncryptedDatabaseTest` trên máy thật để xác nhận nâng cấp SQLCipher.
+- Đã làm (spec `docs/superpowers/specs/2026-11-22-account-identity-design.md`): bảng `account_identifiers` `(packageName, kind, mask)`, migration 8 → 9, rule có `maskKind`, gộp chuyển định danh và chỉ gộp cùng loại, writer chọn lại tài khoản trong transaction ghi; N-01 (phần `parseMoney`), N-02, N-05, N-08, N-21. `EncryptedDatabaseTest` qua trên máy thật (2026-11-23).
 
 **11. `fix/double-booking`** (L3, L4; thay cho `fix/notification-text-lines`). Spec `docs/superpowers/specs/2026-11-23-double-booking-design.md`.
 - Log lưu `notificationKey` (`sbn.key`), migration 9 → 10. Cùng key, cùng số tiền, chiều, 4 số cuối, cách gốc của cụm tối đa 10 phút, số dư không mâu thuẫn → đăng lại. Số dư khác nhau luôn là hai giao dịch.
@@ -256,6 +256,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | D12 | P2d: ghép sau khi ghi, cửa sổ 30 phút hai chiều; chỉ ghép khi bằng tiền; phí nhập tay |
 | D13 | Định danh tài khoản: bảng riêng `account_identifiers` `(packageName, kind, mask)`, kind `ACCOUNT`/`CARD`/`WALLET`; rule khai `maskKind`, null thì suy từ `accountType`. Chốt 2026-11-22, spec `2026-11-22-account-identity-design.md` |
 | D15 | App không đẩy thông báo hệ thống (chỉ báo trong app, như MoMo theo quan sát của user 2026-11-22) thì user nhập tay. Không tìm cách bắt khác. Rule MoMo giữ nguyên, chưa kiểm trên mẫu thật |
+| D14 | Failed-inbox ở v0.3 (bước 13), để v0.2 chỉ gồm Must-Have. Chốt 2026-11-23 |
 | D16 | App không tự tính số tiền điều chỉnh; banner lệch số dư hỏi số dư thật (spec `2026-11-23-ledger-order-design.md`) |
 
 ### Còn mở
@@ -266,7 +267,6 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | D5 | XLSX cùng lúc với CSV? | CSV trước | Bước 25 |
 | D7 | Ai chạy benchmark trên máy thật? | User, khi tới bước 20 và 30 | Bước 20 |
 | D11 | Giao dịch ngày tương lai có tính vào số dư hiện tại không? | Không: số dư hiện tại chỉ tính tới bây giờ | Bước 24 |
-| D14 | Failed-inbox đưa vào v0.2 hay v0.3? | v0.3, để v0.2 chỉ gồm Must-Have | Bước 12 |
 
 ## 8. Đã xong
 
@@ -298,6 +298,10 @@ Chi tiết từng nhánh: `docs/roadmap-history.md` và `git log dev`.
 | | Test rollback khi tràn số cho mọi đường ghi | `57e9fa4` |
 | Dọn dẹp 4 | `chore/ui-overlay-api` (A10, A6, A16) | `97278c5` |
 | Dọn dẹp 5 | `chore/ui-components` (A12–A15) | `c635487` |
+| Bước 2–8 | ghi sổ một đường, Chuyển, sửa giao dịch, P2d, migration, release-readiness, màn log | xem `git log dev` |
+| Bước 10 | `fix/account-identity` (N5) | `7383c9d` |
+| Bước 11 | `fix/double-booking` (L3, L4) | `6de7196` |
+| Bước 11b | `fix/ledger-order` (N-03) | `25492b9` |
 
 Ghi chú vận hành còn hiệu lực:
 - Feed rule `rules/v1/feed.json` ký ECDSA P-256; khóa riêng ở `~/.finote/finote-rules.pem` (ngoài repo). Ký lại: `testDebugUnitTest --tests '*RuleFeedSigningTool*' -PsignRuleFeed=true`. Feed phải lên `main` cùng hoặc trước bản phát hành đầu có OTA.
