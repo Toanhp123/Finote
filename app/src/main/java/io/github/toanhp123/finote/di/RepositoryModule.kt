@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.github.toanhp123.finote.data.account.repository.AccountMergeRepositoryImpl
 import io.github.toanhp123.finote.data.account.repository.AccountRepositoryImpl
+import io.github.toanhp123.finote.data.account.repository.DriftAcknowledgementRepositoryImpl
 import io.github.toanhp123.finote.data.category.repository.CategoryRepositoryImpl
 import io.github.toanhp123.finote.data.database.RoomTransactionRunner
 import io.github.toanhp123.finote.data.notification.repository.NotificationCaptureRepositoryImpl
@@ -16,6 +17,7 @@ import io.github.toanhp123.finote.data.transaction.repository.TransactionReposit
 import io.github.toanhp123.finote.data.transaction.repository.TransferPairRepositoryImpl
 import io.github.toanhp123.finote.domain.account.repository.AccountMergeRepository
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
+import io.github.toanhp123.finote.domain.account.repository.DriftAcknowledgementRepository
 import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
 import io.github.toanhp123.finote.domain.common.TransactionRunner
 import io.github.toanhp123.finote.domain.notification.repository.NotificationCaptureRepository
@@ -33,6 +35,9 @@ interface RepositoryModule {
 
     @Binds
     fun bindAccountMergeRepository(impl: AccountMergeRepositoryImpl): AccountMergeRepository
+
+    @Binds
+    fun bindDriftAcknowledgementRepository(impl: DriftAcknowledgementRepositoryImpl): DriftAcknowledgementRepository
 
     @Binds
     fun bindCategoryRepository(impl: CategoryRepositoryImpl): CategoryRepository

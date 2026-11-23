@@ -22,8 +22,10 @@ data class TransactionListState(
     val accountsById: Map<String, Account> = emptyMap(),
     val categoriesById: Map<String, Category> = emptyMap(),
     val isPendingOnly: Boolean = false,
-    /** Accounts whose balance disagrees with the bank's; each shows a banner with an adjust button. */
+    /** Accounts whose balance may differ from the bank's; the first shows a banner that opens the reconcile sheet. */
     val drifts: List<BalanceDrift> = emptyList(),
+    /** The account whose real balance the user is typing; null shows no sheet. */
+    val reconcilingAccountId: String? = null,
     /** The balance adjustment waiting for the user to confirm its deletion; null shows no dialog. */
     val deletingId: String? = null,
     /** Ids of the transfers made by auto-pairing; their row says so. */
@@ -41,9 +43,15 @@ sealed interface TransactionListIntent {
         val id: String,
     ) : TransactionListIntent
 
-    data class AdjustDrift(
+    data class ReconcileClicked(
         val accountId: String,
     ) : TransactionListIntent
+
+    data class ReconcileSubmitted(
+        val actualBalance: Long,
+    ) : TransactionListIntent
+
+    data object ReconcileDismissed : TransactionListIntent
 
     data object DeleteConfirmed : TransactionListIntent
 
@@ -56,4 +64,6 @@ sealed interface TransactionListEffect {
     ) : TransactionListEffect
 
     data object DeleteFailed : TransactionListEffect
+
+    data object ReconcileFailed : TransactionListEffect
 }

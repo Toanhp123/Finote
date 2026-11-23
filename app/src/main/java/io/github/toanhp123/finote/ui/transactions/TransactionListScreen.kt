@@ -47,6 +47,7 @@ import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.transactions.component.BalanceDriftBanner
 import io.github.toanhp123.finote.ui.transactions.component.DeleteAdjustmentDialog
 import io.github.toanhp123.finote.ui.transactions.component.ListenerOffBanner
+import io.github.toanhp123.finote.ui.transactions.component.ReconcileSheet
 import io.github.toanhp123.finote.ui.transactions.component.TransactionFilterChips
 import io.github.toanhp123.finote.ui.transactions.logic.DayLabel
 import io.github.toanhp123.finote.ui.transactions.logic.dayLabel
@@ -70,6 +71,7 @@ fun TransactionListRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val deleteError = stringResource(R.string.transactions_delete_error)
+    val reconcileError = stringResource(R.string.reconcile_error)
     ObserveEffects(viewModel.effects) { effect ->
         when (effect) {
             is TransactionListEffect.OpenEditor -> {
@@ -78,6 +80,10 @@ fun TransactionListRoute(
 
             TransactionListEffect.DeleteFailed -> {
                 scope.launch { snackbarState.show(deleteError) }
+            }
+
+            TransactionListEffect.ReconcileFailed -> {
+                scope.launch { snackbarState.show(reconcileError) }
             }
         }
     }
@@ -133,6 +139,7 @@ fun TransactionListScreen(
             }
         }
         DeleteAdjustmentDialog(isVisible = state.deletingId != null, onIntent = onIntent)
+        ReconcileSheet(account = state.reconcilingAccountId?.let(state.accountsById::get), onIntent = onIntent)
     }
 }
 
@@ -148,8 +155,7 @@ private fun DriftBanners(
     val account = state.accountsById.getValue(drift.accountId)
     BalanceDriftBanner(
         accountName = resources.displayName(account.name, account.nameKey),
-        difference = drift.difference,
-        onAdjust = { onIntent(TransactionListIntent.AdjustDrift(drift.accountId)) },
+        onReconcile = { onIntent(TransactionListIntent.ReconcileClicked(drift.accountId)) },
         modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg, vertical = FinoteTheme.spacing.sm),
         otherCount = shown.size - 1,
     )

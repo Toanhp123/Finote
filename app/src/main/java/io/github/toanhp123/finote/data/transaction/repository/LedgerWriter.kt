@@ -6,14 +6,14 @@ import io.github.toanhp123.finote.data.account.repository.AccountBalanceRebuilde
 import io.github.toanhp123.finote.data.database.FinoteDatabase
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.mapper.toEntity
-import io.github.toanhp123.finote.domain.account.service.BalanceCalculator
-import io.github.toanhp123.finote.domain.account.service.anchoredInitialBalance
+import io.github.toanhp123.finote.domain.account.service.isStartLocked
+import io.github.toanhp123.finote.domain.account.service.provisionalStart
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import java.time.Clock
 
 /**
- * The one place a ledger row is inserted. Call it inside a write transaction: it inserts, optionally fixes the start
- * of an uninitialized account, then rebuilds the touched accounts. Callers run `TransactionRules` before it.
+ * The one place a ledger row is inserted. Call it inside a write transaction: it inserts, optionally recomputes the
+ * start of a provisional account, then rebuilds the touched accounts. Callers run `TransactionRules` before it.
  */
 internal class LedgerWriter(
     db: FinoteDatabase,
@@ -24,8 +24,8 @@ internal class LedgerWriter(
     private val rebuilder = AccountBalanceRebuilder(accounts, transactions, db.accountBalanceSnapshotDao(), clock)
 
     /**
-     * [coldStart] lets the balance anchor of an uninitialized source account fix its start. It is opt-in: the anchor
-     * comes from rows already stored, so a manual or adjustment insert must not trigger it.
+     * [coldStart] lets the bank balances of a provisional account set its start. It is opt-in: they come from rows
+     * already stored, so a manual or adjustment insert must not trigger it.
      */
     suspend fun insert(
         transaction: Transaction,
@@ -61,12 +61,15 @@ internal class LedgerWriter(
             coldStart(checkNotNull(accounts.getById(it)))
         }
 
-    /** The balance anchor of an uninitialized account fixes its start. A credit card has no anchor. */
+    /**
+     * A provisional account (`isInitialized = false`) recomputes its start from the bank balance chain, and locks it
+     * once its balance rows span the order window. A credit card has no start to derive, so it stays untouched.
+     */
     private suspend fun coldStart(account: AccountEntity) {
         if (account.isInitialized) return
         val rows = transactions.getActiveByAccount(account.id).map { it.toDomain() }
-        BalanceCalculator.anchoredInitialBalance(account.toDomain(), rows)?.let {
-            accounts.update(account.copy(initialBalance = it, isInitialized = true))
+        provisionalStart(account.toDomain(), rows)?.let {
+            accounts.update(account.copy(initialBalance = it, isInitialized = isStartLocked(account.id, rows)))
         }
     }
 }

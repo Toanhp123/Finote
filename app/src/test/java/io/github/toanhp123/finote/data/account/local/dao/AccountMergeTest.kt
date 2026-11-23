@@ -15,10 +15,11 @@ import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.repository.TransactionRepositoryImpl
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.model.IdentifierKind
-import io.github.toanhp123.finote.domain.account.service.detectBalanceDrift
+import io.github.toanhp123.finote.domain.account.service.balanceDriftKey
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -253,7 +254,7 @@ class AccountMergeTest {
         }
 
     @Test
-    fun `merge sets an uninitialized target from the latest postBalance of either side`() =
+    fun `merge sets an uninitialized target from its first bank balance and keeps the gap out`() =
         runTest {
             bank("acc-a")
             bank("acc-b", initialized = false)
@@ -271,18 +272,80 @@ class AccountMergeTest {
             mergeRepo.merge("acc-a", "acc-b", NOW)
 
             val target = rowOf("acc-b")
+            // The balance rows span days, so the start locks. It is the balance before b1 (6_900_000 + 20_000); the
+            // 50_000 missing between b1 and a1 is not folded into it, so the drift banner shows.
             assertTrue(target.isInitialized)
-            assertEquals(6_970_000L, target.initialBalance)
-            assertEquals(6_990_000L, target.currentBalance)
+            assertEquals(6_920_000L, target.initialBalance)
+            assertEquals(6_940_000L, target.currentBalance)
+            assertNotNull(driftKeyOf("acc-b"))
+        }
+
+    /** A swapped pair on two accounts of one bank: the real order is 1_000_000 -> 900_000 -> 1_200_000. */
+    private suspend fun swappedPair() {
+        tx("s1", "acc-a", "11-05T00:01:00Z", amount = 300_000L, type = TransactionType.INCOME, postBalance = 1_200_000L)
+        tx("s2", "acc-b", "11-05T00:02:00Z", amount = 100_000L, postBalance = 900_000L)
+    }
+
+    private suspend fun driftKeyOf(id: String) =
+        balanceDriftKey(
+            rowOf(id).toDomain(),
+            dbRule.db
+                .transactionDao()
+                .getActiveByAccount(id)
+                .map { it.toDomain() },
+        )
+
+    @Test
+    fun `merge into initialized target with a swap shows a banner`() =
+        runTest {
+            bank("acc-a")
+            bank("acc-b")
+            swappedPair()
+
+            mergeRepo.merge("acc-a", "acc-b", NOW)
+
+            // Today's anchor: 900_000 minus the ledger effect (+300_000 -100_000). The real start is 1_000_000.
+            assertEquals(700_000L, rowOf("acc-b").initialBalance)
+            assertNotNull(driftKeyOf("acc-b"))
         }
 
     @Test
-    fun `merge after Adjust keeps balance and books no drift`() =
+    fun `merge into a provisional target uses the chain start`() =
+        runTest {
+            bank("acc-a")
+            bank("acc-b", initialized = false)
+            swappedPair()
+
+            mergeRepo.merge("acc-a", "acc-b", NOW)
+
+            assertEquals(1_000_000L, rowOf("acc-b").initialBalance)
+            assertFalse(rowOf("acc-b").isInitialized)
+            assertNull(driftKeyOf("acc-b"))
+        }
+
+    @Test
+    fun `merge into a provisional target locks it when balance rows span 30 minutes`() =
+        runTest {
+            bank("acc-a")
+            bank("acc-b", initialized = false)
+            swappedPair()
+            tx("s3", "acc-b", "11-05T00:31:00Z", amount = 50_000L, postBalance = 1_150_000L)
+
+            mergeRepo.merge("acc-a", "acc-b", NOW)
+
+            assertEquals(1_000_000L, rowOf("acc-b").initialBalance)
+            assertTrue(rowOf("acc-b").isInitialized)
+        }
+
+    @Test
+    fun `merge after reconcile keeps balance and books no drift`() =
         runTest {
             bank("acc-a")
             bank("acc-b", balance = 1_000_000L)
             tx("b1", "acc-b", "11-01T00:00:00Z", postBalance = 800_000L)
-            TransactionRepositoryImpl(dbRule.db, clock).adjustDrift("adj-1", "acc-b", clock.millis())
+            // The row went in through the DAO, so the stored balance is stale: bring it to 1_000_000 - 100_000.
+            dbRule.db.accountDao().update(rowOf("acc-b").copy(currentBalance = 900_000L))
+            TransactionRepositoryImpl(dbRule.db, clock).reconcile("adj-1", "acc-b", 800_000L, clock.millis())
 
             mergeRepo.merge("acc-a", "acc-b", NOW)
 
@@ -294,7 +357,7 @@ class AccountMergeTest {
                     .transactionDao()
                     .getActiveByAccount("acc-b")
                     .map { it.toDomain() }
-            assertNull(detectBalanceDrift(target.toDomain(), rows))
+            assertNull(balanceDriftKey(target.toDomain(), rows))
         }
 
     @Test

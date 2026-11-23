@@ -9,6 +9,8 @@ import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.domain.account.repository.AccountMergeRepository
 import io.github.toanhp123.finote.domain.account.service.BalanceCalculator
 import io.github.toanhp123.finote.domain.account.service.anchoredInitialBalance
+import io.github.toanhp123.finote.domain.account.service.isStartLocked
+import io.github.toanhp123.finote.domain.account.service.provisionalStart
 import java.time.Clock
 import javax.inject.Inject
 
@@ -75,19 +77,28 @@ class AccountMergeRepositoryImpl
         ): Int = storage { merges.countTransfersBetween(sourceId, targetId) }
 
         /**
-         * Both rows are one real bank account, so its balance already includes the source's transactions. Re-anchor the
-         * target start on the latest bank balance over the merged set, else keep the old start (or the source's).
-         * Runs after the move, so the target's live rows are the merged set.
+         * Both rows are one real bank account, so its balance already includes the source's transactions. A provisional
+         * target takes the young-account start of the merged set (and locks when its balance rows span the order
+         * window); an initialized one re-anchors on the latest bank balance. With neither, keep the old start (or the
+         * source's). Runs after the move, so the target's live rows are the merged set.
          */
         private suspend fun withMergedStart(
             source: AccountEntity,
             target: AccountEntity,
         ): AccountEntity {
             val rows = transactions.getActiveByAccount(target.id).map { it.toDomain() }
-            val anchored = BalanceCalculator.anchoredInitialBalance(target.toDomain(), rows)
+            val start =
+                if (target.isInitialized) {
+                    BalanceCalculator.anchoredInitialBalance(target.toDomain(), rows)
+                } else {
+                    provisionalStart(target.toDomain(), rows)
+                }
             return when {
-                anchored != null -> {
-                    target.copy(initialBalance = anchored, isInitialized = true)
+                start != null -> {
+                    target.copy(
+                        initialBalance = start,
+                        isInitialized = target.isInitialized || isStartLocked(target.id, rows),
+                    )
                 }
 
                 source.isInitialized && !target.isInitialized -> {

@@ -2,7 +2,6 @@ package io.github.toanhp123.finote.data.database
 
 import io.github.toanhp123.finote.data.account.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
-import io.github.toanhp123.finote.domain.account.model.BalanceDrift
 import io.github.toanhp123.finote.domain.account.model.MonthlyBalance
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -33,7 +32,6 @@ class MoneyToStringTest {
 
         assertEquals("AccountBalanceSnapshotEntity(accountId=acc-1, monthYear=2026-11)", snapshot().toString())
         assertEquals("MonthlyBalance(accountId=acc-1, monthYear=2026-11)", monthly.toString())
-        assertEquals("BalanceDrift(accountId=acc-1)", BalanceDrift("acc-1", 987_654L).toString())
     }
 
     private fun assertNoMoney(vararg texts: String) {

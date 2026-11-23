@@ -149,12 +149,17 @@
         <item quantity="other">%1$d mẫu · v%2$d</item>
     </plurals>
     <string name="capture_bank_edited">có chỉnh sửa của bạn</string>
-    <string name="balance_drift_message">%1$s lệch %2$s so với ngân hàng</string>
+    <string name="balance_drift_message">Số dư %1$s có thể lệch với ngân hàng</string>
     <plurals name="balance_drift_others">
         <item quantity="other">và %d tài khoản khác</item>
     </plurals>
-    <string name="balance_drift_adjust">Điều chỉnh</string>
-    <string name="balance_drift_adjust_cd">Điều chỉnh số dư %1$s</string>
+    <string name="balance_drift_adjust">Nhập số dư thật</string>
+    <string name="balance_drift_adjust_cd">Nhập số dư thật của %1$s</string>
+    <string name="reconcile_title">Số dư thật</string>
+    <string name="reconcile_field">Số dư trong app ngân hàng</string>
+    <string name="reconcile_in_app">Trong app</string>
+    <string name="reconcile_difference">Chênh lệch</string>
+    <string name="reconcile_error">Không lưu được số dư</string>
     <string name="settings_group_accounts">TÀI KHOẢN</string>
     <string name="settings_accounts_title">Tài khoản</string>
     <string name="settings_accounts_subtitle">Gộp hoặc bỏ qua</string>

@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.domain.transaction.usecase
 
+import io.github.toanhp123.finote.domain.account.model.DriftKey
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
@@ -26,8 +27,12 @@ class FakeTransactionRepository(
         private set
     val reconcileCalls = mutableListOf<ReconcileCall>()
     var reconcileResult: Transaction? = null
-    val adjustCalls = mutableListOf<AdjustCall>()
-    var adjustResult: Transaction? = null
+
+    /** What [getDriftKey] returns, whatever the account. */
+    var driftKey: DriftKey? = null
+
+    /** Runs on every [getDriftKey] call, before it answers; a test can assert where it ran or make it throw. */
+    var onGetDriftKey: () -> Unit = {}
 
     /** Source of [observeTransactions]; a non-null account id keeps rows with that source or transfer destination. */
     val transactionsFlow = MutableStateFlow<List<Transaction>>(emptyList())
@@ -41,12 +46,6 @@ class FakeTransactionRepository(
         val id: String,
         val accountId: String,
         val actualBalance: Long,
-        val now: Long,
-    )
-
-    data class AdjustCall(
-        val id: String,
-        val accountId: String,
         val now: Long,
     )
 
@@ -96,14 +95,9 @@ class FakeTransactionRepository(
         return reconcileResult
     }
 
-    override suspend fun adjustDrift(
-        id: String,
-        accountId: String,
-        now: Long,
-    ): Transaction? {
-        failWrite?.let { throw it }
-        adjustCalls += AdjustCall(id, accountId, now)
-        return adjustResult
+    override suspend fun getDriftKey(accountId: String): DriftKey? {
+        onGetDriftKey()
+        return driftKey
     }
 
     override suspend fun update(transaction: Transaction) {

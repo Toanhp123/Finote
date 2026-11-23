@@ -8,7 +8,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -17,24 +16,20 @@ import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButtonStyle
 import io.github.toanhp123.finote.ui.common.component.display.FinoteCard
-import io.github.toanhp123.finote.ui.common.format.MoneyKind
-import io.github.toanhp123.finote.ui.common.format.formatMoney
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 /**
- * Says the account's balance differs from the bank's by [difference] (signed VND). [onAdjust] books the gap.
+ * Says the account's balance may differ from the bank's, without an amount. [onReconcile] asks for the real balance.
  * [otherCount] other accounts drift too; above zero the banner says so under the message.
  */
 @Composable
 fun BalanceDriftBanner(
     accountName: String,
-    difference: Long,
-    onAdjust: () -> Unit,
+    onReconcile: () -> Unit,
     modifier: Modifier = Modifier,
     otherCount: Int = 0,
 ) {
-    val amount = formatMoney(difference, MoneyKind.Neutral, LocalConfiguration.current.locales[0])
-    val adjustDescription = stringResource(R.string.balance_drift_adjust_cd, accountName)
+    val reconcileDescription = stringResource(R.string.balance_drift_adjust_cd, accountName)
     FinoteCard(modifier = modifier.fillMaxWidth()) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.md),
@@ -42,7 +37,7 @@ fun BalanceDriftBanner(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.balance_drift_message, accountName, amount),
+                    text = stringResource(R.string.balance_drift_message, accountName),
                     color = FinoteTheme.scheme.onSurface,
                     style = FinoteTheme.typography.material.bodyMedium,
                 )
@@ -56,8 +51,8 @@ fun BalanceDriftBanner(
             }
             FinoteButton(
                 text = stringResource(R.string.balance_drift_adjust),
-                onClick = onAdjust,
-                modifier = Modifier.semantics { contentDescription = adjustDescription },
+                onClick = onReconcile,
+                modifier = Modifier.semantics { contentDescription = reconcileDescription },
                 style = FinoteButtonStyle.Secondary,
             )
         }

@@ -15,7 +15,7 @@ import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.account.model.defaultKind
-import io.github.toanhp123.finote.domain.account.service.detectBalanceDrift
+import io.github.toanhp123.finote.domain.account.service.balanceDriftKey
 import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
@@ -143,7 +143,7 @@ class NotificationSettlementRepositoryImplTest {
             assertEquals("bank", acc.icon)
             assertEquals("VND", acc.currency)
             assertEquals(0xFF546E7A.toInt(), acc.color)
-            assertTrue(acc.isInitialized)
+            assertFalse(acc.isInitialized) // provisional: one balance row cannot lock the start
             assertEquals(1_000_000L, acc.initialBalance)
             assertEquals(950_000L, acc.currentBalance)
             val tx = dbRule.db.transactionDao().getById("tx-1")!!
@@ -221,7 +221,7 @@ class NotificationSettlementRepositoryImplTest {
         }
 
     @Test
-    fun `no post balance leaves account uninitialized and a later one initializes it`() =
+    fun `no post balance leaves account uninitialized and a later one sets its provisional start`() =
         runTest {
             val first = log("a", postBalance = null)
             val second = log("b", postTime = 2_000L, postBalance = 900_000L)
@@ -236,7 +236,7 @@ class NotificationSettlementRepositoryImplTest {
             repo.book(book(second), "tx-b", NOW)
 
             val after = onlyAccount()
-            assertTrue(after.isInitialized)
+            assertFalse(after.isInitialized) // a single balance row is still provisional
             assertEquals(1_000_000L, after.initialBalance)
             assertEquals(900_000L, after.currentBalance)
         }
@@ -255,13 +255,13 @@ class NotificationSettlementRepositoryImplTest {
             repo.book(book(bank, target = AccountTarget.Existing("acc-1")), "tx-1", NOW)
 
             val stored = checkNotNull(dbRule.db.accountDao().getById("acc-1"))
-            assertTrue(stored.isInitialized)
+            assertFalse(stored.isInitialized) // provisional: one balance row cannot lock the start
             val rows =
                 dbRule.db
                     .transactionDao()
                     .getActiveByAccount("acc-1")
                     .map { it.toDomain() }
-            assertNull(detectBalanceDrift(stored.toDomain(), rows))
+            assertNull(balanceDriftKey(stored.toDomain(), rows))
         }
 
     @Test
@@ -885,7 +885,7 @@ class NotificationSettlementRepositoryImplTest {
 
             assertEquals(TransactionType.TRANSFER, liveRows().single().type)
             val b = repo.getAccounts().single { it.id == "acc-b" }
-            assertTrue(b.isInitialized)
+            assertFalse(b.isInitialized) // provisional: one balance row cannot lock the start
             assertEquals(200_000L, b.initialBalance)
             assertEquals(700_000L, b.currentBalance)
         }
@@ -914,7 +914,7 @@ class NotificationSettlementRepositoryImplTest {
                     .getActiveByAccount(b.id)
                     .map { it.toDomain() }
             // The drift assertion carries the test: a wrong anchor on the late expense would report 500_000.
-            assertNull(detectBalanceDrift(b, rows))
+            assertNull(balanceDriftKey(b, rows))
         }
 
     @Test

@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.domain.transaction.repository
 
+import io.github.toanhp123.finote.domain.account.model.DriftKey
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
@@ -35,7 +36,8 @@ interface TransactionRepository {
 
     /**
      * Writes one ADJUSTMENT that brings the account's currentBalance to [actualBalance], all in one
-     * atomic unit. Returns null and writes nothing when the balance already matches.
+     * atomic unit. Returns null and writes nothing when the balance already matches. Either way a provisional
+     * start (`isInitialized = false`) is locked: the user just stated the real balance.
      */
     suspend fun reconcile(
         id: String,
@@ -44,16 +46,8 @@ interface TransactionRepository {
         now: Long,
     ): Transaction?
 
-    /**
-     * Writes one ADJUSTMENT that settles the account's current balance drift (see `detectBalanceDrift`), all in one
-     * atomic unit. The drift is recomputed from stored rows inside the write, so a booking that landed after the
-     * caller saw the drift cannot skew the amount. Returns null and writes nothing when there is no drift.
-     */
-    suspend fun adjustDrift(
-        id: String,
-        accountId: String,
-        now: Long,
-    ): Transaction?
+    /** The account's current drift identity (see `balanceDriftKey`), or null when it has no drift. */
+    suspend fun getDriftKey(accountId: String): DriftKey?
 
     suspend fun update(transaction: Transaction)
 

@@ -11,6 +11,7 @@ import io.github.toanhp123.finote.domain.account.model.BalanceDrift
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.account.tx
 import io.github.toanhp123.finote.domain.account.usecase.FakeAccountRepository
+import io.github.toanhp123.finote.domain.account.usecase.FakeDriftAcknowledgementRepository
 import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveBalanceDriftUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveUsableAccountsUseCase
@@ -23,12 +24,12 @@ import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
-import io.github.toanhp123.finote.domain.transaction.usecase.AdjustBalanceDriftUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransactionRepository
 import io.github.toanhp123.finote.domain.transaction.usecase.FakeTransferPairRepository
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveAutoPairedIdsUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.ReconcileBalanceUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -55,6 +56,7 @@ class TransactionListViewModelTest {
     private val accounts = FakeAccountRepository()
     private val categories = FakeCategoryRepository()
     private val fakeTx = FakeTransactionRepository(activeAccounts = setOf(A))
+    private val acks = FakeDriftAcknowledgementRepository()
 
     private fun seed() {
         accounts.stored[A] = testAccount(A)
@@ -69,8 +71,12 @@ class TransactionListViewModelTest {
             observeAccounts = ObserveAccountsUseCase(accounts),
             observeCategories = ObserveCategoriesUseCase(categories),
             observeDrifts =
-                ObserveBalanceDriftUseCase(ObserveUsableAccountsUseCase(ObserveAccountsUseCase(accounts)), fakeTx),
-            adjustBalanceDrift = AdjustBalanceDriftUseCase(fakeTx, FakeTransactionRunner(), clock),
+                ObserveBalanceDriftUseCase(
+                    ObserveUsableAccountsUseCase(ObserveAccountsUseCase(accounts)),
+                    fakeTx,
+                    acks,
+                ),
+            reconcileBalance = ReconcileBalanceUseCase(fakeTx, acks, FakeTransactionRunner(), clock),
             deleteTransaction = DeleteTransactionUseCase(fakeTx, FakeTransactionRunner(), clock),
             observeAutoPairedIds = ObserveAutoPairedIdsUseCase(FakeTransferPairRepository(fakeTx)),
             clock = clock,
@@ -304,7 +310,7 @@ class TransactionListViewModelTest {
 
             val vm = open()
 
-            assertEquals(listOf(BalanceDrift(A, 700_000 - 10_000)), vm.state.value.drifts)
+            assertEquals(listOf(BalanceDrift(A)), vm.state.value.drifts)
         }
 
     @Test
@@ -339,15 +345,75 @@ class TransactionListViewModelTest {
         }
 
     @Test
-    fun `adjust leaves the drift check to the repository`() =
+    fun `ReconcileClicked sets reconcilingAccountId`() =
         runTest(mainRule.dispatcher) {
             seed()
             val vm = open()
 
-            vm.onIntent(TransactionListIntent.AdjustDrift(A))
+            vm.onIntent(TransactionListIntent.ReconcileClicked(A))
+
+            assertEquals(A, vm.state.value.reconcilingAccountId)
+        }
+
+    @Test
+    fun `ReconcileSubmitted calls reconcile and closes the sheet`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val vm = open()
+            vm.onIntent(TransactionListIntent.ReconcileClicked(A))
+
+            vm.onIntent(TransactionListIntent.ReconcileSubmitted(1_234_000))
             runCurrent()
 
-            assertEquals(A, fakeTx.adjustCalls.single().accountId)
+            val call = fakeTx.reconcileCalls.single()
+            assertEquals(A, call.accountId)
+            assertEquals(1_234_000L, call.actualBalance)
+            assertNull(vm.state.value.reconcilingAccountId)
+        }
+
+    @Test
+    fun `ReconcileDismissed closes the sheet without reconciling`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val vm = open()
+            vm.onIntent(TransactionListIntent.ReconcileClicked(A))
+
+            vm.onIntent(TransactionListIntent.ReconcileDismissed)
+
+            assertNull(vm.state.value.reconcilingAccountId)
+            assertTrue(fakeTx.reconcileCalls.isEmpty())
+        }
+
+    @Test
+    fun `failed reconcile sends ReconcileFailed and keeps the sheet`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            fakeTx.failWrite = StorageException(SQLiteException("disk"))
+            val vm = open()
+            vm.onIntent(TransactionListIntent.ReconcileClicked(A))
+
+            vm.effects.test {
+                vm.onIntent(TransactionListIntent.ReconcileSubmitted(1_234_000))
+                runCurrent()
+                assertEquals(TransactionListEffect.ReconcileFailed, awaitItem())
+            }
+            assertEquals(A, vm.state.value.reconcilingAccountId)
+        }
+
+    @Test
+    fun `a reconcile the use case refuses sends ReconcileFailed and keeps the sheet`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            val vm = open()
+            // B is archived, so the use case answers AccountUnusable.
+            vm.onIntent(TransactionListIntent.ReconcileClicked(B))
+
+            vm.effects.test {
+                vm.onIntent(TransactionListIntent.ReconcileSubmitted(1_234_000))
+                runCurrent()
+                assertEquals(TransactionListEffect.ReconcileFailed, awaitItem())
+            }
+            assertEquals(B, vm.state.value.reconcilingAccountId)
         }
 
     private fun TestScope.click(

@@ -76,6 +76,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 9 | **Dogfood 1 tuần trên máy thật** | Cổng, không phải nhánh | | 🔧 |
 | 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ✅ N5 (L1, L2, N-06 ⏸ chờ mẫu VCB, MoMo) |
 | 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1, N4 | ✅ (chưa thử trên máy thật) |
+| 11b | `fix/ledger-order` | Sửa lỗi tiền N-03 | N1, N3 | ✅ |
 | 12 | `release/0.2.0` | | | ⬜ |
 
 **2. `chore/ledger-write-path`** — một cửa ghi cho mọi nguồn (tay, thông báo, điều chỉnh).
@@ -117,7 +118,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 **9. Dogfood** — cài bản release lên máy thật, dùng 1 tuần. Việc phải làm:
 - Cài bản `dogfood` (`assembleDogfood`): giống release, ký bằng khóa debug. Bản release ký khóa Play sau này không cài đè được lên bản này.
 - Gom mẫu thật (đã ẩn danh) của Techcombank vào corpus. User không có tài khoản VCB, MB, MoMo.
-- Mẫu Techcombank kiểm: L3 (thông báo đăng lại, thêm dòng; A5), N-03, N-05, N-20, N-23, APK release trên máy thật.
+- Mẫu Techcombank kiểm: L3 (thông báo đăng lại, thêm dòng; A5), N-05, N-20, N-23, APK release trên máy thật.
 - L1, L2, N-06 không kiểm được bằng Techcombank. Xin mẫu VCB (thẻ ghi nợ) và MoMo (nguồn ngân hàng) từ người quen, dạng ảnh chụp, che số tài khoản. Không có thì để mở, không chặn v0.2.
 - App không đẩy thông báo ra ngoài thì nhập tay (D15).
 - Lưu ý: bản cài ngoài Play trên Android 13+ cần "Allow restricted settings" mới cấp được quyền đọc thông báo.
@@ -134,6 +135,11 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 - Log lưu `notificationKey` (`sbn.key`), migration 9 → 10. Cùng key, cùng số tiền, chiều, 4 số cuối, cách gốc của cụm tối đa 10 phút, số dư không mâu thuẫn → đăng lại. Số dư khác nhau luôn là hai giao dịch.
 - So "ứng viên với sổ" (N3): `isCoveredByAdjustment` — có dòng điều chỉnh sau log và một số dư ngân hàng nằm giữa hai mốc → log `FAILED` với `adjusted_after`, kiểm trong transaction ghi. Failed-inbox, định kỳ và import dùng chung hàm này.
 - Bước 13 phải hiện cặp ngân hàng + ví `adjusted_after` thành một mục.
+
+**11b. `fix/ledger-order`** (N-03). Spec `docs/superpowers/specs/2026-11-23-ledger-order-design.md`.
+- Lệch số dư xét theo chuỗi số dư ngân hàng thay cho thứ tự thông báo: hai thông báo đến sai thứ tự không còn báo lệch giả.
+- Banner không còn số tiền, chỉ nói số dư có thể lệch; nút mở sheet nhập số dư thật. App không tự tính số điều chỉnh (D16). Chênh lệch 0 thì ghi nhận, banner ẩn đến khi sổ hoặc dòng ngân hàng mới đổi.
+- Số dư đầu của tài khoản mới là tạm trong 30 phút, sau đó mới khóa.
 
 ### Đoạn B — v0.3 (đủ Must-Have, báo cáo)
 
@@ -215,7 +221,6 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | Mã | Vấn đề | Sửa ở |
 |---|---|---|
 | N-01 | Rule hệ thống chưa đọc được số dư âm (thấu chi): `MONEY` không bắt dấu `-`. `parseMoney` đã sẵn sàng | Khi có mẫu thấu chi thật (thêm `-?` vào nhóm balance, tăng version) |
-| N-03 | Hai thông báo đến sai thứ tự gây báo lệch giả (sổ xếp theo `postTime`) | Bước 9 xem có xảy ra không |
 | N-06 | `vcb_card` có thể đọc hạn mức thẻ tín dụng thành số dư (nợ #8 cũ) | Bước 10 |
 | N-07 | Rule `isActive = false` vẫn lọc và vẫn tính để quyết định `NotTracked` | Bước 13 |
 | N-09 | `HttpParserRuleFeed` đọc chặn trên dispatcher của worker | Bước 30 |
@@ -232,7 +237,8 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-22 | Tách lại bị từ chối vì tài khoản đã lưu trữ chỉ hiện lỗi lưu chung, không nói lý do (giống nút Xóa) | Bước 14 |
 | N-23 | Listener chết trên Vivo/Xiaomi khi Autostart tắt: chỉ sống lại khi mở app (`rebindIfDisconnected`). Thông báo user xóa trước lúc đó thì mất, chỉ còn báo lệch số dư bắt được. Cần: màn Capture báo listener đang dừng (không chỉ quyền), hướng dẫn bật Autostart theo hãng máy | Bước 29 |
 | N-24 | Nút Copy mẫu (`masked()`) chỉ che chữ số; tên người chuyển trong ghi chú vẫn lộ. Che tên chung thì phá dạng ghi chú (chữ hoa). Tạm thời: đổi tên bằng tay trước khi đưa mẫu vào corpus | Khi có cách che theo rule |
-| N-25 | Hộp thoại gộp (`MergeDialog.kt`), `BalanceDriftBanner.kt` và `Selectors.kt` đưa số tiền vào câu bằng `formatMoney`, ngoài `MoneyText`; ẩn số dư ở bước 28 sẽ không che được | Bước 28 |
+| N-25 | Hộp thoại gộp (`MergeDialog.kt`) và `Selectors.kt` đưa số tiền vào câu bằng `formatMoney`, ngoài `MoneyText`; ẩn số dư ở bước 28 sẽ không che được | Bước 28 |
+| N-26 | Mốc "đã xác nhận" (`drift_ack.xml`) lưu SHA-256 của `accountId:T:L`, không phải số dư rõ, nhưng số dư ít entropy nên đọc được file prefs (máy root) thì dò ngược được. Hướng sửa: HMAC bằng khóa Keystore, hoặc thay `L` bằng dấu vết không chứa tiền (số dòng, `updatedAt` lớn nhất) | Bước 32 |
 
 ## 7. Quyết định
 
@@ -250,6 +256,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | D12 | P2d: ghép sau khi ghi, cửa sổ 30 phút hai chiều; chỉ ghép khi bằng tiền; phí nhập tay |
 | D13 | Định danh tài khoản: bảng riêng `account_identifiers` `(packageName, kind, mask)`, kind `ACCOUNT`/`CARD`/`WALLET`; rule khai `maskKind`, null thì suy từ `accountType`. Chốt 2026-11-22, spec `2026-11-22-account-identity-design.md` |
 | D15 | App không đẩy thông báo hệ thống (chỉ báo trong app, như MoMo theo quan sát của user 2026-11-22) thì user nhập tay. Không tìm cách bắt khác. Rule MoMo giữ nguyên, chưa kiểm trên mẫu thật |
+| D16 | App không tự tính số tiền điều chỉnh; banner lệch số dư hỏi số dư thật (spec `2026-11-23-ledger-order-design.md`) |
 
 ### Còn mở
 

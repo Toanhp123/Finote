@@ -149,12 +149,17 @@
         <item quantity="other">パターン %1$d 件 · v%2$d</item>
     </plurals>
     <string name="capture_bank_edited">あなたの編集あり</string>
-    <string name="balance_drift_message">%1$sの残高が銀行と%2$sずれています</string>
+    <string name="balance_drift_message">%1$sの残高が銀行と異なる可能性があります</string>
     <plurals name="balance_drift_others">
         <item quantity="other">ほか%d件のアカウント</item>
     </plurals>
-    <string name="balance_drift_adjust">調整</string>
-    <string name="balance_drift_adjust_cd">%1$sの残高を調整</string>
+    <string name="balance_drift_adjust">実際の残高を入力</string>
+    <string name="balance_drift_adjust_cd">%1$sの実際の残高を入力</string>
+    <string name="reconcile_title">実際の残高</string>
+    <string name="reconcile_field">銀行アプリの残高</string>
+    <string name="reconcile_in_app">アプリ内</string>
+    <string name="reconcile_difference">差額</string>
+    <string name="reconcile_error">残高を保存できませんでした</string>
     <string name="settings_group_accounts">口座</string>
     <string name="settings_accounts_title">口座</string>
     <string name="settings_accounts_subtitle">統合と無視</string>

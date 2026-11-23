@@ -149,12 +149,17 @@
         <item quantity="other">%1$d 条规则 · v%2$d</item>
     </plurals>
     <string name="capture_bank_edited">含你的修改</string>
-    <string name="balance_drift_message">%1$s与银行相差%2$s</string>
+    <string name="balance_drift_message">%1$s的余额可能与银行不一致</string>
     <plurals name="balance_drift_others">
         <item quantity="other">还有%d个其他账户</item>
     </plurals>
-    <string name="balance_drift_adjust">调整</string>
-    <string name="balance_drift_adjust_cd">调整%1$s的余额</string>
+    <string name="balance_drift_adjust">输入真实余额</string>
+    <string name="balance_drift_adjust_cd">输入%1$s的真实余额</string>
+    <string name="reconcile_title">真实余额</string>
+    <string name="reconcile_field">银行应用中的余额</string>
+    <string name="reconcile_in_app">应用内</string>
+    <string name="reconcile_difference">差额</string>
+    <string name="reconcile_error">无法保存余额</string>
     <string name="settings_group_accounts">账户</string>
     <string name="settings_accounts_title">账户</string>
     <string name="settings_accounts_subtitle">合并或忽略</string>

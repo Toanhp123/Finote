@@ -12,7 +12,7 @@ import io.github.toanhp123.finote.data.notification.repository.NotificationSettl
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.model.IdentifierKind
-import io.github.toanhp123.finote.domain.account.service.detectBalanceDrift
+import io.github.toanhp123.finote.domain.account.service.balanceDriftKey
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
@@ -137,7 +137,7 @@ class TransferPairRepositoryImplTest {
                 .transactionDao()
                 .getActiveByAccount(accountId)
                 .map { it.toDomain() }
-        assertNull(detectBalanceDrift(stored, rows))
+        assertNull(balanceDriftKey(stored, rows))
     }
 
     @Test

@@ -128,6 +128,14 @@ sealed interface AmountResult {
     ) : AmountResult
 }
 
+/** The number a result shows: an unfinished (not positive) result still has one; empty and invalid have none. */
+fun AmountResult.valueOrNull(): Long? =
+    when (this) {
+        is AmountResult.Ok -> amount
+        is AmountResult.NotPositive -> value
+        else -> null
+    }
+
 enum class InvalidReason { DIVIDE_BY_ZERO, OVERFLOW }
 
 enum class CalcKey(

@@ -152,13 +152,18 @@
         <item quantity="other">%1$d patterns · v%2$d</item>
     </plurals>
     <string name="capture_bank_edited">has your edits</string>
-    <string name="balance_drift_message">%1$s differs from the bank by %2$s</string>
+    <string name="balance_drift_message">%1$s balance may differ from the bank</string>
     <plurals name="balance_drift_others">
         <item quantity="one">and %d other account</item>
         <item quantity="other">and %d other accounts</item>
     </plurals>
-    <string name="balance_drift_adjust">Adjust</string>
-    <string name="balance_drift_adjust_cd">Adjust balance of %1$s</string>
+    <string name="balance_drift_adjust">Enter real balance</string>
+    <string name="balance_drift_adjust_cd">Enter the real balance of %1$s</string>
+    <string name="reconcile_title">Real balance</string>
+    <string name="reconcile_field">Balance in your bank app</string>
+    <string name="reconcile_in_app">In app</string>
+    <string name="reconcile_difference">Difference</string>
+    <string name="reconcile_error">Could not save the balance</string>
     <string name="settings_group_accounts">ACCOUNTS</string>
     <string name="settings_accounts_title">Accounts</string>
     <string name="settings_accounts_subtitle">Merge or ignore</string>

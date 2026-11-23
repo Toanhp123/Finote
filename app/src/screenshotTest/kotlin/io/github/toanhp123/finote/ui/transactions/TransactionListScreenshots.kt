@@ -84,9 +84,9 @@ private fun TransactionListDriftPreview() =
         populated().copy(
             drifts =
                 listOf(
-                    BalanceDrift(bank.id, 50_000),
-                    BalanceDrift(cash.id, -20_000),
-                    BalanceDrift(momo.id, 10_000),
+                    BalanceDrift(bank.id),
+                    BalanceDrift(cash.id),
+                    BalanceDrift(momo.id),
                 ),
         ),
     )

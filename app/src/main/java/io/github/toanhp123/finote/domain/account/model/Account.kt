@@ -19,6 +19,10 @@ data class Account(
     val sortOrder: Int,
     val isExcludedFromNetWorth: Boolean,
     val isArchived: Boolean,
+    /**
+     * False: provisional start, recomputed by `provisionalStart` on each notification until `isStartLocked` or a
+     * reconcile. True: fixed.
+     */
     val isInitialized: Boolean,
     val createdAt: Long,
     val updatedAt: Long,

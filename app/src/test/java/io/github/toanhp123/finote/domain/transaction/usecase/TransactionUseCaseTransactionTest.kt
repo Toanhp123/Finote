@@ -6,6 +6,7 @@ import io.github.toanhp123.finote.data.database.RoomTransactionRunner
 import io.github.toanhp123.finote.data.database.account
 import io.github.toanhp123.finote.data.transaction.repository.TransactionRepositoryImpl
 import io.github.toanhp123.finote.data.transaction.repository.domainTx
+import io.github.toanhp123.finote.domain.account.usecase.FakeDriftAcknowledgementRepository
 import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.transaction.error.TransactionError
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
@@ -122,7 +123,13 @@ class TransactionUseCaseTransactionTest {
             accounts.insert(account(id = "acc-1", currentBalance = 1_000_000L))
             val accountBefore = checkNotNull(accounts.getById("acc-1"))
 
-            val result = ReconcileBalanceUseCase(repo, runner, clock)("acc-1", Long.MIN_VALUE)
+            val result =
+                ReconcileBalanceUseCase(
+                    repo,
+                    FakeDriftAcknowledgementRepository(),
+                    runner,
+                    clock,
+                )("acc-1", Long.MIN_VALUE)
 
             assertEquals(Outcome.Err(TransactionError.AmountOverflow), result)
             assertEquals(accountBefore, accounts.getById("acc-1"))

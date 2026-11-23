@@ -5,4 +5,5 @@
     <exclude domain="sharedpref" path="db_key.xml" />
     <exclude domain="sharedpref" path="rule_update.xml" />
     <exclude domain="sharedpref" path="app_setup.xml" />
+    <exclude domain="sharedpref" path="drift_ack.xml" />
 </full-backup-content>

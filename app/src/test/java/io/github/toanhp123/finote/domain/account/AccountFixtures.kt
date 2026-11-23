@@ -8,10 +8,11 @@ internal fun testAccount(
     name: String = "Test account",
     initialBalance: Long = 1_000_000L,
     currency: String = "VND",
+    type: AccountType = AccountType.BANK,
 ) = Account(
     id = id,
     name = name,
-    type = AccountType.BANK,
+    type = type,
     initialBalance = initialBalance,
     currentBalance = initialBalance,
     currency = currency,

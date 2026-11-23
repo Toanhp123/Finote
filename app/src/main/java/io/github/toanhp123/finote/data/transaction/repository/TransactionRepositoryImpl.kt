@@ -8,7 +8,8 @@ import io.github.toanhp123.finote.data.database.storageWrite
 import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntity
 import io.github.toanhp123.finote.data.transaction.mapper.toDomain
 import io.github.toanhp123.finote.data.transaction.mapper.toEntity
-import io.github.toanhp123.finote.domain.account.service.detectBalanceDrift
+import io.github.toanhp123.finote.domain.account.model.DriftKey
+import io.github.toanhp123.finote.domain.account.service.balanceDriftKey
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
@@ -65,19 +66,15 @@ class TransactionRepositoryImpl
         ): Transaction? =
             db.storageWrite {
                 val account = checkNotNull(db.accountDao().getById(accountId))
+                if (!account.isInitialized) db.accountDao().update(account.copy(isInitialized = true))
                 writeAdjustment(id, accountId, Math.subtractExact(actualBalance, account.currentBalance), now)
             }
 
-        override suspend fun adjustDrift(
-            id: String,
-            accountId: String,
-            now: Long,
-        ): Transaction? =
-            db.storageWrite {
+        override suspend fun getDriftKey(accountId: String): DriftKey? =
+            storage {
                 val account = checkNotNull(db.accountDao().getById(accountId))
                 val live = transactions.getActiveByAccount(accountId).map { it.toDomain() }
-                val drift = detectBalanceDrift(account.toDomain(), live) ?: return@storageWrite null
-                writeAdjustment(id, accountId, drift.difference, now)
+                balanceDriftKey(account.toDomain(), live)
             }
 
         override suspend fun update(transaction: Transaction) {

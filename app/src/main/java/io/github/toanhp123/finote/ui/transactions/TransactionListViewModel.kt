@@ -11,10 +11,10 @@ import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
-import io.github.toanhp123.finote.domain.transaction.usecase.AdjustBalanceDriftUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveAutoPairedIdsUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.ObserveTransactionListUseCase
+import io.github.toanhp123.finote.domain.transaction.usecase.ReconcileBalanceUseCase
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import io.github.toanhp123.finote.ui.transactions.logic.isOpenable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,7 +36,7 @@ class TransactionListViewModel
         observeAccounts: ObserveAccountsUseCase,
         observeCategories: ObserveCategoriesUseCase,
         observeDrifts: ObserveBalanceDriftUseCase,
-        private val adjustBalanceDrift: AdjustBalanceDriftUseCase,
+        private val reconcileBalance: ReconcileBalanceUseCase,
         private val deleteTransaction: DeleteTransactionUseCase,
         observeAutoPairedIds: ObserveAutoPairedIdsUseCase,
         private val clock: Clock,
@@ -135,8 +135,16 @@ class TransactionListViewModel
                     setState { copy(deletingId = null) }
                 }
 
-                is TransactionListIntent.AdjustDrift -> {
-                    adjust(intent.accountId)
+                is TransactionListIntent.ReconcileClicked -> {
+                    setState { copy(reconcilingAccountId = intent.accountId) }
+                }
+
+                is TransactionListIntent.ReconcileSubmitted -> {
+                    reconcile(intent.actualBalance)
+                }
+
+                TransactionListIntent.ReconcileDismissed -> {
+                    setState { copy(reconcilingAccountId = null) }
                 }
             }
         }
@@ -170,12 +178,19 @@ class TransactionListViewModel
 
         private fun sendDeleteFailed() = sendEffect(TransactionListEffect.DeleteFailed)
 
-        // The drift flow re-emits once the adjustment lands, which removes the banner.
-        private fun adjust(accountId: String) {
-            // An Err (account no longer usable, or a drift too large to book) or a storage failure leaves the banner,
-            // so the user can tap again. Nothing is logged: the content is financial data.
-            launchCatching(onStorageError = {}) { adjustBalanceDrift(accountId) }
+        // The sheet closes only on success, so a failed save keeps what the user typed. The drift flow re-emits once
+        // the adjustment or the acknowledgement lands, which removes the banner. Nothing is logged: financial data.
+        private fun reconcile(actualBalance: Long) {
+            val accountId = state.value.reconcilingAccountId ?: return
+            launchCatching(onStorageError = ::sendReconcileFailed) {
+                when (reconcileBalance(accountId, actualBalance)) {
+                    is Outcome.Ok -> setState { copy(reconcilingAccountId = null) }
+                    is Outcome.Err -> sendReconcileFailed()
+                }
+            }
         }
+
+        private fun sendReconcileFailed() = sendEffect(TransactionListEffect.ReconcileFailed)
 
         /** The list for one filter choice; a null [days] is a failed list. */
         private data class Listing(
