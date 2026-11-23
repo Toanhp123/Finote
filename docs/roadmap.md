@@ -7,7 +7,7 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 ## 1. Hiện trạng (2026-11-23)
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2d (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản, ghép chuyển khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Bước 1–11b xong (2026-11-23). Đang làm: bước 12 (`release/0.2.0`). Tiếp theo: đoạn B, bắt đầu bước 13.
+- Đoạn A xong: v0.2.0 phát hành 2026-11-23 (tag `v0.2.0`). Tiếp theo: đoạn B, bắt đầu bước 13 (`feature/failed-inbox`).
 - Dogfood đóng 2026-11-23 (chỉ Techcombank): APK dogfood (R8) chạy ổn trên máy thật; `EncryptedDatabaseTest` qua trên máy thật; chưa gặp báo lệch số dư; luồng bình thường của bản sửa N-03 đã thử trên máy Vivo.
 - Mẫu thật chỉ gom được của Techcombank (2026-11-22): user không có tài khoản VCB, MB, MoMo. Rule VCB, MB, MoMo chỉ kiểm trên mẫu tổng hợp (D4).
 - DB version 10, có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
@@ -77,7 +77,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 10 | `fix/account-identity` | Sửa lỗi tiền L1, L2; nền móng N5 | N4 | ✅ N5 (L1, L2, N-06 ⏸ chờ mẫu VCB, MoMo) |
 | 11 | `fix/double-booking` | Sửa lỗi tiền L3, L4 (A5); N3 | N1, N4 | ✅ `6de7196` |
 | 11b | `fix/ledger-order` | Sửa lỗi tiền N-03 | N1, N3 | ✅ |
-| 12 | `release/0.2.0` | | | 🔧 |
+| 12 | `release/0.2.0` | | | ✅ tag `v0.2.0` |
 
 **2. `chore/ledger-write-path`** — một cửa ghi cho mọi nguồn (tay, thông báo, điều chỉnh).
 - `book` của settlement dựng `Transaction` domain và đi qua cùng rule và cùng hàm ghi với nhập tay. Không tự dựng `TransactionEntity`.
@@ -302,8 +302,9 @@ Chi tiết từng nhánh: `docs/roadmap-history.md` và `git log dev`.
 | Bước 10 | `fix/account-identity` (N5) | `7383c9d` |
 | Bước 11 | `fix/double-booking` (L3, L4) | `6de7196` |
 | Bước 11b | `fix/ledger-order` (N-03) | `25492b9` |
+| Bước 12 | `release/0.2.0` | `main`: `b1d5f49` (PR #3); `dev`: `efd59a9` |
 
 Ghi chú vận hành còn hiệu lực:
 - Feed rule `rules/v1/feed.json` ký ECDSA P-256; khóa riêng ở `~/.finote/finote-rules.pem` (ngoài repo). Ký lại: `testDebugUnitTest --tests '*RuleFeedSigningTool*' -PsignRuleFeed=true`. Feed phải lên `main` cùng hoặc trước bản phát hành đầu có OTA.
 - Test Room dùng DB không mã hóa; mã hóa kiểm bằng instrumented test.
-- Nhánh local chờ user xóa (nếu còn): `chore/ui-components`, `chore/ui-overlay-api`, `chore/test-hygiene`, `chore/errors-transaction` (kiểm đã vào `dev` trước khi xóa).
+- Có remote `origin`: phát hành theo release flow mới ở `docs/git-workflow.md` (PR vào `main`, tag sau khi PR merge).

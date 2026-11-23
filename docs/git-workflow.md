@@ -45,12 +45,20 @@ git switch -c release/1.0.0
 # bump versionName and versionCode in app/build.gradle.kts
 git commit -m "build: bump version to 1.0.0"
 ./gradlew.bat qualityGate
+git push -u origin release/1.0.0
+# open a PR release/1.0.0 -> main; merge it with "Create a merge commit" (never squash or rebase)
 git switch main
-git merge --no-ff --no-edit release/1.0.0
-git tag -a v1.0.0 -m "Release 1.0.0"
+git pull --ff-only
+git tag -a v1.0.0 -m "Release 1.0.0"   # on main's merge commit, not on a local merge
+git push origin v1.0.0
 git switch dev
 git merge --no-ff --no-edit release/1.0.0
+git push origin dev
+git push origin --delete release/1.0.0
+git branch -d release/1.0.0
 ```
+
+- Tag only after the PR merges, on the merge commit `main` now holds. A tag on a local merge that never reaches `main` leaves `git describe` broken (this happened with v0.2.0 and was fixed by re-tagging).
 
 A hotfix follows the same steps. It starts with `git switch -c hotfix/1.0.1 main` and merges into `main`, then `dev`.
 
