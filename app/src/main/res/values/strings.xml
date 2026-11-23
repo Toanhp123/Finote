@@ -1,3 +1,211 @@
 <resources>
     <string name="app_name">Finote</string>
+    <string name="balance_total">Tổng số dư</string>
+    <string name="balance_income">Thu</string>
+    <string name="balance_expense">Chi</string>
+    <string name="cd_loading">Đang tải</string>
+    <string name="cd_back">Quay lại</string>
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Hủy</string>
+    <string name="action_delete">Xóa</string>
+    <string name="sys_food">Ăn uống</string>
+    <string name="sys_food_groceries">Đi chợ</string>
+    <string name="sys_food_restaurants">Nhà hàng</string>
+    <string name="sys_food_coffee">Cà phê &amp; ăn vặt</string>
+    <string name="sys_transport">Di chuyển</string>
+    <string name="sys_transport_fuel">Xăng dầu</string>
+    <string name="sys_transport_parking">Gửi xe &amp; phí cầu đường</string>
+    <string name="sys_transport_taxi">Taxi &amp; xe công nghệ</string>
+    <string name="sys_transport_transit">Phương tiện công cộng</string>
+    <string name="sys_transport_maintenance">Bảo dưỡng xe</string>
+    <string name="sys_housing">Nhà ở</string>
+    <string name="sys_housing_rent">Tiền thuê nhà</string>
+    <string name="sys_housing_utilities">Điện, nước, gas</string>
+    <string name="sys_housing_internet">Internet &amp; điện thoại</string>
+    <string name="sys_housing_maintenance">Sửa chữa nhà</string>
+    <string name="sys_shopping">Mua sắm</string>
+    <string name="sys_shopping_clothing">Quần áo</string>
+    <string name="sys_shopping_electronics">Đồ điện tử</string>
+    <string name="sys_shopping_household">Đồ gia dụng</string>
+    <string name="sys_health">Sức khỏe</string>
+    <string name="sys_health_medical">Khám chữa bệnh</string>
+    <string name="sys_health_pharmacy">Thuốc men</string>
+    <string name="sys_health_insurance">Bảo hiểm</string>
+    <string name="sys_education">Giáo dục</string>
+    <string name="sys_education_tuition">Học phí</string>
+    <string name="sys_education_courses">Sách &amp; khóa học</string>
+    <string name="sys_entertainment">Giải trí</string>
+    <string name="sys_entertainment_media">Phim &amp; nhạc</string>
+    <string name="sys_entertainment_travel">Du lịch</string>
+    <string name="sys_entertainment_sports">Thể thao &amp; sở thích</string>
+    <string name="sys_family">Gia đình &amp; cá nhân</string>
+    <string name="sys_family_children">Con cái</string>
+    <string name="sys_family_personal_care">Chăm sóc cá nhân</string>
+    <string name="sys_family_pets">Thú cưng</string>
+    <string name="sys_gifts">Quà tặng &amp; từ thiện</string>
+    <string name="sys_gifts_gifts">Quà tặng</string>
+    <string name="sys_gifts_charity">Từ thiện</string>
+    <string name="sys_fees">Phí &amp; lệ phí</string>
+    <string name="sys_fees_bank">Phí ngân hàng</string>
+    <string name="sys_fees_taxes">Thuế</string>
+    <string name="sys_other">Khác</string>
+    <string name="sys_income_salary">Lương</string>
+    <string name="sys_income_bonus">Thưởng</string>
+    <string name="sys_income_business">Kinh doanh</string>
+    <string name="sys_income_investment">Đầu tư &amp; lãi</string>
+    <string name="sys_income_gifts">Quà nhận được</string>
+    <string name="sys_income_other">Thu nhập khác</string>
+    <string name="sys_cash">Tiền mặt</string>
+    <string name="cash_entry_expense">Chi</string>
+    <string name="cash_entry_income">Thu</string>
+    <string name="cash_entry_save">Lưu</string>
+    <string name="cash_entry_account">Tài khoản</string>
+    <string name="cash_entry_category">Danh mục</string>
+    <string name="cash_entry_no_account">Chưa có tài khoản</string>
+    <string name="cash_entry_no_category">Không chọn danh mục</string>
+    <string name="cash_entry_transfer">Chuyển</string>
+    <string name="cash_entry_to_account">Tài khoản đích</string>
+    <string name="cash_entry_choose_account">Chọn tài khoản</string>
+    <string name="cash_entry_fee">Phí</string>
+    <string name="cash_entry_to_value">Đến %1$s</string>
+    <string name="cash_entry_fee_value">Phí %1$s</string>
+    <string name="cash_entry_no_destination">Cần ít nhất hai tài khoản để chuyển</string>
+    <string name="cash_entry_date">Ngày</string>
+    <string name="cash_entry_note">Ghi chú</string>
+    <string name="cash_entry_today">Hôm nay</string>
+    <string name="cash_entry_error_divide_by_zero">Không chia được cho 0</string>
+    <string name="cash_entry_error_overflow">Số quá lớn</string>
+    <string name="cash_entry_error_save">Không lưu được, thử lại</string>
+    <string name="cash_entry_done">Xong</string>
+    <string name="cash_entry_delete_cd">Xóa giao dịch</string>
+    <string name="cash_entry_delete_title">Xóa giao dịch này?</string>
+    <string name="cash_entry_delete_text">Số dư tài khoản sẽ được tính lại.</string>
+    <string name="cash_entry_unpair">Không phải chuyển khoản</string>
+    <string name="cash_entry_unpair_confirm_title">Tách thành hai giao dịch?</string>
+    <string name="cash_entry_unpair_confirm_body">Tách lại thành hai giao dịch Chi và Thu ban đầu. Những thay đổi bạn đã sửa trên dòng này sẽ mất.</string>
+    <string name="cash_entry_backspace">Xóa</string>
+    <string name="cash_entry_tile_label">Ghi tiền mặt</string>
+    <string name="cash_entry_shortcut_short">Ghi tiền mặt</string>
+    <string name="cash_entry_shortcut_long">Ghi khoản tiền mặt</string>
+    <string name="tab_overview">Tổng quan</string>
+    <string name="tab_transactions">Giao dịch</string>
+    <string name="tab_budget">Ngân sách</string>
+    <string name="tab_settings">Cài đặt</string>
+    <string name="coming_soon_title">Sắp có</string>
+    <string name="transactions_all">Tất cả</string>
+    <string name="transactions_today">Hôm nay</string>
+    <string name="transactions_yesterday">Hôm qua</string>
+    <string name="transactions_transfer">Chuyển khoản</string>
+    <string name="transactions_adjustment">Điều chỉnh số dư</string>
+    <string name="transactions_uncategorized">Chưa phân loại</string>
+    <string name="transactions_deleted_account">Tài khoản đã xóa</string>
+    <string name="transactions_auto_paired">Tự ghép</string>
+    <string name="transactions_empty">Chưa có giao dịch</string>
+    <string name="transactions_empty_account">Tài khoản này chưa có giao dịch</string>
+    <string name="transactions_error">Không tải được giao dịch</string>
+    <string name="reimbursement_title">Chi hộ</string>
+    <string name="reimbursement_normal">Bình thường</string>
+    <string name="reimbursement_pending">Chờ trả</string>
+    <string name="reimbursement_settled">Đã trả</string>
+    <string name="transactions_empty_pending">Không có khoản chờ trả</string>
+    <string name="setup_title">Tự động ghi giao dịch</string>
+    <string name="setup_body">Finote đọc thông báo của app ngân hàng để tự ghi giao dịch.</string>
+    <string name="setup_point_banks">Chỉ đọc app đã hỗ trợ: Vietcombank, MB Bank, MoMo, Techcombank.</string>
+    <string name="setup_point_otp">Bỏ qua OTP và mã xác thực, không lưu.</string>
+    <string name="setup_point_local">Dữ liệu nằm trên máy, đã mã hóa, không gửi đi đâu.</string>
+    <string name="setup_howto">Tìm Finote trong danh sách và bật.</string>
+    <string name="setup_restricted_hint">Nếu thấy \"Restricted setting\": Thông tin ứng dụng → ⋮ → Cho phép cài đặt hạn chế.</string>
+    <string name="setup_enable">Bật tự động ghi</string>
+    <string name="setup_retry">Thử lại</string>
+    <string name="setup_later">Để sau, tôi nhập tay</string>
+    <string name="setup_granted">Đã bật</string>
+    <string name="transactions_listener_off">Tự động ghi đang tắt. Bấm để bật.</string>
+    <string name="transactions_delete_adjustment_title">Xóa điều chỉnh này?</string>
+    <string name="transactions_delete_adjustment_text">Nếu số dư còn lệch, bạn có thể điều chỉnh lại.</string>
+    <string name="transactions_delete_error">Không xóa được. Thử lại.</string>
+    <string name="settings_group_capture">TỰ ĐỘNG GHI</string>
+    <string name="settings_capture_title">Ghi từ thông báo</string>
+    <string name="settings_access_on">Bật</string>
+    <string name="settings_access_off">Tắt</string>
+    <plurals name="settings_capture_subtitle">
+        <item quantity="other">%1$s · %2$d ngân hàng</item>
+    </plurals>
+    <string name="capture_group_access">QUYỀN TRUY CẬP</string>
+    <string name="capture_access_row">Đọc thông báo</string>
+    <string name="capture_group_patterns">MẪU NHẬN DIỆN</string>
+    <string name="capture_auto_update">Cập nhật hằng ngày</string>
+    <string name="capture_privacy">Chỉ tải mẫu nhận diện. Không gửi dữ liệu nào ra khỏi máy.</string>
+    <string name="capture_check_now">Kiểm tra ngay</string>
+    <string name="capture_last_check">Lần kiểm tra cuối: %1$s · %2$s</string>
+    <plurals name="capture_result_updated">
+        <item quantity="other">đã cập nhật %d mẫu</item>
+    </plurals>
+    <string name="capture_result_up_to_date">đã là bản mới nhất</string>
+    <string name="capture_result_network">không có mạng</string>
+    <string name="capture_result_invalid">dữ liệu tải về không hợp lệ</string>
+    <string name="capture_result_error">có lỗi, thử lại sau</string>
+    <string name="capture_group_banks">NGÂN HÀNG ĐƯỢC HỖ TRỢ</string>
+    <plurals name="capture_bank_summary">
+        <item quantity="other">%1$d mẫu · v%2$d</item>
+    </plurals>
+    <string name="capture_bank_edited">có chỉnh sửa của bạn</string>
+    <string name="balance_drift_message">Số dư %1$s có thể lệch với ngân hàng</string>
+    <plurals name="balance_drift_others">
+        <item quantity="other">và %d tài khoản khác</item>
+    </plurals>
+    <string name="balance_drift_adjust">Nhập số dư thật</string>
+    <string name="balance_drift_adjust_cd">Nhập số dư thật của %1$s</string>
+    <string name="reconcile_title">Số dư thật</string>
+    <string name="reconcile_field">Số dư trong app ngân hàng</string>
+    <string name="reconcile_in_app">Trong app</string>
+    <string name="reconcile_difference">Chênh lệch</string>
+    <string name="reconcile_error">Không lưu được số dư</string>
+    <string name="settings_group_accounts">TÀI KHOẢN</string>
+    <string name="settings_accounts_title">Tài khoản</string>
+    <string name="settings_accounts_subtitle">Gộp hoặc bỏ qua</string>
+    <string name="accounts_ignored_label">Đã bỏ qua</string>
+    <string name="accounts_merge_into">Gộp vào…</string>
+    <string name="accounts_merge_none">Không có tài khoản nào khác của cùng ngân hàng để gộp.</string>
+    <string name="accounts_ignore_action">Bỏ qua tài khoản</string>
+    <string name="accounts_follow_again">Theo dõi lại</string>
+    <string name="accounts_merge_dialog_title">Gộp %1$s vào %2$s?</string>
+    <plurals name="accounts_merge_dialog_text">
+        <item quantity="other">%d giao dịch sẽ chuyển sang. Không thể hoàn tác.</item>
+    </plurals>
+    <string name="accounts_merge_confirm">Gộp</string>
+    <string name="accounts_merge_drops_start">Số dư đầu %1$s của %2$s sẽ bị bỏ. Có thể chỉnh lại bằng Điều chỉnh.</string>
+    <string name="accounts_ignore_dialog_title">Bỏ qua tài khoản này?</string>
+    <string name="accounts_ignore_dialog_text">Sẽ không ghi giao dịch mới nào cho tài khoản này.</string>
+    <plurals name="accounts_ignore_trash">
+        <item quantity="other">Chuyển %d giao dịch cũ vào thùng rác</item>
+    </plurals>
+    <string name="accounts_ignore_confirm">Bỏ qua</string>
+    <string name="accounts_snack_merged">Đã gộp tài khoản</string>
+    <string name="accounts_snack_ignored">Đã bỏ qua tài khoản</string>
+    <string name="accounts_snack_following">Đang theo dõi lại tài khoản</string>
+    <string name="accounts_snack_transfer">Không thể gộp: có giao dịch chuyển giữa hai tài khoản</string>
+    <string name="accounts_snack_failed">Không thực hiện được. Thử lại sau.</string>
+    <string name="settings_logs_title" translatable="false">Nhật ký thông báo</string>
+    <string name="settings_logs_subtitle" translatable="false">Chỉ có ở bản debug và dogfood</string>
+    <string name="logs_empty" translatable="false">Chưa có thông báo nào</string>
+    <string name="logs_copy" translatable="false">Sao chép mẫu đã che số</string>
+    <string name="logs_copy_note" translatable="false">Kiểm tra và xóa tên riêng trước khi commit.</string>
+    <string name="logs_copied" translatable="false">Đã sao chép mẫu</string>
+    <string name="logs_none" translatable="false">—</string>
+    <string name="logs_row_meta" translatable="false">%1$s · %2$s</string>
+    <string name="logs_field_status" translatable="false">Trạng thái</string>
+    <string name="logs_field_failure" translatable="false">Lý do lỗi</string>
+    <string name="logs_field_content" translatable="false">Nội dung</string>
+    <string name="logs_field_post_time" translatable="false">Giờ đăng</string>
+    <string name="logs_field_received_at" translatable="false">Giờ nhận</string>
+    <string name="logs_field_channel" translatable="false">Kênh</string>
+    <string name="logs_field_hash" translatable="false">Mã băm nội dung</string>
+    <string name="logs_field_rule" translatable="false">Luật khớp</string>
+    <string name="logs_field_amount" translatable="false">Số tiền</string>
+    <string name="logs_field_type" translatable="false">Loại</string>
+    <string name="logs_field_mask" translatable="false">Đuôi tài khoản</string>
+    <string name="logs_field_balance" translatable="false">Số dư sau</string>
+    <string name="logs_field_merchant" translatable="false">Nơi nhận</string>
+    <string name="logs_field_note" translatable="false">Ghi chú</string>
+    <string name="logs_field_transaction" translatable="false">Giao dịch liên kết</string>
 </resources>

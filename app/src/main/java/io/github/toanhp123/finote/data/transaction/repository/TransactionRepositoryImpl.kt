@@ -1,0 +1,129 @@
+package io.github.toanhp123.finote.data.transaction.repository
+
+import io.github.toanhp123.finote.data.account.mapper.toDomain
+import io.github.toanhp123.finote.data.database.FinoteDatabase
+import io.github.toanhp123.finote.data.database.mapStorageErrors
+import io.github.toanhp123.finote.data.database.storage
+import io.github.toanhp123.finote.data.database.storageWrite
+import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntity
+import io.github.toanhp123.finote.data.transaction.mapper.toDomain
+import io.github.toanhp123.finote.data.transaction.mapper.toEntity
+import io.github.toanhp123.finote.domain.account.model.DriftKey
+import io.github.toanhp123.finote.domain.account.service.balanceDriftKey
+import io.github.toanhp123.finote.domain.category.model.CategoryType
+import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
+import io.github.toanhp123.finote.domain.transaction.model.Transaction
+import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
+import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import java.time.Clock
+import javax.inject.Inject
+
+class TransactionRepositoryImpl
+    @Inject
+    constructor(
+        private val db: FinoteDatabase,
+        clock: Clock,
+    ) : TransactionRepository {
+        private val transactions = db.transactionDao()
+        private val ledger = LedgerWriter(db, clock)
+
+        override suspend fun getTransaction(id: String): Transaction? = storage { transactions.getById(id)?.toDomain() }
+
+        override suspend fun getUsableAccountIds(accountIds: Set<String>): Set<String> =
+            storage {
+                accountIds.filterTo(mutableSetOf()) { id ->
+                    db
+                        .accountDao()
+                        .getById(id)
+                        ?.toDomain()
+                        ?.isUsable == true
+                }
+            }
+
+        override suspend fun getCategoryType(categoryId: String): CategoryType? =
+            storage { db.categoryDao().getById(categoryId)?.type }
+
+        override suspend fun getLastManualAccountId(): String? = storage { transactions.getLastManualAccountId() }
+
+        override suspend fun getLastManualCategoryId(type: TransactionType): String? =
+            storage { transactions.getLastManualCategoryId(type) }
+
+        override fun observeTransactions(accountId: String?): Flow<List<Transaction>> =
+            transactions.observeTransactions(accountId).map { rows -> rows.map { it.toDomain() } }.mapStorageErrors()
+
+        override suspend fun add(transaction: Transaction) {
+            db.storageWrite { ledger.insert(transaction) }
+        }
+
+        override suspend fun reconcile(
+            id: String,
+            accountId: String,
+            actualBalance: Long,
+            now: Long,
+        ): Transaction? =
+            db.storageWrite {
+                val account = checkNotNull(db.accountDao().getById(accountId))
+                if (!account.isInitialized) db.accountDao().update(account.copy(isInitialized = true))
+                writeAdjustment(id, accountId, Math.subtractExact(actualBalance, account.currentBalance), now)
+            }
+
+        override suspend fun getDriftKey(accountId: String): DriftKey? =
+            storage {
+                val account = checkNotNull(db.accountDao().getById(accountId))
+                val live = transactions.getActiveByAccount(accountId).map { it.toDomain() }
+                balanceDriftKey(account.toDomain(), live)
+            }
+
+        override suspend fun update(transaction: Transaction) {
+            db.storageWrite {
+                val old = checkNotNull(transactions.getById(transaction.id))
+                val entity = transaction.toEntity()
+                transactions.update(entity)
+                ledger.rebuild(old.accountIds() + entity.accountIds())
+            }
+        }
+
+        override suspend fun softDelete(
+            id: String,
+            deletedAt: Long,
+        ) {
+            db.storageWrite {
+                val old = checkNotNull(transactions.getById(id))
+                if (old.deletedAt != null) return@storageWrite
+                transactions.update(old.copy(deletedAt = deletedAt, updatedAt = deletedAt))
+                ledger.rebuild(old.accountIds())
+            }
+        }
+
+        /** Inserts one ADJUSTMENT worth [delta] (signed) and rebuilds the account; null and no write when 0. */
+        private suspend fun writeAdjustment(
+            id: String,
+            accountId: String,
+            delta: Long,
+            now: Long,
+        ): Transaction? {
+            if (delta == 0L) return null
+            val adjustment =
+                Transaction(
+                    id = id,
+                    amount = if (delta > 0) delta else Math.negateExact(delta),
+                    feeAmount = 0L,
+                    type = TransactionType.ADJUSTMENT,
+                    adjustmentDirection = if (delta > 0) AdjustmentDirection.IN else AdjustmentDirection.OUT,
+                    accountId = accountId,
+                    toAccountId = null,
+                    timestamp = now,
+                    deletedAt = null,
+                    createdAt = now,
+                    updatedAt = now,
+                    source = TransactionSource.ADJUSTMENT,
+                )
+            ledger.insert(adjustment)
+            return adjustment
+        }
+
+        private fun TransactionEntity.accountIds() = setOfNotNull(accountId, toAccountId)
+    }

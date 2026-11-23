@@ -26,11 +26,14 @@ git switch dev
 git switch -c feature/parser-vcb
 # write code and tests, commit in small steps
 ./gradlew.bat testDebugUnitTest
+./gradlew.bat qualityGate
 # reviewer checks the whole branch diff
 git switch dev
 git merge --squash feature/parser-vcb
 git commit -m "feat(parser): add VCB balance regex"
 ```
+
+These commands are for a human at a PowerShell prompt. Agents run the same Gradle tasks through the `gradle-run` skill (see `CLAUDE.md` Commands).
 
 After a squash, `git branch -d` refuses because the commits are not reachable from `dev`. Confirm the squash commit exists, then the user deletes the branch with `git branch -D` in their own terminal.
 
@@ -41,7 +44,7 @@ git switch dev
 git switch -c release/1.0.0
 # bump versionName and versionCode in app/build.gradle.kts
 git commit -m "build: bump version to 1.0.0"
-./gradlew.bat testDebugUnitTest
+./gradlew.bat qualityGate
 git switch main
 git merge --no-ff --no-edit release/1.0.0
 git tag -a v1.0.0 -m "Release 1.0.0"
@@ -74,7 +77,7 @@ A hotfix follows the same steps. It starts with `git switch -c hotfix/1.0.1 main
 
 1. Stage files by name. Never `git add -A`, `git add .`, or `git commit -a`.
 2. Read `git diff --cached`. Every line must belong to this commit.
-3. After a logic change (parser, dedup, pairing, balance), run `./gradlew.bat testDebugUnitTest` and read the output.
+3. After a logic change (parser, dedup, pairing, balance), run `testDebugUnitTest` (agents: through `gradle-run`) and read the result.
 4. Check privacy. See below.
 
 ## Privacy and secrets
@@ -101,7 +104,7 @@ If a secret reaches a commit, stop and tell the user. Do not rewrite history alo
 |---|---|
 | Rewrite history | `push --force`, `push --force-with-lease`, `reset --hard`, `rebase -i`, rebase of `main` or `dev`, `filter-branch`, `filter-repo`, `reflog expire` |
 | Lose work | `clean -f`, `checkout -- <path>`, `checkout .`, `restore <path>`, `branch -D`, `stash drop`, `stash clear`, `tag -d` |
-| Skip checks | `--no-verify`, `commit -n`, `--no-gpg-sign`, `-c core.hooksPath=` |
+| Skip checks | `--no-verify`, `commit -n`, `--no-gpg-sign`, `-c core.hooksPath=`, `config core.hooksPath <value>` unless the value is `.githooks`, `config --unset core.hooksPath`, `config unset core.hooksPath`, `config edit`, `config -e` |
 | Careless staging | `add -A`, `add .`, `add -u`, `add -f`, `commit -a` |
 | Wrong place | commit on `main` or `dev`, push of `main`, a merge that breaks the branch table, a bad branch, tag, or commit name |
 | Attribution | `Co-Authored-By` in a commit or merge message |
@@ -114,6 +117,12 @@ The first commit goes on `main`. The hook allows this once, while `main` has no 
 
 ```bash
 git branch dev
+```
+
+Once per clone, turn on the quality gate hooks. See `docs/architecture.md`.
+
+```bash
+git config core.hooksPath .githooks
 ```
 
 When a remote is added, open pull requests instead of merging locally, and turn on branch protection for `main` and `dev`.

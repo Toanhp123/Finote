@@ -81,6 +81,23 @@ class DangerousCommands(Base):
             "git commit -am 'feat: add x'",
             "git stash clear",
             "git tag -d v1.0.0",
+            "git config core.hooksPath /dev/null",
+            "git config --local core.hooksPath hooks",
+            "git config --global core.hooksPath .git/hooks",
+            "git config --replace-all core.hooksPath x",
+            "git config core.hookspath ''",
+            "git config --unset core.hooksPath",
+            "git config --local --unset-all core.hooksPath",
+            "git config unset core.hooksPath",
+            "git config unset --all core.hooksPath",
+            "git config --local unset core.hooksPath",
+            "git config set core.hooksPath x",
+            "git config set --local core.hooksPath /dev/null",
+            "git config set core.hooksPath",
+            "git config edit",
+            "git config edit --global",
+            "git config -e",
+            "git config --edit",
         ]:
             self.blocked(command)
 
@@ -107,6 +124,13 @@ class DangerousCommands(Base):
         self.blocked("git status; git reset --hard", tool="PowerShell")
         self.blocked("git -C D:\\nope reset --hard", tool="PowerShell")
 
+    def test_powershell_script_blocks(self):
+        self.seed()
+        self.checkout("dev")
+        self.allowed("git status; if ($?) { git switch -c chore/x }", tool="PowerShell")
+        self.blocked("if ($?) { git switch -c chore/x main }", tool="PowerShell")
+        self.blocked("if ($?) { git status } else { git push --force }", tool="PowerShell")
+
     def test_text_in_message_is_not_a_command(self):
         self.seed()
         self.checkout("dev")
@@ -129,6 +153,18 @@ class DangerousCommands(Base):
             "git branch -d feature/old",
             "git tag",
             "git clean -n",
+            "git config core.hooksPath .githooks",
+            "git config --local core.hooksPath .githooks",
+            "git config core.hooksPath",
+            "git config --get core.hooksPath",
+            "git config set core.hooksPath .githooks",
+            "git config set --local core.hooksPath .githooks",
+            "git config get core.hooksPath",
+            "git config list",
+            "git config set user.name tester",
+            "git config unset user.name",
+            "git config user.name tester",
+            "git config --unset user.name",
             "git stash",
             "gradlew.bat assembleDebug",
             "echo digit",

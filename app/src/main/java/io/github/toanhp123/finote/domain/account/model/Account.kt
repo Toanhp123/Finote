@@ -1,0 +1,42 @@
+package io.github.toanhp123.finote.domain.account.model
+
+/**
+ * A place that holds money. [nameKey] is the string-resource key of a system account and is null once the user
+ * renames it; the UI shows the resource when it is set and [name] otherwise. [initialBalance] and
+ * [currentBalance] are VND, signed: a credit card is negative while it carries debt. Every `Long` time field is
+ * epoch ms.
+ */
+data class Account(
+    val id: String,
+    val name: String,
+    val nameKey: String? = null,
+    val type: AccountType,
+    val initialBalance: Long,
+    val currentBalance: Long,
+    val currency: String,
+    val icon: String,
+    val color: Int,
+    val sortOrder: Int,
+    val isExcludedFromNetWorth: Boolean,
+    val isArchived: Boolean,
+    /**
+     * False: provisional start, recomputed by `provisionalStart` on each notification until `isStartLocked` or a
+     * reconcile. True: fixed.
+     */
+    val isInitialized: Boolean,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val deletedAt: Long?,
+    /** Package of the bank or wallet app that feeds this account. Its masked numbers are [AccountIdentifier]s. */
+    val bankPackageName: String? = null,
+    /** Set when this account was merged into another; the target account id. */
+    val mergedIntoId: String? = null,
+    /** True when notifications for this account are dropped instead of recorded. */
+    val isIgnored: Boolean = false,
+) {
+    /** Live, not archived, not ignored: the account can take new or edited transactions and shows in pickers. */
+    val isUsable: Boolean get() = deletedAt == null && !isArchived && !isIgnored
+
+    // Balances must never reach a log or crash report.
+    override fun toString() = "Account(id=$id, type=$type)"
+}

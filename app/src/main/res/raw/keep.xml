@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- System categories look up icons and names by string (CategoryEntity.icon, nameKey), so no R reference exists. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_*,@string/sys_*" />

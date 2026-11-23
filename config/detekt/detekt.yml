@@ -1,0 +1,28 @@
+coroutines:
+  InjectDispatcher:
+    # The Hilt module is where a dispatcher is created and injected; everything else must receive it.
+    excludes: ['**/di/**']
+complexity:
+  LongMethod:
+    allowedLines: 60
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    allowedFunctionParameters: 6
+    ignoreAnnotated: ['Composable']
+  CyclomaticComplexMethod:
+    allowedComplexity: 15
+    # A flat when over enum entries reads as a table, not as branching logic.
+    ignoreSimpleWhenEntries: true
+  TooManyFunctions:
+    # Private helpers belong inside their class; counting them pushed helpers out to top level.
+    ignorePrivate: true
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+style:
+  MagicNumber:
+    # Keeps the detekt defaults (tests, kts) and adds the theme package, the only place raw numbers are allowed.
+    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/*.kts', '**/ui/common/theme/**']
+  UnusedPrivateFunction:
+    # Previews are called by the IDE and the screenshot engine, not by code.
+    ignoreAnnotated: ['FinotePreviews']

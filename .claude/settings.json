@@ -3,13 +3,18 @@
     "allow": [
       "Bash(./gradlew.bat assembleDebug*)",
       "Bash(./gradlew.bat testDebugUnitTest*)",
+      "Bash(./gradlew.bat qualityGate*)",
       "Bash(git status*)",
       "Bash(git diff*)",
       "Bash(git log*)",
+      "Bash(python3 .claude/skills/gradle-run/scripts/gradle_run.py *)",
+      "PowerShell(python3 .claude/skills/gradle-run/scripts/gradle_run.py *)",
       "PowerShell(./gradlew.bat assembleDebug*)",
       "PowerShell(./gradlew.bat testDebugUnitTest*)",
       "PowerShell(.\\gradlew.bat assembleDebug*)",
       "PowerShell(.\\gradlew.bat testDebugUnitTest*)",
+      "PowerShell(./gradlew.bat qualityGate*)",
+      "PowerShell(.\\gradlew.bat qualityGate*)",
       "PowerShell(git status*)",
       "PowerShell(git diff*)",
       "PowerShell(git log*)"

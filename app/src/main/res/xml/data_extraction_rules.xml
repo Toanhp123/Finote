@@ -1,19 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
--->
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The database is encrypted and the Keystore key never leaves the device, so a restored copy cannot be opened. -->
+<!-- rule_update.xml holds the download switch: a restored ON would download without a fresh choice. -->
+<!-- app_setup.xml holds the setup-done flag: a restored flag would skip setup on top of an empty database. -->
+<!-- drift_ack.xml holds drift acknowledgements keyed to the ledger: a restored one would hide a real drift. -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="db_key.xml" />
+        <exclude domain="sharedpref" path="rule_update.xml" />
+        <exclude domain="sharedpref" path="app_setup.xml" />
+        <exclude domain="sharedpref" path="drift_ack.xml" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="db_key.xml" />
+        <exclude domain="sharedpref" path="rule_update.xml" />
+        <exclude domain="sharedpref" path="app_setup.xml" />
+        <exclude domain="sharedpref" path="drift_ack.xml" />
     </device-transfer>
-    -->
 </data-extraction-rules>

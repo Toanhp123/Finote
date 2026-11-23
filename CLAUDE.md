@@ -15,10 +15,11 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 - Never read the whole spec. Use `offset` and `limit` on these lines: `2.2` notification engine L32–51, `3.1–3.10` Room schema L61–228, `4` MoSCoW scope L229–404, `5–9` acceptance criteria L405–422.
 
 ## Current state
-- `app/src/main/java/` has no Kotlin source yet. Only `ExampleUnitTest.kt` and `ExampleInstrumentedTest.kt` exist.
-- Git repository with no commits yet. Do not assume commit history exists.
+- Phases P0–P2c are on `dev`. Order of work, shared foundations (N1–N8), and the debt ledger: `docs/roadmap.md`. Read section 5 for the next step.
+- Konsist rules live in `app/src/test/java/io/github/toanhp123/finote/architecture/`.
+- Git history exists. Branches: `main`, `dev`, work branches.
 - Package: `io.github.toanhp123.finote`. `minSdk` 26 (per spec). `targetSdk` 37 (intentionally above the spec's 35).
-- Kotlin, Compose, Room, Hilt, and SQLCipher are not in `gradle/libs.versions.toml` yet. Add a dependency only when a task needs it, through the version catalog. Never hardcode versions in `build.gradle.kts`.
+- Dependencies live in `gradle/libs.versions.toml`. Add one only when a task needs it, through the version catalog. Never hardcode versions in `build.gradle.kts`.
 
 ## Model routing (subagents in `.claude/agents/`)
 - Find code: call `codegraph_explore` yourself. It is one call. Do not delegate a lookup.
@@ -31,14 +32,34 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 - `reviewer` never edits. Send its findings back to `coder` to fix, then review again.
 - The main session model is the user's choice (`/model`). Do not switch it yourself.
 
+## Skills (invoke with the Skill tool before the work, not after)
+- IMPORTANT: a subagent starts without the session's skills. `coder` and `reviewer` invoke their own (see their files). When you brief one, name the skills that fit the task.
+
+| When | Skill |
+|---|---|
+| Writing or changing any code | `ponytail:ponytail` |
+| Compose state, effects, navigation, focus | `compose-state-and-effects` |
+| Coroutines, `Flow`, `StateFlow`, scopes | `kotlin-concurrency-and-flow` |
+| Test of a `suspend` function or ViewModel | `testing-coroutines-with-runtest` |
+| Test that asserts `Flow` emissions | `testing-flows-with-turbine` |
+| Room or Android-aware JVM test | `using-robolectric-correctly` |
+| Any Gradle task | `gradle-run` |
+| Bug or failing test | `superpowers:systematic-debugging` |
+| Review of a branch | `ponytail:ponytail-review`, inside `reviewer` |
+| Before saying "done" | `superpowers:verification-before-completion` |
+
 ## Commands
-- Build: `./gradlew.bat assembleDebug`
-- Unit tests: `./gradlew.bat testDebugUnitTest`
+- Build: `assembleDebug`
+- Unit tests: `testDebugUnitTest`
+- Full gate: `qualityGate`
+- Run these tasks through the `gradle-run` skill. Pass `.\gradlew.bat`: as is from PowerShell, single-quoted (`'.\gradlew.bat'`) from Bash. `./gradlew.bat` fails under cmd, and bare `gradlew.bat` is not found.
 - Instrumented tests (`connectedDebugAndroidTest`) need a device or emulator. Run them only when the user asks.
 
 ## Verification
-- IMPORTANT: after any logic change (parser, dedup, pairing, balance), run `./gradlew.bat testDebugUnitTest`.
+- IMPORTANT: after any logic change (parser, dedup, pairing, balance), run `testDebugUnitTest` through `gradle-run`.
+- Before the squash into `dev`, run `qualityGate` through `gradle-run` and read its summary.
 - Do not report work as done without a real build or test run and its output.
+- The `gradle-run` JSON summary (question, answer, `exit_status`) counts as the output. Never paste the full build log.
 
 ## Git
 - IMPORTANT: follow `docs/git-workflow.md` for every branch, commit, merge, and tag.
@@ -47,6 +68,9 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 - `.claude/hooks/git_guard.py` blocks violations. Never work around a block. Tell the user.
 
 ## Architecture
+- IMPORTANT: layers, naming, and limits are in `docs/architecture.md`. Tests in `app/src/test/java/io/github/toanhp123/finote/architecture/` enforce them.
+- Never split a file or function only to pass a limit when the split hurts reading. Stop and propose a rule change, or a justified `@Suppress` as `docs/architecture.md` allows.
+- IMPORTANT: UI tokens, components, and usage rules are in `docs/design-system.md`.
 - Clean Architecture with MVI: one-way flow of state, intent, and effect.
 - Single Activity. UI is Compose with Material 3.
 
@@ -63,4 +87,5 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 - IMPORTANT: never write bank notification content, balances, or account numbers to Logcat.
 
 ## Working in this repo
-- Small change: make it directly, no plan. Large feature (one module of spec `2.2`): write a short plan first.
+- Small change: make it directly, no plan.
+- Large feature (one module of spec `2.2`): IMPORTANT: run `superpowers:brainstorming`, then `superpowers:writing-plans`. Never write an ad-hoc plan that skips these skills. Plans go in `docs/superpowers/plans/`.

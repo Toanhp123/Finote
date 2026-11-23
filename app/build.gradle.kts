@@ -1,5 +1,46 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.androidx.room3)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.spotless)
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom("$rootDir/config/detekt/detekt.yml")
+}
+
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        ktlint(libs.versions.ktlint.get())
+            .customRuleSets(listOf("io.nlopez.compose.rules:ktlint:${libs.versions.composeRules.get()}"))
+    }
+    kotlinGradle {
+        target("*.gradle.kts", "../*.gradle.kts")
+        ktlint(libs.versions.ktlint.get())
+    }
+}
+
+room3 {
+    schemaDirectory("$projectDir/schemas")
+}
+
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors = true
+        extraWarnings = true
+        // Room 3 generates Kotlin (build/generated/ksp) that trips these extraWarnings checkers.
+        // Kotlin has no per-file switch, so they are off project-wide.
+        freeCompilerArgs.addAll(
+            "-Xwarning-level=REDUNDANT_VISIBILITY_MODIFIER:disabled",
+            "-Xwarning-level=CAN_BE_VAL:disabled",
+        )
+    }
 }
 
 android {
@@ -12,31 +53,145 @@ android {
         applicationId = "io.github.toanhp123.finote"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        debug {
+            // Own app id, so installing or uninstalling debug (device tests uninstall it) never touches dogfood.
+            applicationIdSuffix = ".debug"
+            buildConfigField("boolean", "TOOLS_ENABLED", "true")
+        }
         release {
             optimization {
                 enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
             }
+            buildConfigField("boolean", "TOOLS_ENABLED", "false")
+        }
+        // Release code and R8, signed with the debug key so it installs on a phone. The tools stay on.
+        create("dogfood") {
+            initWith(getByName("release"))
+            buildConfigField("boolean", "TOOLS_ENABLED", "true")
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+    sourceSets {
+        // MigrationTestHelper reads the exported schemas as assets. Robolectric serves only the tested
+        // variant's merged assets, not the test source set's, so they ride in the debug APK (never release).
+        getByName("debug").assets.directories.add("$projectDir/schemas")
+    }
+    androidResources {
+        // Lists the app languages in the Android 13+ per-app language setting.
+        generateLocaleConfig = true
+    }
+    lint {
+        warningsAsErrors = true
+        abortOnError = true
+        // Version-bump checks would turn the gate red whenever a library ships.
+        disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
+    }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+        screenshotTests.create("screenshotTest") {
+            engineVersion = libs.versions.screenshot.get()
+            targetVariants.add("debug")
+            dependencies {
+                implementation(libs.androidx.compose.ui.tooling)
+                implementation(libs.screenshot.validation.api)
+            }
+        }
+    }
+}
+
+// Compose Preview creates runfiles for every variant and requires unit tests on each of them.
+androidComponents {
+    beforeVariants { variantBuilder ->
+        variantBuilder.hostTests[com.android.build.api.variant.HostTestBuilder.UNIT_TEST_TYPE]?.enable = true
     }
 }
 
 dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.material)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.haze)
+    implementation(libs.haze.blur)
+    implementation(libs.composeunstyled.bottom.sheet)
+    implementation(libs.composeunstyled.dialog)
+    implementation(libs.composeunstyled.modal.bottom.sheet)
+    implementation(libs.composeunstyled.toggle.switch)
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+    implementation(libs.room3.runtime)
+    implementation(libs.sqlcipher.android)
+    ksp(libs.room3.compiler)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    testImplementation(libs.androidx.junit)
+    testImplementation(libs.androidx.espresso.core)
+    testImplementation(libs.sqlite.framework)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.room3.testing)
+    testImplementation(libs.konsist)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.androidx.work.testing)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+}
+// Konsist reads source text, but the test task tracks compiled classes only. Without this input a source-only
+// change (for example a new @Suppress line) leaves testDebugUnitTest up to date and the gate green.
+tasks.withType<Test>().configureEach {
+    inputs.files(fileTree("src/main")).withPathSensitivity(PathSensitivity.RELATIVE)
+    // Robolectric on SDK 37 reaches FileDescriptor internals through SharedSecrets, which Java 21 does not export.
+    jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+    providers.gradleProperty("signRuleFeed").orNull?.let { systemProperty("finote.signRuleFeed", it) }
+}
+
+tasks.register("qualityGate") {
+    group = "verification"
+    // detektMain skips test sources, so detekt and detektTest cover them (detektTest: unit and androidTest, typed).
+    dependsOn(
+        "spotlessCheck",
+        "detekt",
+        "detektMain",
+        "detektTest",
+        "lintDebug",
+        "testDebugUnitTest",
+        "testDebugScreenshotTestDefaultTestSuite",
+        "assembleDebug",
+        // The only place R8 runs: catches R8 and release-only compile errors, not runtime reflection breaks.
+        "assembleRelease",
+    )
 }
