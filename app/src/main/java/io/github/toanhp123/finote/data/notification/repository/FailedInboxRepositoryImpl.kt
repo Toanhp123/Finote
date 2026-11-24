@@ -176,7 +176,8 @@ class FailedInboxRepositoryImpl
             if (refusal != null) return BookInboxResult.Refused(refusal)
             ledger.insert(transaction)
             // The logs were read in this write, so a miss means something is wrong: undo the insert too.
-            if (logs.confirmFromInbox(item.ids, transactionId) != item.ids.size) throw GuardMiss()
+            val confirmed = logs.confirmFromInbox(item.ids, transactionId, booking.amount, booking.type.name)
+            if (confirmed != item.ids.size) throw GuardMiss()
             return BookInboxResult.Booked
         }
 

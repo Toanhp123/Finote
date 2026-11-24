@@ -130,12 +130,14 @@ private fun NotificationLog.sameText(other: NotificationLog) =
 /**
  * Key rule: a platform updates one notification in place (same key, new text). A cluster is one root plus the logs
  * matched to it. A log joins the nearest root (then the earlier root) of the same package and key with equal
- * amount, type and mask, within [REPOST_WINDOW_WITH_BALANCE_MILLIS] of the root, never of a member, and whose
+ * amount, type and mask (any mask when the root was booked from the inbox without a rule), within
+ * [REPOST_WINDOW_WITH_BALANCE_MILLIS] of the root, never of a member, and whose
  * non-null balances in the cluster all equal its own. A settled root may be later than the log (a reparsed first
  * version); a pending root is always earlier in plan order. Only parsed logs take part, so a failed first version
  * is never a root.
  * shortcut: one fixed key per app, equal amount, type and mask, at most one of them with a balance, within 10 min
- * merges two payments; upgrade: per-rule opt-out of the key rule.
+ * merges two payments; so does an inbox-booked root with a later payment of another card (its mask is unknown);
+ * upgrade: per-rule opt-out of the key rule, and match the new mask against the root's booked account.
  */
 private class KeyClusters(
     settled: List<NotificationLog>,
@@ -187,12 +189,15 @@ private class KeyClusters(
                     (it.status != NotificationStatus.DEDUPLICATED || LOG_ORDER.compare(it, this) < 0)
             }
 
+    // Booked from the inbox without a rule: it carries the booked amount and type but no mask, so any mask matches.
+    private fun NotificationLog.isInboxBooked() = matchedRuleId == null && parsed?.accountMask == null
+
     private fun NotificationLog.accepts(log: NotificationLog): Boolean {
         val a = parsed
         val b = log.parsed
         return a != null && b != null &&
             packageName == log.packageName && notificationKey == log.notificationKey &&
-            a.amount == b.amount && a.type == b.type && a.accountMask == b.accountMask &&
+            a.amount == b.amount && a.type == b.type && (a.accountMask == b.accountMask || isInboxBooked()) &&
             abs(log.postTime - postTime) <= REPOST_WINDOW_WITH_BALANCE_MILLIS &&
             (b.postBalance == null || balances.getValue(id).all { it == b.postBalance })
     }

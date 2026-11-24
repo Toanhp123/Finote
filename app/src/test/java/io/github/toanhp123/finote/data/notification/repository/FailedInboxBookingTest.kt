@@ -284,6 +284,43 @@ class FailedInboxBookingTest {
         }
 
     @Test
+    fun `booking an unparsed log stores the booked amount and type on it`() =
+        runTest {
+            seed(failedLog("log-1", FAIL_NO_RULE_MATCHED, content = SPEND))
+
+            book(booking())
+
+            val log = logDao.getById("log-1")
+            assertEquals(AMOUNT, log?.parsedAmount)
+            assertEquals(TransactionType.EXPENSE.name, log?.parsedType)
+        }
+
+    @Test
+    fun `booking a parsed log keeps its parsed amount and type`() =
+        runTest {
+            seed(failedLog("log-1").copy(parsedAmount = AMOUNT + 1, parsedType = TransactionType.INCOME.name))
+
+            book(booking())
+
+            val log = logDao.getById("log-1")
+            assertEquals(AMOUNT + 1, log?.parsedAmount)
+            assertEquals(TransactionType.INCOME.name, log?.parsedType)
+        }
+
+    @Test
+    fun `a repost of a log booked from the inbox does not come back`() =
+        runTest {
+            seed(failedLog("log-1", FAIL_NO_RULE_MATCHED, content = SPEND).copy(notificationKey = "key-1"))
+            book(booking())
+
+            logDao.insert(
+                failedLog("log-2", FAIL_NO_RULE_MATCHED, POST + 1_000L, "$SPEND.").copy(notificationKey = "key-1"),
+            )
+
+            assertNull(repo.getItem("log-2"))
+        }
+
+    @Test
     fun `a copy that arrived after the sheet opened is confirmed too`() =
         runTest {
             seed(failedLog("copy-a", FAIL_NO_RULE_MATCHED, POST - HOUR), failedLog("copy-b", FAIL_NO_RULE_MATCHED))

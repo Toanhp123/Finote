@@ -422,6 +422,20 @@ class SettlementPlannerTest {
     }
 
     @Test
+    fun `a later parsed version of a log booked from the inbox is a repost whatever its mask`() {
+        val inbox = log(vcb, old(0), ruleId = null, key = k, status = NotificationStatus.CONFIRMED, linkedTx = "tx")
+        val update = log(vcb, old(2_000), mask = "1234", balance = 1000L, key = k)
+        assertEquals(listOf(Repost(update, inbox)), plan(update, settled = listOf(inbox)))
+    }
+
+    @Test
+    fun `a ruled root without a mask still needs an equal mask`() {
+        val a = log(vcb, old(0), key = k, status = NotificationStatus.CONFIRMED, linkedTx = "tx")
+        val b = log(vcb, old(2_000), mask = "1234", key = k)
+        assertEquals(listOf(b), booked(plan(b, settled = listOf(a))))
+    }
+
+    @Test
     fun `null keys use only the text rule`() {
         val a = log(vcb, old(0))
         val b = log(vcb, old(1_000))

@@ -38,14 +38,23 @@ interface FailedInboxQueries {
         content: String,
     ): List<NotificationLogEntity>
 
-    /** `FAILED` inbox rows to `CONFIRMED`; returns how many changed. */
+    /**
+     * `FAILED` inbox rows to `CONFIRMED`; returns how many changed. An unparsed row takes the booked [amount] and
+     * [type], so repost checks can match it; a parsed row keeps what its rule read.
+     * shortcut: an amount or type the user changed in the sheet no longer matches the text, so a repost is not
+     * recognized; upgrade: store the text's own amount beside the booked one.
+     */
     @Query(
-        "UPDATE notification_logs SET status = 'CONFIRMED', linkedTransactionId = :linkedTransactionId " +
+        "UPDATE notification_logs SET status = 'CONFIRMED', linkedTransactionId = :linkedTransactionId, " +
+            "parsedType = CASE WHEN parsedAmount IS NULL OR parsedType IS NULL THEN :type ELSE parsedType END, " +
+            "parsedAmount = CASE WHEN parsedAmount IS NULL OR parsedType IS NULL THEN :amount ELSE parsedAmount END " +
             "WHERE id IN (:ids) AND status = 'FAILED' AND failureReason IN $INBOX_REASONS_SQL",
     )
     suspend fun confirmFromInbox(
         ids: List<String>,
         linkedTransactionId: String,
+        amount: Long,
+        type: String,
     ): Int
 
     /** `FAILED` inbox rows keep `FAILED` and get reason `user_dismissed`; returns how many changed. */
