@@ -165,6 +165,20 @@ class NotificationSettlementRepositoryImplTest {
         }
 
     @Test
+    fun `auto-created account goes after the user's order`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(id = "user-a", sortOrder = 0))
+            dbRule.db.accountDao().insert(account(id = "user-b", sortOrder = 5))
+            val bank = log("b1")
+            seed(bank)
+
+            repo.book(book(bank), "tx-1", NOW)
+
+            // The user accounts have no bank package, so getAccounts() leaves them out and only the new one is left.
+            assertEquals(6, onlyAccount().sortOrder)
+        }
+
+    @Test
     fun `book refuses a post time outside the ledger range and writes nothing`() =
         runTest {
             val bank = log("b1", postTime = 1_000L - T0) // epoch 1970, before the lower bound

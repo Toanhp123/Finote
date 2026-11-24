@@ -17,6 +17,7 @@ import io.github.toanhp123.finote.domain.notification.usecase.BookInboxItemUseCa
 import io.github.toanhp123.finote.domain.notification.usecase.DismissInboxItemUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.GetInboxItemUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.GetInboxPrefillUseCase
+import io.github.toanhp123.finote.domain.transaction.error.TransactionError
 import io.github.toanhp123.finote.domain.transaction.model.ManualChoices
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionEdit
@@ -40,6 +41,7 @@ import io.github.toanhp123.finote.ui.cashentry.logic.feeOf
 import io.github.toanhp123.finote.ui.cashentry.logic.filledFrom
 import io.github.toanhp123.finote.ui.cashentry.logic.filledFromInbox
 import io.github.toanhp123.finote.ui.cashentry.logic.offeredFor
+import io.github.toanhp123.finote.ui.cashentry.logic.saveErrorOf
 import io.github.toanhp123.finote.ui.cashentry.logic.toCategoryType
 import io.github.toanhp123.finote.ui.cashentry.logic.toInboxBooking
 import io.github.toanhp123.finote.ui.cashentry.logic.withAccount
@@ -148,7 +150,7 @@ class CashEntryViewModel
                 }
 
                 is CashEntryIntent.FeeChanged -> {
-                    setState { copy(fee = feeOf(intent.text), hasSaveError = false) }
+                    setState { copy(fee = feeOf(intent.text), saveError = null) }
                 }
 
                 is CashEntryIntent.CategoryPicked -> {
@@ -319,7 +321,7 @@ class CashEntryViewModel
         ) {
             val booking = state.value.toInboxBooking(inbox, clock.zone) ?: return
             setState { busy().copy(isCoveredNotice = false, pendingConfirmation = null) }
-            launchCatching(onStorageError = ::showSaveError) {
+            launchCatching(onStorageError = { showSaveError() }) {
                 val result = bookInboxItem(booking, confirmation)
                 setState { afterBooking(result) }
                 if (result == BookInboxResult.AlreadyHandled) sendEffect(CashEntryEffect.ShowAlreadyHandled)
@@ -341,7 +343,7 @@ class CashEntryViewModel
         // Dismissed or already handled, the sheet leaves; only the second says why.
         private fun dismissInbox(inbox: InboxSource) {
             setState { busy() }
-            launchCatching(onStorageError = ::showSaveError) {
+            launchCatching(onStorageError = { showSaveError() }) {
                 if (!dismissInboxItem(inbox.item.id, inbox.item.logIds)) sendEffect(CashEntryEffect.ShowAlreadyHandled)
                 setState { copy(isVisible = false) }
             }
@@ -349,12 +351,12 @@ class CashEntryViewModel
 
         // Runs [action] with the sheet busy and both confirm dialogs closed: Ok hides the sheet (isSaving stays true so
         // a second save cannot run while it leaves), Err shows the save error.
-        private fun leaveAfter(action: suspend () -> Outcome<*, *>) {
+        private fun leaveAfter(action: suspend () -> Outcome<*, TransactionError>) {
             setState { busy().withoutConfirms() }
-            launchCatching(onStorageError = ::showSaveError) {
-                when (action()) {
+            launchCatching(onStorageError = { showSaveError() }) {
+                when (val outcome = action()) {
                     is Outcome.Ok -> setState { copy(isVisible = false) }
-                    is Outcome.Err -> showSaveError()
+                    is Outcome.Err -> showSaveError(saveErrorOf(outcome.error))
                 }
             }
         }
@@ -373,7 +375,8 @@ class CashEntryViewModel
             }
         }
 
-        private fun showSaveError() = setState { copy(isSaving = false, hasSaveError = true) }
+        private fun showSaveError(error: CashEntrySaveError = CashEntrySaveError.GENERIC) =
+            setState { copy(isSaving = false, saveError = error) }
 
         /**
          * What the first read gives: the last choices in create mode, the stored row (null if gone) and whether

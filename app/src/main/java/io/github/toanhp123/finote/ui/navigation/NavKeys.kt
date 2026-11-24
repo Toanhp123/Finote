@@ -24,9 +24,19 @@ data class Setup(
     val isFromOnboarding: Boolean,
 ) : NavKey
 
-/** The accounts page (merge, ignore), pushed on top of [Settings]. */
+/** The accounts page (bank groups, archive, reorder), pushed on top of [Settings]. */
 @Serializable
 data object AccountsSettings : NavKey
+
+/**
+ * The account create screen ([id] null) or edit screen, pushed on top of [AccountsSettings]. [mergeTargetId] opens the
+ * merge dialog into that account on load (a list suggestion).
+ */
+@Serializable
+data class EditAccount(
+    val id: String? = null,
+    val mergeTargetId: String? = null,
+) : NavKey
 
 /** The notification capture page, pushed on top of [Settings]. */
 @Serializable

@@ -362,6 +362,18 @@ class MigrationPolicyTest {
         }
 
     @Test
+    fun `migrating 11 to 12 keeps every account and adds isPrimary false`() =
+        runTest {
+            helper.createDatabase(11).use { connection -> V8_ROWS.forEach(connection::execSQL) }
+
+            helper.runMigrationsAndValidate(12, FINOTE_MIGRATIONS).close()
+
+            assertTrue(rowExists("accounts", "acc-a"))
+            assertTrue(rowExists("accounts", "acc-b"))
+            assertEquals(2L, longColumn("SELECT COUNT(*) FROM accounts WHERE isPrimary = 0"))
+        }
+
+    @Test
     fun `migrated schema validates`() = runTest { migrateKeyedRows() }
 
     private suspend fun migrateKeyedRows() {

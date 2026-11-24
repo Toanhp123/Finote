@@ -153,7 +153,11 @@ fun TransactionListScreen(
             }
         }
         DeleteAdjustmentDialog(isVisible = state.deletingId != null, onIntent = onIntent)
-        ReconcileSheet(account = state.reconcilingAccountId?.let(state.accountsById::get), onIntent = onIntent)
+        ReconcileSheet(
+            account = state.reconcilingAccountId?.let(state.accountsById::get),
+            onSubmit = { onIntent(TransactionListIntent.ReconcileSubmitted(it)) },
+            onDismiss = { onIntent(TransactionListIntent.ReconcileDismissed) },
+        )
     }
 }
 

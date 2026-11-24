@@ -36,9 +36,13 @@ class AccountMergeRepositoryImpl
                 merges.moveSource(sourceId, targetId)
                 merges.moveDestination(sourceId, targetId)
                 db.accountIdentifierDao().moveAll(sourceId, targetId)
-                accounts.update(withMergedStart(source, target).copy(updatedAt = now))
+                // The star moves to the target only when the target can hold it; else it is dropped.
+                val isPrimary = target.isPrimary || (source.isPrimary && !target.isIgnored && !target.isArchived)
+                accounts.update(withMergedStart(source, target).copy(isPrimary = isPrimary, updatedAt = now))
                 merges.repointMerged(sourceId, targetId)
-                accounts.update(source.copy(deletedAt = now, mergedIntoId = targetId, updatedAt = now))
+                accounts.update(
+                    source.copy(deletedAt = now, mergedIntoId = targetId, isPrimary = false, updatedAt = now),
+                )
                 db.accountBalanceSnapshotDao().deleteByAccount(sourceId)
                 rebuilder.rebuild(setOf(targetId))
             }

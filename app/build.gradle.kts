@@ -145,6 +145,7 @@ dependencies {
     implementation(libs.composeunstyled.dialog)
     implementation(libs.composeunstyled.modal.bottom.sheet)
     implementation(libs.composeunstyled.toggle.switch)
+    implementation(libs.reorderable)
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     ksp(libs.hilt.compiler)

@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,12 +36,15 @@ import io.github.toanhp123.finote.ui.common.component.overlay.rememberFinoteSnac
 import io.github.toanhp123.finote.ui.common.theme.FinoteMotion
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.settings.SettingsRoute
+import io.github.toanhp123.finote.ui.settings.accountedit.AccountEditRoute
+import io.github.toanhp123.finote.ui.settings.accountedit.AccountEditViewModel
 import io.github.toanhp123.finote.ui.settings.accounts.AccountsSettingsRoute
 import io.github.toanhp123.finote.ui.settings.capture.NotificationCaptureSettingsRoute
 import io.github.toanhp123.finote.ui.settings.inbox.FailedInboxRoute
 import io.github.toanhp123.finote.ui.settings.logs.NotificationLogsRoute
 import io.github.toanhp123.finote.ui.setup.SetupRoute
 import io.github.toanhp123.finote.ui.transactions.TransactionListRoute
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -101,6 +105,7 @@ fun FinoteNavHost(
                     }
                     entry<Budget> { ComingSoonScreen(R.string.tab_budget) }
                     settingsEntries(backStack, snackbarState, padding)
+                    accountEditEntry(backStack, snackbarState, padding, scope)
                     inboxEntry(backStack, snackbarState, padding)
                     if (isToolsEnabled) logsEntry(backStack, snackbarState, padding)
                     editorEntry(backStack)
@@ -141,6 +146,7 @@ private fun EntryProviderScope<NavKey>.settingsEntries(
         AccountsSettingsRoute(
             viewModel = hiltViewModel(),
             snackbarState = snackbarState,
+            onOpenAccount = { key -> openEditAccount(backStack, key) },
             onClose = { backStack.removeLastOrNull() },
             modifier = Modifier.padding(padding),
         )
@@ -150,6 +156,33 @@ private fun EntryProviderScope<NavKey>.settingsEntries(
             viewModel = hiltViewModel(),
             onClose = { backStack.removeLastOrNull() },
             modifier = Modifier.padding(padding),
+        )
+    }
+}
+
+/**
+ * The account create and edit screen, full screen. The message of a close that the account caused is shown from
+ * [scope], the host's, because the entry is gone before the message ends.
+ */
+private fun EntryProviderScope<NavKey>.accountEditEntry(
+    backStack: MutableList<NavKey>,
+    snackbarState: FinoteSnackbarState,
+    padding: PaddingValues,
+    scope: CoroutineScope,
+) {
+    entry<EditAccount> { key ->
+        AccountEditRoute(
+            viewModel =
+                hiltViewModel<AccountEditViewModel, AccountEditViewModel.Factory>(
+                    creationCallback = { it.create(key.id, key.mergeTargetId) },
+                ),
+            snackbarState = snackbarState,
+            onClose = { message ->
+                backStack.remove(key)
+                if (message != null) scope.launch { snackbarState.show(message) }
+            },
+            // The edit screen applies the keyboard inset itself, so the padding must say it already took the bar inset.
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
         )
     }
 }
@@ -262,6 +295,14 @@ private fun NavKey.labelRes(): Int =
 /** Opens [AccountsSettings]. A second call while it is on top does nothing, so a double tap cannot stack it. */
 private fun openAccountsSettings(backStack: MutableList<NavKey>) {
     if (backStack.lastOrNull() != AccountsSettings) backStack.add(AccountsSettings)
+}
+
+/** Opens [key]. A second call while it is on top does nothing, so a double tap cannot stack it. */
+private fun openEditAccount(
+    backStack: MutableList<NavKey>,
+    key: EditAccount,
+) {
+    if (backStack.lastOrNull() != key) backStack.add(key)
 }
 
 /** Opens [NotificationLogs]. A second call while it is on top does nothing, so a double tap cannot stack it. */

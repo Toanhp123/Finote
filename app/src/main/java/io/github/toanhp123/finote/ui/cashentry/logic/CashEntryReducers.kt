@@ -4,8 +4,10 @@ import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.notification.model.BookInboxResult
+import io.github.toanhp123.finote.domain.transaction.error.TransactionError
 import io.github.toanhp123.finote.domain.transaction.model.ManualChoices
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import io.github.toanhp123.finote.ui.cashentry.CashEntrySaveError
 import io.github.toanhp123.finote.ui.cashentry.CashEntryState
 
 internal fun TransactionType.toCategoryType() =
@@ -55,8 +57,12 @@ internal fun CashEntryState.afterBooking(result: BookInboxResult): CashEntryStat
         BookInboxResult.Booked, BookInboxResult.AlreadyHandled -> copy(isVisible = false)
         BookInboxResult.CoveredByAdjustment -> copy(isSaving = false, isCoveredNotice = true)
         is BookInboxResult.NeedsAdjustmentConfirmation -> copy(isSaving = false, pendingConfirmation = result.token)
-        is BookInboxResult.Refused -> copy(isSaving = false, hasSaveError = true)
+        is BookInboxResult.Refused -> copy(isSaving = false, saveError = CashEntrySaveError.GENERIC)
     }
+
+/** Only a refused account has its own text; any other use case error shows the generic one. */
+internal fun saveErrorOf(error: TransactionError?): CashEntrySaveError =
+    if (error == TransactionError.AccountUnusable) CashEntrySaveError.ACCOUNT_UNUSABLE else CashEntrySaveError.GENERIC
 
 private val CATEGORY_TYPES = listOf(TransactionType.EXPENSE, TransactionType.INCOME)
 

@@ -11,6 +11,7 @@ import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.cashentry.CashEntryIntent
 import io.github.toanhp123.finote.ui.cashentry.CashEntryPage
+import io.github.toanhp123.finote.ui.cashentry.CashEntrySaveError
 import io.github.toanhp123.finote.ui.cashentry.CashEntryState
 import io.github.toanhp123.finote.ui.cashentry.logic.AmountResult
 import io.github.toanhp123.finote.ui.common.component.control.FinoteButton
@@ -90,6 +91,11 @@ private fun AmountHeader(
         result = state.result,
         kind = kind,
         modifier = modifier,
-        hasSaveError = state.hasSaveError,
+        saveErrorRes =
+            when (state.saveError) {
+                null -> null
+                CashEntrySaveError.GENERIC -> R.string.cash_entry_error_save
+                CashEntrySaveError.ACCOUNT_UNUSABLE -> R.string.cash_entry_error_account_unusable
+            },
     )
 }

@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.ui.common.theme.color
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.toArgb
 
 /** Starting colors for a new category. Each one must pass ContrastTest on its tile. */
 val CategoryPalette: List<Color> =
@@ -21,6 +22,9 @@ val CategoryPalette: List<Color> =
         Color(0xFF4E342E),
         Color(0xFF37474F),
     )
+
+/** [CategoryPalette] as ARGB, for code that stores a color as an `Int` and must not import Compose. */
+val CategoryPaletteArgb: List<Int> = CategoryPalette.map { it.toArgb() }
 
 data class CategoryIconColors(
     val container: Color,

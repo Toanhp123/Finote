@@ -21,6 +21,7 @@ class ArchiveAccountUseCaseTest {
     fun `archive and unarchive stamp updatedAt from the clock`() =
         runTest {
             repo.stored["acc-1"] = testAccount()
+            repo.stored["acc-2"] = testAccount(id = "acc-2")
 
             assertEquals(Outcome.Ok(Unit), archive("acc-1", archived = true))
             assertEquals(true, repo.stored.getValue("acc-1").isArchived)
@@ -30,6 +31,36 @@ class ArchiveAccountUseCaseTest {
             assertEquals(false, repo.stored.getValue("acc-1").isArchived)
             assertEquals(2, repo.writes)
             assertEquals(2, runner.writes)
+        }
+
+    @Test
+    fun `archiving the last usable account is refused`() =
+        runTest {
+            repo.stored["acc-1"] = testAccount()
+            repo.stored["ignored"] = testAccount(id = "ignored").copy(isIgnored = true)
+            repo.stored["old"] = testAccount(id = "old").copy(isArchived = true)
+
+            assertEquals(Outcome.Err(AccountError.LastUsableAccount), archive("acc-1", archived = true))
+            assertEquals(0, repo.writes)
+        }
+
+    @Test
+    fun `restoring is allowed when no account is usable`() =
+        runTest {
+            repo.stored["acc-1"] = testAccount().copy(isArchived = true)
+
+            assertEquals(Outcome.Ok(Unit), archive("acc-1", archived = false))
+        }
+
+    @Test
+    fun `archiving the star clears it`() =
+        runTest {
+            repo.stored["acc-1"] = testAccount().copy(isPrimary = true)
+            repo.stored["acc-2"] = testAccount(id = "acc-2")
+
+            archive("acc-1", archived = true)
+
+            assertEquals(false, repo.stored.getValue("acc-1").isPrimary)
         }
 
     @Test

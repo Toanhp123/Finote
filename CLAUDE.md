@@ -76,7 +76,7 @@ Reply to the user in Vietnamese. Write code, identifiers, comments, and commit m
 
 ## Money and data rules
 - IMPORTANT: store money as `Long` in VND. Never use `Double` for amounts.
-- Soft delete through `deletedAt`. Never hard-delete rows, except when WorkManager purges the trash.
+- Soft delete through `deletedAt`. Never hard-delete rows, except when WorkManager purges the trash. Rows of `account_identifiers` are matching keys, not records: they may be hard-deleted when the user removes a masked number.
 - Any change to a balance or to `AccountBalanceSnapshot` must run inside one `@Transaction`.
 
 ## Notification parsing

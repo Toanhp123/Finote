@@ -1,6 +1,8 @@
 package io.github.toanhp123.finote.domain.account.repository
 
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.model.AccountIdentifier
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -29,14 +31,14 @@ interface AccountRepository {
      */
     suspend fun update(account: Account)
 
-    /** Flips `isArchived` only. */
+    /** Flips `isArchived` only; archiving also clears `isPrimary`. */
     suspend fun setArchived(
         id: String,
         archived: Boolean,
         updatedAt: Long,
     )
 
-    /** Soft delete. Deleting twice does nothing. */
+    /** Soft delete; also clears `isPrimary`. Deleting twice does nothing. */
     suspend fun softDelete(
         id: String,
         deletedAt: Long,
@@ -46,8 +48,8 @@ interface AccountRepository {
     suspend fun getLiveTransactionCount(id: String): Int
 
     /**
-     * Sets `isIgnored`. When [ignored] and [shouldTrashOldTransactions], one write transaction also soft-deletes the
-     * live non-transfer rows with `accountId = id` and rebuilds its balance.
+     * Sets `isIgnored`; ignoring also clears `isPrimary`. When [ignored] and [shouldTrashOldTransactions], one write
+     * transaction also soft-deletes the live non-transfer rows with `accountId = id` and rebuilds its balance.
      */
     suspend fun setIgnored(
         id: String,
@@ -58,4 +60,61 @@ interface AccountRepository {
 
     /** Live non-transfer rows with `accountId = id`: what [setIgnored] would trash. */
     suspend fun getTrashableTransactionCount(id: String): Int
+
+    /** Highest stored `sortOrder` plus one (soft-deleted rows count); 0 when there are no rows. */
+    suspend fun getNextSortOrder(): Int
+
+    /**
+     * Sets `initialBalance` and `isInitialized = true`, then rebuilds `currentBalance` and the monthly snapshots from
+     * the live transactions.
+     */
+    suspend fun setInitialBalance(
+        id: String,
+        initialBalance: Long,
+        now: Long,
+    )
+
+    /** Clears `isPrimary` on every other row and sets it on [id]. */
+    suspend fun setPrimary(
+        id: String,
+        now: Long,
+    )
+
+    suspend fun clearPrimary(
+        id: String,
+        now: Long,
+    )
+
+    /** `sortOrder = index` for each id in [orderedIds]; ids not listed keep their value. */
+    suspend fun reorder(
+        orderedIds: List<String>,
+        now: Long,
+    )
+
+    /** Writes [packageName] only while the stored `bankPackageName` is null. */
+    suspend fun setBankPackage(
+        id: String,
+        packageName: String,
+        now: Long,
+    )
+
+    fun observeIdentifiers(accountId: String): Flow<List<AccountIdentifier>>
+
+    /** Ids of the accounts that own at least one identifier. */
+    fun observeIdentifiedAccountIds(): Flow<Set<String>>
+
+    suspend fun getIdentifier(
+        packageName: String,
+        kind: IdentifierKind,
+        mask: String,
+    ): AccountIdentifier?
+
+    /**
+     * Inserts the key. A key whose owner is soft-deleted moves to the new account, as settlement does. A key owned by
+     * a live account throws `StorageException`: the use case checks first.
+     */
+    suspend fun addIdentifier(identifier: AccountIdentifier)
+
+    /** Hard-deletes that one key, even when its owner is missing or deleted; an unknown key does nothing. */
+    suspend fun removeIdentifier(identifier: AccountIdentifier)
 }

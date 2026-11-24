@@ -26,6 +26,7 @@ composeRules = "0.6.8"
 konsist = "0.18.1"
 haze = "2.1.0"
 composeUnstyled = "2.10.2"
+reorderable = "3.1.0"
 screenshot = "0.0.1-alpha16"
 robolectric = "4.17"
 room3 = "3.0.3"
@@ -73,6 +74,7 @@ composeunstyled-bottom-sheet = { group = "com.composables", name = "composeunsty
 composeunstyled-modal-bottom-sheet = { group = "com.composables", name = "composeunstyled-modal-bottom-sheet", version.ref = "composeUnstyled" }
 composeunstyled-dialog = { group = "com.composables", name = "composeunstyled-dialog", version.ref = "composeUnstyled" }
 composeunstyled-toggle-switch = { group = "com.composables", name = "composeunstyled-toggle-switch", version.ref = "composeUnstyled" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 screenshot-validation-api = { group = "com.android.tools.screenshot", name = "screenshot-validation-api", version.ref = "screenshot" }
 room3-runtime = { group = "androidx.room3", name = "room3-runtime", version.ref = "room3" }
 room3-compiler = { group = "androidx.room3", name = "room3-compiler", version.ref = "room3" }

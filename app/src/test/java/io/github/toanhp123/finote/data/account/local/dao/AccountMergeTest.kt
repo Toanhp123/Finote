@@ -479,6 +479,46 @@ class AccountMergeTest {
         }
 
     @Test
+    fun `merge moves the star to the target`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(id = "acc-a").copy(isPrimary = true))
+            bank("acc-b")
+
+            mergeRepo.merge("acc-a", "acc-b", NOW)
+
+            assertTrue(rowOf("acc-b").isPrimary)
+            assertFalse(rowOf("acc-a").isPrimary)
+        }
+
+    @Test
+    fun `merge into an ignored or archived target drops the star`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(id = "acc-a").copy(isPrimary = true))
+            dbRule.db.accountDao().insert(account(id = "acc-b").copy(isIgnored = true))
+            dbRule.db.accountDao().insert(account(id = "acc-c").copy(isPrimary = true))
+            dbRule.db.accountDao().insert(account(id = "acc-d").copy(isArchived = true))
+
+            mergeRepo.merge("acc-a", "acc-b", NOW)
+            mergeRepo.merge("acc-c", "acc-d", NOW)
+
+            assertFalse(rowOf("acc-b").isPrimary)
+            assertFalse(rowOf("acc-d").isPrimary)
+        }
+
+    @Test
+    fun `merge of an unstarred source leaves the star where it is`() =
+        runTest {
+            bank("acc-a")
+            dbRule.db.accountDao().insert(account(id = "acc-b").copy(isPrimary = true))
+            bank("acc-c")
+
+            mergeRepo.merge("acc-a", "acc-c", NOW)
+
+            assertTrue(rowOf("acc-b").isPrimary)
+            assertFalse(rowOf("acc-c").isPrimary)
+        }
+
+    @Test
     fun `chained merge repoints older rows`() =
         runTest {
             bank("acc-a")

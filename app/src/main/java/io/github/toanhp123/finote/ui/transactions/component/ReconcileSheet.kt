@@ -35,7 +35,6 @@ import io.github.toanhp123.finote.ui.common.format.MoneyKind
 import io.github.toanhp123.finote.ui.common.format.displayName
 import io.github.toanhp123.finote.ui.common.rememberLastNonNull
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
-import io.github.toanhp123.finote.ui.transactions.TransactionListIntent
 
 /**
  * Asks for the real balance of [account] (null hides the sheet) and shows how far it is from the app's. The amount is
@@ -44,14 +43,15 @@ import io.github.toanhp123.finote.ui.transactions.TransactionListIntent
 @Composable
 fun ReconcileSheet(
     account: Account?,
-    onIntent: (TransactionListIntent) -> Unit,
+    onSubmit: (Long) -> Unit,
+    onDismiss: () -> Unit,
 ) {
     // The sheet keeps its content while it slides out; the typed text is cleared once it is hidden.
     val shownAccount = rememberLastNonNull(account)
     var expression by rememberSaveable { mutableStateOf("") }
     FinoteBottomSheet(
         isVisible = account != null,
-        onDismiss = { onIntent(TransactionListIntent.ReconcileDismissed) },
+        onDismiss = onDismiss,
         onDismissComplete = { expression = "" },
     ) {
         shownAccount?.let {
@@ -59,7 +59,8 @@ fun ReconcileSheet(
                 account = it,
                 expression = expression,
                 onKey = { key -> expression = AmountExpression.press(expression, key) },
-                onIntent = onIntent,
+                onSubmit = onSubmit,
+                onDismiss = onDismiss,
             )
         }
     }
@@ -70,7 +71,8 @@ private fun ColumnScope.ReconcileContent(
     account: Account,
     expression: String,
     onKey: (CalcKey) -> Unit,
-    onIntent: (TransactionListIntent) -> Unit,
+    onSubmit: (Long) -> Unit,
+    onDismiss: () -> Unit,
 ) {
     val result = remember(expression) { AmountExpression.evaluate(expression) }
     // A real balance of zero is valid, so an unfinished result is not an error; only an empty field blocks Save.
@@ -88,7 +90,7 @@ private fun ColumnScope.ReconcileContent(
     )
     Amounts(account.currentBalance, expression, result, actual)
     CashKeypad(onKey = onKey)
-    Buttons(actual, onIntent)
+    Buttons(actual, onSubmit, onDismiss)
 }
 
 @Composable
@@ -121,7 +123,8 @@ private fun Amounts(
 @Composable
 private fun Buttons(
     actual: Long?,
-    onIntent: (TransactionListIntent) -> Unit,
+    onSubmit: (Long) -> Unit,
+    onDismiss: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = FinoteTheme.spacing.md),
@@ -129,13 +132,13 @@ private fun Buttons(
     ) {
         FinoteButton(
             text = stringResource(R.string.action_cancel),
-            onClick = { onIntent(TransactionListIntent.ReconcileDismissed) },
+            onClick = onDismiss,
             modifier = Modifier.weight(1f),
             style = FinoteButtonStyle.Secondary,
         )
         FinoteButton(
             text = stringResource(R.string.cash_entry_save),
-            onClick = { actual?.let { onIntent(TransactionListIntent.ReconcileSubmitted(it)) } },
+            onClick = { actual?.let(onSubmit) },
             modifier = Modifier.weight(1f),
             enabled = actual != null,
         )

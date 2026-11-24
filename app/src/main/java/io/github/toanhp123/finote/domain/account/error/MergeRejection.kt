@@ -7,4 +7,5 @@ enum class MergeRejection {
     DIFFERENT_BANK,
     DIFFERENT_TYPE,
     HAS_TRANSFER,
+    ACCOUNT_ARCHIVED,
 }

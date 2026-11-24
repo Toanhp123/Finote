@@ -56,6 +56,7 @@ di/                  Hilt module
 
 - Write transactions open only through `TransactionRunner` (use cases) or `storageWrite` (repositories). `withWriteTransaction` appears only in `data/database`. A nested `storageWrite` joins the outer transaction as a savepoint.
 - `SQLException` maps to `StorageException` only in `data/database`. `StorageException(` is created only there; `domain/common` holds the definition.
+- Soft delete through `deletedAt` is the rule. The exception: rows of `account_identifiers` are matching keys, not records, and may be hard-deleted when the user removes a masked number.
 - A schema change raises `DATABASE_VERSION`, commits the new `app/schemas/.../N.json`, and adds an `AutoMigration` on `@Database` or a `Migration` in `FINOTE_MIGRATIONS` (`data/database/MigrationPolicy.kt`). Extend `MigrationPolicyTest` when rows move. Destructive fallback is allowed only from v1–v7; from v8 a missing migration or a downgrade crashes and keeps the file.
 
 `ProjectRulesKonsistTest` enforces both.
@@ -177,7 +178,7 @@ UI flow is MVI: Screen sends `Intent`, ViewModel calls use cases (reads included
 
 detekt cannot hold two limits in one rule. `LongMethod` and `LongParameterList` set `ignoreAnnotated: ['Composable']`. Konsist checks the 80-line limit, 120 for `*Screen` composables.
 
-Private helpers of a class stay inside the class; detekt `TooManyFunctions` ignores private functions so they need not leave it. `TooManyFunctions` also skips DAOs (`local/dao`) and Hilt modules (`di`): one table's queries stay in one DAO. Hilt modules may still be split by feature for reading, not for the limit.
+Private helpers of a class stay inside the class; detekt `TooManyFunctions` ignores private functions so they need not leave it. `TooManyFunctions` also skips DAOs (`local/dao`), repositories (`repository`) and Hilt modules (`di`): one table's queries stay in one DAO, and its operations stay in one repository. Hilt modules may still be split by feature for reading, not for the limit.
 
 When a file co-locates types, the declaration the file is named after comes first and the serving types (style enum, item class, state holder) go below it. detekt `MatchingDeclarationName` (`mustBeFirst`) relies on this order: a file that starts with its only class must be named after that class.
 

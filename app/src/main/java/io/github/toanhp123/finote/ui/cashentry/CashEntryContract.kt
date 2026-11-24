@@ -31,7 +31,7 @@ data class CashEntryState(
     val fee: Long = 0,
     val page: CashEntryPage = CashEntryPage.KEYPAD,
     val isSaving: Boolean = false,
-    val hasSaveError: Boolean = false,
+    val saveError: CashEntrySaveError? = null,
     /** False once the sheet should leave, after a save or a dismiss; the screen closes when the exit ends. */
     val isVisible: Boolean = true,
     /** True when the sheet edits a stored transaction instead of adding one. */
@@ -153,6 +153,9 @@ data class SourceText(
     // The notification text stays out of logs and crash reports.
     override fun toString() = "SourceText"
 }
+
+/** Why the last save failed; [ACCOUNT_UNUSABLE] means an account in the transaction is archived or ignored. */
+enum class CashEntrySaveError { GENERIC, ACCOUNT_UNUSABLE }
 
 /** The content the cash-entry sheet shows. Only [KEYPAD] shows the calculator keypad. */
 enum class CashEntryPage { KEYPAD, ACCOUNT, DESTINATION, CATEGORY, FEE, DATE, NOTE }

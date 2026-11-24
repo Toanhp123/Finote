@@ -258,7 +258,7 @@ class NotificationSettlementRepositoryImpl
                     currency = "VND",
                     icon = target.type.name.lowercase(),
                     color = ACCOUNT_COLOR,
-                    sortOrder = 0,
+                    sortOrder = (accounts.getMaxSortOrder() ?: -1) + 1,
                     isExcludedFromNetWorth = false,
                     isArchived = false,
                     isIgnored = false,

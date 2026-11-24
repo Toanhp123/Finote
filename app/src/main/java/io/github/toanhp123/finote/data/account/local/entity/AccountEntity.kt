@@ -31,6 +31,8 @@ data class AccountEntity(
     val bankPackageName: String?,
     /** Set when this account was merged into another; the target account id. */
     val mergedIntoId: String?,
+    /** At most one live account holds it; the repository keeps that. No index: Room cannot declare a partial one. */
+    @ColumnInfo(defaultValue = "0") val isPrimary: Boolean = false,
 ) {
     // Balances must never reach a log or crash report.
     override fun toString() = "AccountEntity(id=$id, type=$type)"

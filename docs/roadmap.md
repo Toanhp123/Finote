@@ -7,11 +7,11 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 ## 1. Hiện trạng (2026-11-23)
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2d (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản, ghép chuyển khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Đoạn A xong: v0.2.0 phát hành 2026-11-23 (tag `v0.2.0`). Đang làm: bước 13 (`feature/failed-inbox`), chờ user dogfood. Sau đó đoạn B tiếp tục.
+- Đoạn A xong: v0.2.0 phát hành 2026-11-23 (tag `v0.2.0`). Đoạn B: bước 13 (`feature/failed-inbox`) và bước 14 (`feature/account-manage`) xong. Tiếp theo: bước 13b và 15.
 - Dogfood đóng 2026-11-23 (chỉ Techcombank): APK dogfood (R8) chạy ổn trên máy thật; `EncryptedDatabaseTest` qua trên máy thật; chưa gặp báo lệch số dư; luồng bình thường của bản sửa N-03 đã thử trên máy Vivo.
 - Mẫu thật chỉ gom được của Techcombank (2026-11-22): user không có tài khoản VCB, MB, MoMo. Rule VCB, MB, MoMo chỉ kiểm trên mẫu tổng hợp (D4).
-- DB version 11 (nhánh `feature/failed-inbox`, migration 10→11), có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
-- Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: tạo và sửa tài khoản, quản lý danh mục, dashboard.
+- DB version 12 (migration 11→12 của bước 14), có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
+- Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Tài khoản: danh sách gom theo ngân hàng, tạo, sửa, sao chính, sắp xếp, lưu trữ, xóa, gộp, bỏ qua, số đã che. Chưa có: quản lý danh mục, dashboard.
 
 ## 2. Nguyên tắc làm việc
 
@@ -145,9 +145,9 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 
 | # | Nhánh | Loại | Dùng | Trạng thái |
 |---|---|---|---|---|
-| 13 | `feature/failed-inbox` | Should-Have | N1, N2, N3 | 🔧 |
+| 13 | `feature/failed-inbox` | Should-Have | N1, N2, N3 | ✅ |
 | 13b | `feature/regex-sandbox` (beta) | Should-Have | N2 | ⬜ |
-| 14 | `feature/account-manage` | Must-Have | N5 | ⬜ |
+| 14 | `feature/account-manage` | Must-Have | N5 | ✅ [spec](superpowers/specs/2026-11-24-account-manage-design.md) |
 | 15 | `feature/category-ui` | Must-Have | | ⬜ |
 | 16 | `feature/merchant-normalize` | Should-Have | N1 | ⬜ |
 | 17 | `feature/dashboard` | **Must-Have** (bản cũ ghi nhầm Should-Have) | N6 | ⬜ |
@@ -225,7 +225,6 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-01 | Rule hệ thống chưa đọc được số dư âm (thấu chi): `MONEY` không bắt dấu `-`. `parseMoney` đã sẵn sàng | Khi có mẫu thấu chi thật (thêm `-?` vào nhóm balance, tăng version) |
 | N-06 | `vcb_card` có thể đọc hạn mức thẻ tín dụng thành số dư (nợ #8 cũ) | Bước 10 |
 | N-09 | `HttpParserRuleFeed` đọc chặn trên dispatcher của worker | Bước 30 |
-| N-10 | Màn Tài khoản gom mọi lỗi thành một snackbar; sheet không tự cập nhật khi danh sách đổi | Bước 14 |
 | N-11 | Fake `FakeRuleUpdateSettingsRepository` mặc định bật tự cập nhật (thật: tắt); `CategoryDao.observeCategories` thiếu tie-break `id`; Konsist lách được bằng tên đầy đủ và hàm top-level trong `di` | Bước 15 (DAO), còn lại khi chạm tới |
 | N-12 | Konsist chưa bắt `useWriterConnection { withTransaction }` và `::StorageException`; `return` trong `immediateTransaction` bỏ qua COMMIT | Bước 32 |
 | N-13 | `SetupEffect.Finished` là tên sự kiện; tên ngân hàng viết cứng trong 4 file strings (nợ #5, #7 cũ) | Bước 29 |
@@ -235,7 +234,6 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-17 | Mục nhỏ của audit 2026-11-10: UI không dùng (`FinoteDatePicker`; `BalanceHeroCard` giữ cho bước 17), test mẫu, dependency thừa, test dùng đồng hồ thật | Bước 32 |
 | N-19 | Dòng gốc bị ẩn vì ghép (`pairedIntoId`) và chuyển khoản đã tách: thùng rác phải ẩn; không dọn dòng gốc khi `T` còn sống, dọn cùng `T` | Bước 26 |
 | N-20 | Ghép theo giờ thông báo đến máy; đọc giờ ngân hàng trong nội dung (nhóm `time`, định dạng từng ngân hàng, cột ở log, đổi `pairingTime`) | Sau bước 9 |
-| N-22 | Tách lại bị từ chối vì tài khoản đã lưu trữ chỉ hiện lỗi lưu chung, không nói lý do (giống nút Xóa) | Bước 14 |
 | N-23 | Listener chết trên Vivo/Xiaomi khi Autostart tắt: chỉ sống lại khi mở app (`rebindIfDisconnected`). Thông báo user xóa trước lúc đó thì mất, chỉ còn báo lệch số dư bắt được. Cần: màn Capture báo listener đang dừng (không chỉ quyền), hướng dẫn bật Autostart theo hãng máy | Bước 29 |
 | N-24 | Nút Copy mẫu (`masked()`) chỉ che chữ số; tên người chuyển trong ghi chú vẫn lộ. Che tên chung thì phá dạng ghi chú (chữ hoa). Tạm thời: đổi tên bằng tay trước khi đưa mẫu vào corpus | Khi có cách che theo rule |
 | N-25 | Hộp thoại gộp (`MergeDialog.kt`) và `Selectors.kt` đưa số tiền vào câu bằng `formatMoney`, ngoài `MoneyText`; ẩn số dư ở bước 28 sẽ không che được | Bước 28 |

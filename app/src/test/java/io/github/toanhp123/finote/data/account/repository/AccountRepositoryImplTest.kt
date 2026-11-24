@@ -1,12 +1,16 @@
 package io.github.toanhp123.finote.data.account.repository
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.cash.turbine.test
 import io.github.toanhp123.finote.data.account.mapper.toDomain
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.database.account
 import io.github.toanhp123.finote.data.transaction.repository.TransactionRepositoryImpl
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.domain.account.model.AccountIdentifier
 import io.github.toanhp123.finote.domain.account.model.AccountType
+import io.github.toanhp123.finote.domain.account.model.IdentifierKind
+import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import kotlinx.coroutines.flow.first
@@ -395,4 +399,246 @@ class AccountRepositoryImplTest {
             assertEquals(true, rowOf("acc-1")?.isIgnored)
             assertEquals("acc-9", rowOf("acc-1")?.mergedIntoId)
         }
+
+    private fun identifier(
+        mask: String,
+        accountId: String,
+        kind: IdentifierKind = IdentifierKind.ACCOUNT,
+    ) = AccountIdentifier(PKG, kind, mask, accountId)
+
+    private suspend fun ownerOf(
+        mask: String,
+        kind: IdentifierKind = IdentifierKind.ACCOUNT,
+    ) = dbRule.db
+        .accountIdentifierDao()
+        .get(PKG, kind, mask)
+        ?.accountId
+
+    @Test
+    fun `setInitialBalance fixes the start and rebuilds the balance`() =
+        runTest {
+            dbRule.db.accountDao().insert(account(currentBalance = 0L).copy(isInitialized = false))
+            transactions.add(
+                domainTx(type = TransactionType.INCOME, amount = 100_000L, at = "2026-10-05T00:00:00Z"),
+            )
+
+            repo.setInitialBalance("acc-1", 500_000L, now = 50L)
+
+            val row = checkNotNull(rowOf("acc-1"))
+            assertEquals(500_000L, row.initialBalance)
+            assertEquals(600_000L, row.currentBalance)
+            assertTrue(row.isInitialized)
+            val snapshots = snapshotsOf("acc-1").associateBy { it.monthYear }
+            assertEquals(500_000L, snapshots["2026-10"]?.openingBalance)
+            assertEquals(600_000L, snapshots["2026-11"]?.closingBalance)
+        }
+
+    @Test
+    fun `setInitialBalance on a missing account is a silent no-op`() =
+        runTest {
+            repo.setInitialBalance("ghost", 500_000L, now = 50L)
+
+            assertNull(rowOf("ghost"))
+        }
+
+    @Test
+    fun `setPrimary leaves exactly one primary`() =
+        runTest {
+            repo.add(domainAccount("acc-1"))
+            repo.add(domainAccount("acc-2"))
+
+            repo.setPrimary("acc-1", now = 50L)
+            repo.setPrimary("acc-2", now = 60L)
+
+            assertEquals(false, rowOf("acc-1")?.isPrimary)
+            assertEquals(true, rowOf("acc-2")?.isPrimary)
+            assertEquals(60L, rowOf("acc-2")?.updatedAt)
+        }
+
+    @Test
+    fun `clearPrimary clears only that account`() =
+        runTest {
+            repo.add(domainAccount("acc-1"))
+            repo.setPrimary("acc-1", now = 50L)
+
+            repo.clearPrimary("acc-2", now = 60L)
+            assertEquals(true, rowOf("acc-1")?.isPrimary)
+
+            repo.clearPrimary("acc-1", now = 70L)
+            assertEquals(false, rowOf("acc-1")?.isPrimary)
+        }
+
+    @Test
+    fun `archiving the primary clears the star`() =
+        runTest {
+            repo.add(domainAccount().copy(isPrimary = true))
+
+            repo.setArchived("acc-1", archived = true, updatedAt = 50L)
+            assertEquals(false, rowOf("acc-1")?.isPrimary)
+
+            // Unarchiving does not give the star back.
+            repo.setArchived("acc-1", archived = false, updatedAt = 60L)
+            assertEquals(false, rowOf("acc-1")?.isPrimary)
+        }
+
+    @Test
+    fun `ignoring the primary clears the star`() =
+        runTest {
+            repo.add(domainAccount().copy(isPrimary = true))
+
+            repo.setIgnored("acc-1", ignored = true, shouldTrashOldTransactions = false, now = 50L)
+
+            assertEquals(false, rowOf("acc-1")?.isPrimary)
+        }
+
+    @Test
+    fun `softDelete of the primary clears the star`() =
+        runTest {
+            repo.add(domainAccount().copy(isPrimary = true))
+
+            repo.softDelete("acc-1", deletedAt = 50L)
+
+            assertEquals(false, rowOf("acc-1")?.isPrimary)
+        }
+
+    @Test
+    fun `archiving a non-primary leaves the primary alone`() =
+        runTest {
+            repo.add(domainAccount("acc-1").copy(isPrimary = true))
+            repo.add(domainAccount("acc-2"))
+
+            repo.setArchived("acc-2", archived = true, updatedAt = 50L)
+
+            assertEquals(true, rowOf("acc-1")?.isPrimary)
+        }
+
+    @Test
+    fun `reorder writes sortOrder by position and keeps unlisted ids`() =
+        runTest {
+            repo.add(domainAccount("acc-1").copy(sortOrder = 0))
+            repo.add(domainAccount("acc-2").copy(sortOrder = 1))
+            repo.add(domainAccount("acc-3").copy(sortOrder = 2))
+            repo.add(domainAccount("acc-4").copy(sortOrder = 9, isArchived = true))
+
+            repo.reorder(listOf("acc-3", "acc-1", "acc-2"), now = 50L)
+
+            val orders = listOf("acc-1", "acc-2", "acc-3", "acc-4").map { rowOf(it)?.sortOrder }
+            assertEquals(listOf(1, 2, 0, 9), orders)
+            assertEquals(50L, rowOf("acc-3")?.updatedAt)
+        }
+
+    @Test
+    fun `setBankPackage does not overwrite a stored package`() =
+        runTest {
+            repo.add(domainAccount())
+
+            repo.setBankPackage("acc-1", "com.first", now = 50L)
+            repo.setBankPackage("acc-1", "com.second", now = 60L)
+
+            assertEquals("com.first", rowOf("acc-1")?.bankPackageName)
+            assertEquals(50L, rowOf("acc-1")?.updatedAt)
+        }
+
+    @Test
+    fun `addIdentifier stores a free key`() =
+        runTest {
+            repo.add(domainAccount())
+
+            repo.addIdentifier(identifier("1234", "acc-1"))
+
+            assertEquals(identifier("1234", "acc-1"), repo.getIdentifier(PKG, IdentifierKind.ACCOUNT, "1234"))
+        }
+
+    @Test
+    fun `addIdentifier repoints a key whose owner is deleted`() =
+        runTest {
+            repo.add(domainAccount("acc-1"))
+            repo.add(domainAccount("acc-2"))
+            repo.addIdentifier(identifier("1234", "acc-2"))
+            repo.softDelete("acc-2", deletedAt = 50L)
+
+            repo.addIdentifier(identifier("1234", "acc-1"))
+
+            assertEquals("acc-1", ownerOf("1234"))
+        }
+
+    @Test
+    fun `addIdentifier on a key of a live account throws and changes nothing`() =
+        runTest {
+            repo.add(domainAccount("acc-1"))
+            repo.add(domainAccount("acc-2"))
+            repo.addIdentifier(identifier("1234", "acc-2"))
+
+            val failure = runCatching { repo.addIdentifier(identifier("1234", "acc-1")) }.exceptionOrNull()
+
+            assertTrue("$failure", failure is StorageException)
+            assertEquals("acc-2", ownerOf("1234"))
+        }
+
+    @Test
+    fun `getIdentifier is null for an unknown key`() =
+        runTest {
+            assertNull(repo.getIdentifier(PKG, IdentifierKind.CARD, "0000"))
+        }
+
+    @Test
+    fun `removeIdentifier deletes only that key`() =
+        runTest {
+            repo.add(domainAccount())
+            repo.addIdentifier(identifier("1234", "acc-1"))
+            repo.addIdentifier(identifier("1234", "acc-1", IdentifierKind.CARD))
+            repo.addIdentifier(identifier("5678", "acc-1"))
+
+            repo.removeIdentifier(identifier("1234", "acc-1"))
+
+            assertNull(ownerOf("1234"))
+            assertEquals("acc-1", ownerOf("1234", IdentifierKind.CARD))
+            assertEquals("acc-1", ownerOf("5678"))
+        }
+
+    @Test
+    fun `observeIdentifiers emits the keys of one account`() =
+        runTest {
+            repo.add(domainAccount("acc-1"))
+            repo.add(domainAccount("acc-2"))
+            repo.addIdentifier(identifier("5555", "acc-2"))
+
+            repo.observeIdentifiers("acc-1").test {
+                assertEquals(emptyList<AccountIdentifier>(), awaitItem())
+                repo.addIdentifier(identifier("1234", "acc-1"))
+                assertEquals(listOf(identifier("1234", "acc-1")), awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `observeIdentifiedAccountIds emits owners`() =
+        runTest {
+            repo.add(domainAccount("acc-1"))
+            repo.add(domainAccount("acc-2"))
+
+            repo.observeIdentifiedAccountIds().test {
+                assertEquals(emptySet<String>(), awaitItem())
+                repo.addIdentifier(identifier("1234", "acc-1"))
+                assertEquals(setOf("acc-1"), awaitItem())
+                repo.addIdentifier(identifier("5678", "acc-2"))
+                assertEquals(setOf("acc-1", "acc-2"), awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `getNextSortOrder is zero on an empty table and max plus one otherwise`() =
+        runTest {
+            assertEquals(0, repo.getNextSortOrder())
+
+            repo.add(domainAccount("acc-1").copy(sortOrder = 4))
+            repo.add(domainAccount("acc-2").copy(sortOrder = 2))
+
+            assertEquals(5, repo.getNextSortOrder())
+        }
+
+    private companion object {
+        const val PKG = "com.vcb"
+    }
 }

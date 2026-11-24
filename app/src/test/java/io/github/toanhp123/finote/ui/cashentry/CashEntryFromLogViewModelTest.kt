@@ -315,7 +315,7 @@ class CashEntryFromLogViewModelTest {
 
             vm.save()
 
-            assertTrue(vm.current.hasSaveError)
+            assertEquals(CashEntrySaveError.GENERIC, vm.current.saveError)
             assertFalse(vm.current.isSaving)
             assertTrue(vm.current.isVisible)
         }

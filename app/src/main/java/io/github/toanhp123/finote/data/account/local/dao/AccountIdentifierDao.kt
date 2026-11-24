@@ -5,6 +5,7 @@ import androidx.room3.Insert
 import androidx.room3.Query
 import io.github.toanhp123.finote.data.account.local.entity.AccountIdentifierEntity
 import io.github.toanhp123.finote.domain.account.model.IdentifierKind
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AccountIdentifierDao {
@@ -34,6 +35,19 @@ interface AccountIdentifierDao {
         kind: IdentifierKind,
         mask: String,
         accountId: String,
+    ): Int
+
+    @Query("SELECT * FROM account_identifiers WHERE accountId = :accountId ORDER BY kind, mask")
+    fun observeByAccount(accountId: String): Flow<List<AccountIdentifierEntity>>
+
+    @Query("SELECT DISTINCT accountId FROM account_identifiers")
+    fun observeOwnerIds(): Flow<List<String>>
+
+    @Query("DELETE FROM account_identifiers WHERE packageName = :packageName AND kind = :kind AND mask = :mask")
+    suspend fun delete(
+        packageName: String,
+        kind: IdentifierKind,
+        mask: String,
     ): Int
 
     @Query("UPDATE account_identifiers SET accountId = :to WHERE accountId = :from")

@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.ui.cashentry.component
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +24,7 @@ import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 /**
  * The typed [expression], its [result] as a big amount, and one error line, right-aligned above a keypad. Only an
- * invalid result or a failed save ([hasSaveError]) shows text; a result that is not positive is just unfinished.
+ * invalid result or a failed save ([saveErrorRes]) shows text; a result that is not positive is just unfinished.
  */
 @Composable
 fun AmountDisplay(
@@ -32,7 +33,7 @@ fun AmountDisplay(
     kind: MoneyKind,
     modifier: Modifier = Modifier,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
-    hasSaveError: Boolean = false,
+    @StringRes saveErrorRes: Int? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -57,7 +58,7 @@ fun AmountDisplay(
         )
         // Always one line tall, so the keypad does not jump when an error appears.
         Text(
-            text = errorText(result, hasSaveError),
+            text = errorText(result, saveErrorRes),
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             color = FinoteTheme.colors.expense.color,
             style = FinoteTheme.typography.material.bodySmall,
@@ -69,7 +70,7 @@ fun AmountDisplay(
 @Composable
 private fun errorText(
     result: AmountResult,
-    hasSaveError: Boolean,
+    @StringRes saveErrorRes: Int?,
 ): String {
     val res =
         when {
@@ -81,8 +82,8 @@ private fun errorText(
                 R.string.cash_entry_error_overflow
             }
 
-            hasSaveError -> {
-                R.string.cash_entry_error_save
+            saveErrorRes != null -> {
+                saveErrorRes
             }
 
             else -> {

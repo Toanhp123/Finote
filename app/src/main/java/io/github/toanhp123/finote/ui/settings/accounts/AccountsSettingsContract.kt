@@ -1,73 +1,65 @@
 package io.github.toanhp123.finote.ui.settings.accounts
 
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.ui.settings.accounts.logic.AccountListItem
 
 /**
- * [accounts] are the live ones: followed first by `sortOrder`, ignored last. [selected] is the account whose sheet is
- * open and [mergeTargets] are the live accounts of the same bank it could merge into. [dialog] is the open
- * confirmation, if any.
+ * [items] are the live accounts as rows and [archived] the archived ones. [suggestions] maps an account id to the id
+ * of the account it may duplicate. [expanded] holds the packages of the open groups. [reorder] is the draft order of
+ * the top-level rows while the reorder mode is on, and null otherwise.
  */
 data class AccountsSettingsState(
-    val accounts: List<Account> = emptyList(),
-    val selected: Account? = null,
-    val mergeTargets: List<Account> = emptyList(),
-    val dialog: AccountsDialog? = null,
+    val items: List<AccountListItem> = emptyList(),
+    val archived: List<Account> = emptyList(),
+    val suggestions: Map<String, String> = emptyMap(),
+    val expanded: Set<String> = emptySet(),
+    val isArchivedExpanded: Boolean = false,
+    val reorder: List<AccountListItem>? = null,
 )
-
-sealed interface AccountsDialog {
-    /**
-     * [count] is how many transactions would move from [source] to [target]. [droppedStart] is the start balance of
-     * [source] the merge would drop, or null when none is lost.
-     */
-    data class Merge(
-        val source: Account,
-        val target: Account,
-        val count: Int,
-        val droppedStart: Long? = null,
-    ) : AccountsDialog
-
-    /** [trashableCount] is what the dialog offers to trash; [shouldTrash] is the ticked option. */
-    data class Ignore(
-        val trashableCount: Int,
-        val shouldTrash: Boolean = false,
-    ) : AccountsDialog
-}
 
 sealed interface AccountsSettingsIntent {
     data class AccountClicked(
         val id: String,
     ) : AccountsSettingsIntent
 
-    data object SheetDismissed : AccountsSettingsIntent
+    data object AddClicked : AccountsSettingsIntent
 
-    data class MergeTargetPicked(
-        val targetId: String,
+    data class GroupToggled(
+        val packageName: String,
     ) : AccountsSettingsIntent
 
-    data object MergeConfirmed : AccountsSettingsIntent
+    data object ArchivedToggled : AccountsSettingsIntent
 
-    data object IgnoreClicked : AccountsSettingsIntent
-
-    data class TrashToggled(
-        val isChecked: Boolean,
+    /** The user opened the merge of [id] with its suggested partner. */
+    data class SuggestionClicked(
+        val id: String,
     ) : AccountsSettingsIntent
 
-    data object IgnoreConfirmed : AccountsSettingsIntent
+    /** The user said [id] and its suggested partner are not the same account. */
+    data class SuggestionDismissed(
+        val id: String,
+    ) : AccountsSettingsIntent
 
-    data object FollowAgainClicked : AccountsSettingsIntent
+    data object ReorderClicked : AccountsSettingsIntent
 
-    data object DialogDismissed : AccountsSettingsIntent
+    /** The draft row at index [from] was dropped at index [to]. */
+    data class ReorderMoved(
+        val from: Int,
+        val to: Int,
+    ) : AccountsSettingsIntent
+
+    data object ReorderDone : AccountsSettingsIntent
+
+    data object ReorderCancelled : AccountsSettingsIntent
 }
 
-/** Each effect is the outcome of an action; the route shows it as a snackbar. */
 sealed interface AccountsSettingsEffect {
-    data object Merged : AccountsSettingsEffect
+    /** Open the edit screen of [id], or the create screen when [id] is null. [mergeTargetId] opens its merge dialog. */
+    data class OpenAccount(
+        val id: String?,
+        val mergeTargetId: String? = null,
+    ) : AccountsSettingsEffect
 
-    data object Ignored : AccountsSettingsEffect
-
-    data object FollowingAgain : AccountsSettingsEffect
-
-    data object MergeBlockedByTransfer : AccountsSettingsEffect
-
+    /** A write failed; the route shows a snackbar. */
     data object ActionFailed : AccountsSettingsEffect
 }

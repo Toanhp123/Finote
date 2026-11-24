@@ -59,4 +59,19 @@ class AccountUseCaseTransactionTest {
             assertEquals(Outcome.Err(AccountError.HasTransactions), result)
             assertNull(accounts.getById("acc-1")?.deletedAt)
         }
+
+    @Test
+    fun `archive reads the account list inside the transaction`() =
+        runTest {
+            accounts.insert(account(id = "acc-1"))
+            accounts.insert(account(id = "acc-2"))
+
+            val first = ArchiveAccountUseCase(repo, runner, clock)("acc-1", archived = true)
+            val last = ArchiveAccountUseCase(repo, runner, clock)("acc-2", archived = true)
+
+            assertEquals(Outcome.Ok(Unit), first)
+            assertEquals(Outcome.Err(AccountError.LastUsableAccount), last)
+            assertEquals(true, accounts.getById("acc-1")?.isArchived)
+            assertEquals(false, accounts.getById("acc-2")?.isArchived)
+        }
 }

@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.account.usecase
 
 import io.github.toanhp123.finote.domain.account.error.AccountError
+import io.github.toanhp123.finote.domain.account.model.SYSTEM_CASH_ACCOUNT_ID
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.common.FakeTransactionRunner
 import io.github.toanhp123.finote.domain.common.Outcome
@@ -28,6 +29,16 @@ class DeleteAccountUseCaseTest {
             assertEquals(now.toEpochMilli(), repo.stored.getValue("acc-1").deletedAt)
             assertEquals(1, repo.writes)
             assertEquals(1, runner.writes)
+        }
+
+    @Test
+    fun `seeded cash cannot be deleted`() =
+        runTest {
+            repo.stored[SYSTEM_CASH_ACCOUNT_ID] = testAccount(id = SYSTEM_CASH_ACCOUNT_ID)
+
+            assertEquals(Outcome.Err(AccountError.SystemAccount), delete(SYSTEM_CASH_ACCOUNT_ID))
+            assertEquals(0, repo.writes)
+            assertNull(repo.stored.getValue(SYSTEM_CASH_ACCOUNT_ID).deletedAt)
         }
 
     @Test

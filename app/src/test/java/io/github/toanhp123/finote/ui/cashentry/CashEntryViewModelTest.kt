@@ -316,7 +316,7 @@ class CashEntryViewModelTest {
             viewModel.onIntent(CashEntryIntent.SaveClicked)
             runCurrent()
 
-            assertTrue(viewModel.current.hasSaveError)
+            assertEquals(CashEntrySaveError.ACCOUNT_UNUSABLE, viewModel.current.saveError)
             assertFalse(viewModel.current.isSaving)
             assertEquals("70", viewModel.current.expression)
             assertTrue(noActiveAccount.stored.isEmpty())
@@ -335,7 +335,7 @@ class CashEntryViewModelTest {
             viewModel.onIntent(CashEntryIntent.SaveClicked)
             runCurrent()
 
-            assertTrue(viewModel.current.hasSaveError)
+            assertEquals(CashEntrySaveError.GENERIC, viewModel.current.saveError)
             assertFalse(viewModel.current.isSaving)
             assertEquals("70", viewModel.current.expression)
             assertTrue(viewModel.current.isVisible)
@@ -361,11 +361,11 @@ class CashEntryViewModelTest {
             viewModel.press(CalcKey.D7)
             viewModel.onIntent(CashEntryIntent.SaveClicked)
             runCurrent()
-            assertTrue(viewModel.current.hasSaveError)
+            assertEquals(CashEntrySaveError.ACCOUNT_UNUSABLE, viewModel.current.saveError)
 
             viewModel.press(CalcKey.D0)
 
-            assertFalse(viewModel.current.hasSaveError)
+            assertNull(viewModel.current.saveError)
             assertEquals("70", viewModel.current.expression)
         }
 
@@ -503,7 +503,7 @@ class CashEntryViewModelTest {
             viewModel.onIntent(CashEntryIntent.SaveClicked)
             runCurrent()
 
-            assertTrue(viewModel.current.hasSaveError)
+            assertEquals(CashEntrySaveError.GENERIC, viewModel.current.saveError)
             assertFalse(viewModel.current.isSaving)
             assertTrue(viewModel.current.isVisible)
             assertTrue(transactions.stored.isEmpty())

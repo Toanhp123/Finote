@@ -17,15 +17,19 @@ class CreateAccountUseCase
         private val clock: Clock,
     ) {
         /**
-         * Stamps both timestamps from the clock, clears `deletedAt`, marks it initialized, balance = initial.
+         * Stamps both timestamps from the clock, clears `deletedAt`, puts the account last, balance = initial. A bank
+         * account with an unknown start stays provisional ([isStartKnown] false); any other is initialized.
          * Returns the id, or the rule that refused the account.
          */
-        suspend operator fun invoke(account: Account): Outcome<String, AccountError> {
+        suspend operator fun invoke(
+            account: Account,
+            isStartKnown: Boolean,
+        ): Outcome<String, AccountError> {
             val now = clock.millis()
             val fresh =
                 account.copy(
                     currentBalance = account.initialBalance,
-                    isInitialized = true,
+                    isInitialized = isStartKnown || account.bankPackageName == null,
                     createdAt = now,
                     updatedAt = now,
                     deletedAt = null,
@@ -35,7 +39,7 @@ class CreateAccountUseCase
                 if (error != null) {
                     Outcome.Err(error)
                 } else {
-                    repository.add(fresh)
+                    repository.add(fresh.copy(sortOrder = repository.getNextSortOrder()))
                     Outcome.Ok(fresh.id)
                 }
             }

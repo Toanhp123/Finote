@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.account.usecase
 
 import io.github.toanhp123.finote.domain.account.error.AccountError
+import io.github.toanhp123.finote.domain.account.model.SYSTEM_CASH_ACCOUNT_ID
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.account.service.AccountRules
 import io.github.toanhp123.finote.domain.common.Outcome
@@ -15,13 +16,20 @@ class DeleteAccountUseCase
         private val tx: TransactionRunner,
         private val clock: Clock,
     ) {
-        /** Soft delete. An unknown id is `NotFound`; deleting an already deleted account does nothing. */
+        /**
+         * Soft delete. An unknown id is `NotFound`; the seeded cash account is `SystemAccount`; deleting an already
+         * deleted account does nothing.
+         */
         suspend operator fun invoke(id: String): Outcome<Unit, AccountError> =
             tx.write {
                 val old = repository.getAccount(id)
                 when {
                     old == null -> {
                         Outcome.Err(AccountError.NotFound)
+                    }
+
+                    id == SYSTEM_CASH_ACCOUNT_ID -> {
+                        Outcome.Err(AccountError.SystemAccount)
                     }
 
                     old.deletedAt != null -> {

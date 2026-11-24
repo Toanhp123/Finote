@@ -9,11 +9,11 @@ internal fun CashEntryState.backToKeypad() = copy(page = CashEntryPage.KEYPAD)
 internal fun CashEntryState.withoutConfirms() = copy(isDeleteConfirmOpen = false, isUnpairConfirmOpen = false)
 
 /** A save, delete or unpair runs: the sheet is busy and an earlier save error is cleared. */
-internal fun CashEntryState.busy() = copy(isSaving = true, hasSaveError = false)
+internal fun CashEntryState.busy() = copy(isSaving = true, saveError = null)
 
 internal fun CashEntryState.afterKey(key: CalcKey): CashEntryState {
     val next = AmountExpression.press(expression, key)
-    return copy(expression = next, result = AmountExpression.evaluate(next), hasSaveError = false)
+    return copy(expression = next, result = AmountExpression.evaluate(next), saveError = null)
 }
 
 /** An id that is not in the live list (for example archived while the page was open) changes nothing. */

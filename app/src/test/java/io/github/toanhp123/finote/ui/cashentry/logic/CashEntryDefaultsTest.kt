@@ -18,6 +18,18 @@ class CashEntryDefaultsTest {
     }
 
     @Test
+    fun `primary wins over last used`() {
+        val primary = testAccount(id = "star").copy(isPrimary = true, sortOrder = 9)
+        assertEquals("star", CashEntryDefaults.pickAccount(listOf(cash, bank, primary), "bank"))
+    }
+
+    @Test
+    fun `archived primary is skipped`() {
+        val primary = testAccount(id = "star").copy(isPrimary = true, isArchived = true)
+        assertEquals("bank", CashEntryDefaults.pickAccount(listOf(cash, bank, primary), "bank"))
+    }
+
+    @Test
     fun `archived last used falls back to cash`() {
         val archived = bank.copy(isArchived = true)
         assertEquals(SYSTEM_CASH_ACCOUNT_ID, CashEntryDefaults.pickAccount(listOf(cash, archived), "bank"))

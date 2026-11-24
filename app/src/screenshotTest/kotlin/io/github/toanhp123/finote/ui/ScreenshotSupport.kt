@@ -10,3 +10,9 @@ internal const val PHONE = "spec:width=360dp,height=640dp"
 @Preview(name = "Dark", device = PHONE, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Preview(name = "Large font", device = PHONE, fontScale = 2f)
 internal annotation class ScreenPreviews
+
+/** The trio on a tall phone, so one image shows a long form and the actions under it. */
+@Preview(name = "Light", device = "spec:width=360dp,height=1500dp")
+@Preview(name = "Dark", device = "spec:width=360dp,height=1500dp", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Large font", device = "spec:width=360dp,height=1500dp", fontScale = 2f)
+internal annotation class TallScreenPreviews

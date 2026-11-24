@@ -2,18 +2,18 @@ package io.github.toanhp123.finote.ui.settings.accounts
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.toanhp123.finote.domain.account.error.AccountError
-import io.github.toanhp123.finote.domain.account.error.MergeRejection
-import io.github.toanhp123.finote.domain.account.model.Account
-import io.github.toanhp123.finote.domain.account.usecase.CountMergeMovesUseCase
-import io.github.toanhp123.finote.domain.account.usecase.CountTrashableTransactionsUseCase
-import io.github.toanhp123.finote.domain.account.usecase.GetMergeDroppedStartUseCase
-import io.github.toanhp123.finote.domain.account.usecase.MergeAccountsUseCase
+import io.github.toanhp123.finote.domain.account.usecase.DismissMergeSuggestionUseCase
 import io.github.toanhp123.finote.domain.account.usecase.ObserveAccountsUseCase
-import io.github.toanhp123.finote.domain.account.usecase.SetAccountIgnoredUseCase
+import io.github.toanhp123.finote.domain.account.usecase.ObserveBankAppsUseCase
+import io.github.toanhp123.finote.domain.account.usecase.ObserveMergeSuggestionsUseCase
+import io.github.toanhp123.finote.domain.account.usecase.ReorderAccountsUseCase
 import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.ui.common.BaseViewModel
+import io.github.toanhp123.finote.ui.settings.accounts.logic.AccountListItem
+import io.github.toanhp123.finote.ui.settings.accounts.logic.groupAccounts
+import io.github.toanhp123.finote.ui.settings.accounts.logic.reorderedIds
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -23,11 +23,10 @@ class AccountsSettingsViewModel
     @Inject
     constructor(
         observeAccounts: ObserveAccountsUseCase,
-        private val countMergeMoves: CountMergeMovesUseCase,
-        private val getDroppedStart: GetMergeDroppedStartUseCase,
-        private val countTrashable: CountTrashableTransactionsUseCase,
-        private val mergeAccounts: MergeAccountsUseCase,
-        private val setIgnored: SetAccountIgnoredUseCase,
+        observeBankApps: ObserveBankAppsUseCase,
+        observeSuggestions: ObserveMergeSuggestionsUseCase,
+        private val dismissSuggestion: DismissMergeSuggestionUseCase,
+        private val reorderAccounts: ReorderAccountsUseCase,
         @IsDebuggable isDebuggable: Boolean,
     ) : BaseViewModel<AccountsSettingsState, AccountsSettingsIntent, AccountsSettingsEffect>(
             AccountsSettingsState(),
@@ -35,140 +34,91 @@ class AccountsSettingsViewModel
         ) {
         init {
             viewModelScope.launch {
-                observeAccounts()
-                    .catchStorage {
-                        // The list keeps its last state. Nothing is logged: accounts and balances are private.
-                    }.collect { list ->
-                        setState { copy(accounts = list.sortedWith(compareBy({ it.isIgnored }, { it.sortOrder }))) }
+                combine(observeAccounts(), observeBankApps(), observeSuggestions()) { accounts, apps, suggestions ->
+                    val names = apps.associate { it.packageName to it.bankName }
+                    val archived = accounts.filter { it.isArchived && it.deletedAt == null }
+                    AccountsSettingsState(
+                        items = groupAccounts(accounts, names),
+                        archived = archived.sortedBy { it.sortOrder },
+                        suggestions = suggestions,
+                    )
+                }.catchStorage {
+                    // The list keeps its last state. Nothing is logged: accounts and balances are private.
+                }.collect { loaded ->
+                    setState {
+                        copy(items = loaded.items, archived = loaded.archived, suggestions = loaded.suggestions)
                     }
+                }
             }
         }
 
         override fun onIntent(intent: AccountsSettingsIntent) {
             when (intent) {
                 is AccountsSettingsIntent.AccountClicked -> {
-                    openSheet(intent.id)
+                    sendEffect(AccountsSettingsEffect.OpenAccount(intent.id))
                 }
 
-                AccountsSettingsIntent.SheetDismissed -> {
-                    // mergeTargets stays so the sheet keeps its rows while it slides out; openSheet replaces it.
-                    setState { copy(selected = null).withoutDialogs() }
+                AccountsSettingsIntent.AddClicked -> {
+                    sendEffect(AccountsSettingsEffect.OpenAccount(id = null))
                 }
 
-                AccountsSettingsIntent.DialogDismissed -> {
-                    setState { withoutDialogs() }
+                is AccountsSettingsIntent.GroupToggled -> {
+                    setState { copy(expanded = expanded.toggled(intent.packageName)) }
                 }
 
-                is AccountsSettingsIntent.MergeTargetPicked -> {
-                    askMerge(intent.targetId)
+                AccountsSettingsIntent.ArchivedToggled -> {
+                    setState { copy(isArchivedExpanded = !isArchivedExpanded) }
                 }
 
-                AccountsSettingsIntent.MergeConfirmed -> {
-                    confirmMerge()
+                is AccountsSettingsIntent.SuggestionClicked -> {
+                    sendEffect(AccountsSettingsEffect.OpenAccount(intent.id, state.value.suggestions[intent.id]))
                 }
 
-                AccountsSettingsIntent.IgnoreClicked -> {
-                    askIgnore()
+                is AccountsSettingsIntent.SuggestionDismissed -> {
+                    dismiss(intent.id)
                 }
 
-                is AccountsSettingsIntent.TrashToggled -> {
-                    toggleTrash(intent.isChecked)
+                AccountsSettingsIntent.ReorderClicked -> {
+                    setState { copy(reorder = items) }
                 }
 
-                AccountsSettingsIntent.IgnoreConfirmed -> {
-                    confirmIgnore()
+                is AccountsSettingsIntent.ReorderMoved -> {
+                    setState { copy(reorder = reorder?.moved(intent.from, intent.to)) }
                 }
 
-                AccountsSettingsIntent.FollowAgainClicked -> {
-                    followAgain()
+                AccountsSettingsIntent.ReorderDone -> {
+                    finishReorder()
+                }
+
+                AccountsSettingsIntent.ReorderCancelled -> {
+                    setState { copy(reorder = null) }
                 }
             }
         }
 
-        private fun openSheet(id: String) {
-            val account = state.value.accounts.firstOrNull { it.id == id }
-            // An account without a bank key (cash) has no action to offer.
-            val bank = account?.bankPackageName ?: return
-            val targets =
-                state.value.accounts.filter {
-                    it.id != id && it.bankPackageName == bank && it.type == account.type
-                }
-            setState { copy(selected = account, mergeTargets = targets) }
+        private fun dismiss(id: String) {
+            val partner = state.value.suggestions[id] ?: return
+            launchCatching(onStorageError = ::sendActionFailed) { dismissSuggestion(id, partner) }
         }
 
-        private fun askMerge(targetId: String) {
-            val source = state.value.selected ?: return
-            val target = state.value.mergeTargets.firstOrNull { it.id == targetId } ?: return
+        private fun finishReorder() {
+            val draft = state.value.reorder ?: return
+            // Leaves the mode first, so a second tap on Done finds nothing to write.
+            setState { copy(reorder = null) }
+            // Archived accounts follow the live ones, so every account ends with its own sort order.
+            val ids = reorderedIds(draft) + state.value.archived.map { it.id }
             launchCatching(onStorageError = ::sendActionFailed) {
-                val count = countMergeMoves(source.id)
-                val droppedStart = getDroppedStart(source.id, target.id)
-                // The sheet may have closed while the count loaded.
-                if (state.value.selected?.id != source.id) return@launchCatching
-                setState { copy(dialog = AccountsDialog.Merge(source, target, count, droppedStart)) }
+                if (reorderAccounts(ids) is Outcome.Err) sendActionFailed()
             }
-        }
-
-        private fun confirmMerge() {
-            val merge = state.value.dialog as? AccountsDialog.Merge ?: return
-            finishAction(AccountsSettingsEffect.Merged) { mergeAccounts(merge.source.id, merge.target.id) }
-        }
-
-        private fun askIgnore() {
-            val account = state.value.selected ?: return
-            launchCatching(onStorageError = ::sendActionFailed) {
-                val count = countTrashable(account.id)
-                if (state.value.selected?.id != account.id) return@launchCatching
-                setState { copy(dialog = AccountsDialog.Ignore(trashableCount = count)) }
-            }
-        }
-
-        private fun toggleTrash(isChecked: Boolean) =
-            setState { copy(dialog = (dialog as? AccountsDialog.Ignore)?.copy(shouldTrash = isChecked) ?: dialog) }
-
-        private fun confirmIgnore() {
-            val account = state.value.selected ?: return
-            val dialog = state.value.dialog as? AccountsDialog.Ignore ?: return
-            // Ticked with nothing to trash must not trash: this is the only guard.
-            val shouldTrash = dialog.shouldTrash && dialog.trashableCount > 0
-            finishAction(AccountsSettingsEffect.Ignored) { setIgnored(account.id, ignored = true, shouldTrash) }
-        }
-
-        private fun followAgain() {
-            val account = state.value.selected ?: return
-            finishAction(AccountsSettingsEffect.FollowingAgain) {
-                setIgnored(account.id, ignored = false, shouldTrashOldTransactions = false)
-            }
-        }
-
-        /**
-         * Closes the sheet and dialogs first, so a second tap finds nothing to confirm. Then runs a write and reports
-         * the outcome as one effect.
-         */
-        private fun finishAction(
-            success: AccountsSettingsEffect,
-            block: suspend () -> Outcome<Unit, AccountError>,
-        ) {
-            setState { copy(selected = null).withoutDialogs() }
-            launchCatching(onStorageError = ::sendActionFailed) { sendEffect(effectOf(block(), success)) }
         }
 
         private fun sendActionFailed() = sendEffect(AccountsSettingsEffect.ActionFailed)
-
-        private fun effectOf(
-            outcome: Outcome<Unit, AccountError>,
-            success: AccountsSettingsEffect,
-        ): AccountsSettingsEffect =
-            when (outcome) {
-                is Outcome.Ok -> success
-                is Outcome.Err -> blockOrFail(outcome.error)
-            }
-
-        private fun blockOrFail(error: AccountError): AccountsSettingsEffect =
-            if (error == AccountError.MergeRejected(MergeRejection.HAS_TRANSFER)) {
-                AccountsSettingsEffect.MergeBlockedByTransfer
-            } else {
-                AccountsSettingsEffect.ActionFailed
-            }
-
-        private fun AccountsSettingsState.withoutDialogs() = copy(dialog = null)
     }
+
+private fun Set<String>.toggled(value: String) = if (value in this) this - value else this + value
+
+private fun List<AccountListItem>.moved(
+    from: Int,
+    to: Int,
+): List<AccountListItem> =
+    if (from !in indices || to !in indices) this else toMutableList().apply { add(to, removeAt(from)) }

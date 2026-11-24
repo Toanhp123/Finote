@@ -24,6 +24,7 @@ fun AccountEntity.toDomain(): Account =
         deletedAt = deletedAt,
         bankPackageName = bankPackageName,
         mergedIntoId = mergedIntoId,
+        isPrimary = isPrimary,
     )
 
 fun Account.toEntity(): AccountEntity =
@@ -47,4 +48,5 @@ fun Account.toEntity(): AccountEntity =
         deletedAt = deletedAt,
         bankPackageName = bankPackageName,
         mergedIntoId = mergedIntoId,
+        isPrimary = isPrimary,
     )

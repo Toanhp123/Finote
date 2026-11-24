@@ -245,7 +245,7 @@ class CashEntryEditViewModelTest {
             runCurrent()
 
             assertFalse(viewModel.current.isDeleteConfirmOpen)
-            assertTrue(viewModel.current.hasSaveError)
+            assertEquals(CashEntrySaveError.GENERIC, viewModel.current.saveError)
             assertFalse(viewModel.current.isSaving)
             assertTrue(viewModel.current.isVisible)
         }
@@ -261,7 +261,7 @@ class CashEntryEditViewModelTest {
             viewModel.onIntent(CashEntryIntent.DeleteConfirmed)
             runCurrent()
 
-            assertTrue(viewModel.current.hasSaveError)
+            assertEquals(CashEntrySaveError.GENERIC, viewModel.current.saveError)
             assertFalse(viewModel.current.isSaving)
             assertTrue(viewModel.current.isVisible)
         }
@@ -379,7 +379,25 @@ class CashEntryEditViewModelTest {
 
             assertEquals(0, pairs.unpairs)
             assertFalse(viewModel.current.isUnpairConfirmOpen)
-            assertTrue(viewModel.current.hasSaveError)
+            assertEquals(CashEntrySaveError.GENERIC, viewModel.current.saveError)
+            assertFalse(viewModel.current.isSaving)
+            assertTrue(viewModel.current.isVisible)
+        }
+
+    @Test
+    fun `unpair refused for an archived account says so`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            paired()
+            original("o3", TransactionType.INCOME, "archived")
+            val viewModel = openEdit()
+            viewModel.onIntent(CashEntryIntent.UnpairClicked)
+
+            viewModel.onIntent(CashEntryIntent.UnpairConfirmed)
+            runCurrent()
+
+            assertEquals(0, pairs.unpairs)
+            assertEquals(CashEntrySaveError.ACCOUNT_UNUSABLE, viewModel.current.saveError)
             assertFalse(viewModel.current.isSaving)
             assertTrue(viewModel.current.isVisible)
         }

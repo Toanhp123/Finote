@@ -22,8 +22,8 @@ class CreateAccountUseCaseTest {
     @Test
     fun `blank name is BlankName and nothing is stored`() =
         runTest {
-            assertEquals(Outcome.Err(AccountError.BlankName), create(testAccount(name = "")))
-            assertEquals(Outcome.Err(AccountError.BlankName), create(testAccount(name = "   ")))
+            assertEquals(Outcome.Err(AccountError.BlankName), create(testAccount(name = ""), isStartKnown = true))
+            assertEquals(Outcome.Err(AccountError.BlankName), create(testAccount(name = "   "), isStartKnown = true))
             assertEquals(0, repo.writes)
             assertTrue(repo.stored.isEmpty())
         }
@@ -31,7 +31,9 @@ class CreateAccountUseCaseTest {
     @Test
     fun `non VND currency is UnsupportedCurrency and nothing is stored`() =
         runTest {
-            assertEquals(Outcome.Err(AccountError.UnsupportedCurrency), create(testAccount(currency = "USD")))
+            val outcome = create(testAccount(currency = "USD"), isStartKnown = true)
+
+            assertEquals(Outcome.Err(AccountError.UnsupportedCurrency), outcome)
             assertEquals(0, repo.writes)
         }
 
@@ -40,7 +42,7 @@ class CreateAccountUseCaseTest {
         runTest {
             val dirty = testAccount().copy(currentBalance = 5L, deletedAt = 7L, createdAt = 1L, updatedAt = 2L)
 
-            val outcome = create(dirty)
+            val outcome = create(dirty, isStartKnown = true)
 
             assertEquals(Outcome.Ok("acc-1"), outcome)
             assertEquals(1, runner.writes)
@@ -53,9 +55,35 @@ class CreateAccountUseCaseTest {
         }
 
     @Test
+    fun `bank account with an unknown start is provisional`() =
+        runTest {
+            create(testAccount().copy(bankPackageName = "bank.one"), isStartKnown = false)
+
+            assertEquals(false, repo.stored.getValue("acc-1").isInitialized)
+        }
+
+    @Test
+    fun `account without a bank app is always initialized`() =
+        runTest {
+            create(testAccount(), isStartKnown = false)
+
+            assertEquals(true, repo.stored.getValue("acc-1").isInitialized)
+        }
+
+    @Test
+    fun `new account goes last`() =
+        runTest {
+            repo.stored["old"] = testAccount(id = "old").copy(sortOrder = 4)
+
+            create(testAccount(), isStartKnown = true)
+
+            assertEquals(5, repo.stored.getValue("acc-1").sortOrder)
+        }
+
+    @Test
     fun `negative initialBalance is accepted`() =
         runTest {
-            create(testAccount(initialBalance = -300_000L))
+            create(testAccount(initialBalance = -300_000L), isStartKnown = true)
 
             assertEquals(-300_000L, repo.stored.getValue("acc-1").currentBalance)
         }

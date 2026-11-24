@@ -33,6 +33,8 @@ data class Account(
     val mergedIntoId: String? = null,
     /** True when notifications for this account are dropped instead of recorded. */
     val isIgnored: Boolean = false,
+    /** The default account of the user. At most one live account holds it. */
+    val isPrimary: Boolean = false,
 ) {
     /** Live, not archived, not ignored: the account can take new or edited transactions and shows in pickers. */
     val isUsable: Boolean get() = deletedAt == null && !isArchived && !isIgnored
