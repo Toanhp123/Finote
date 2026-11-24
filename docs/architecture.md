@@ -177,7 +177,7 @@ UI flow is MVI: Screen sends `Intent`, ViewModel calls use cases (reads included
 
 detekt cannot hold two limits in one rule. `LongMethod` and `LongParameterList` set `ignoreAnnotated: ['Composable']`. Konsist checks the 80-line limit, 120 for `*Screen` composables.
 
-Private helpers of a class stay inside the class; detekt `TooManyFunctions` ignores private functions so they need not leave it.
+Private helpers of a class stay inside the class; detekt `TooManyFunctions` ignores private functions so they need not leave it. `TooManyFunctions` also skips DAOs (`local/dao`) and Hilt modules (`di`): one table's queries stay in one DAO. Hilt modules may still be split by feature for reading, not for the limit.
 
 When a file co-locates types, the declaration the file is named after comes first and the serving types (style enum, item class, state holder) go below it. detekt `MatchingDeclarationName` (`mustBeFirst`) relies on this order: a file that starts with its only class must be named after that class.
 

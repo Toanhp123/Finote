@@ -17,7 +17,7 @@ import io.github.toanhp123.finote.domain.notification.repository.NotificationSet
 import io.github.toanhp123.finote.domain.notification.repository.ParserRuleRepository
 import io.github.toanhp123.finote.domain.notification.repository.UserKeywordRepository
 
-/** The notification feature's repositories. Apart from [RepositoryModule] to stay under the detekt function limit. */
+/** The notification feature's repository bindings. */
 @Module
 @InstallIn(SingletonComponent::class)
 interface NotificationRepositoryModule {

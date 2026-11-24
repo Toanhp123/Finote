@@ -16,6 +16,9 @@ complexity:
   TooManyFunctions:
     # Private helpers belong inside their class; counting them pushed helpers out to top level.
     ignorePrivate: true
+    # Keeps the detekt defaults (tests) and adds DAOs and Hilt modules: flat lists of one-line declarations, where the
+    # count says nothing about complexity and splitting only scatters one table's queries or one feature's bindings.
+    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/local/dao/**', '**/di/**']
 naming:
   FunctionNaming:
     ignoreAnnotated: ['Composable']

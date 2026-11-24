@@ -9,7 +9,7 @@ import io.github.toanhp123.finote.data.notification.local.dao.NotificationLogDao
 import io.github.toanhp123.finote.data.notification.local.dao.ParserRuleDao
 import io.github.toanhp123.finote.data.notification.local.dao.UserIgnoreKeywordDao
 
-/** The notification feature's DAOs. Apart from [DatabaseModule] so neither grows past the detekt function limit. */
+/** The notification feature's DAOs. */
 @Module
 @InstallIn(SingletonComponent::class)
 object NotificationDaoModule {
