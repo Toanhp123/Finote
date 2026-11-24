@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.data.notification.repository
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
+import io.github.toanhp123.finote.data.notification.local.entity.UserIgnoreKeywordEntity
 import io.github.toanhp123.finote.data.notification.notificationLogEntity
 import io.github.toanhp123.finote.data.notification.parserRuleEntity
 import io.github.toanhp123.finote.domain.notification.model.Classification
@@ -91,14 +92,29 @@ class NotificationCaptureRepositoryImplTest {
             .single { it.id == id }
 
     @Test
-    fun `getFailedLogs returns only FAILED rows of the given packages`() =
+    fun `getReparseLogs returns FAILED and keyword-hidden rows of the given packages`() =
         runTest {
             seedLog("failed", NotificationStatus.FAILED)
             seedLog("pending", NotificationStatus.PENDING)
             seedLog("other", NotificationStatus.FAILED, packageName = "com.other")
+            dbRule.db.notificationLogDao().insert(
+                notificationLogEntity(id = "hidden", contentHash = "h-hidden", status = NotificationStatus.IGNORED_SPAM)
+                    .copy(failureReason = "user_keyword:moi ban"),
+            )
 
-            assertEquals(listOf("failed"), repo.getFailedLogs(setOf("com.test.bank")).map { it.id })
-            assertTrue(repo.getFailedLogs(emptySet()).isEmpty())
+            assertEquals(listOf("failed", "hidden"), repo.getReparseLogs(setOf("com.test.bank")).map { it.id }.sorted())
+            assertTrue(repo.getReparseLogs(emptySet()).isEmpty())
+        }
+
+    @Test
+    fun `getUserKeywords returns the normalized keywords of one package`() =
+        runTest {
+            val dao = dbRule.db.userIgnoreKeywordDao()
+            dao.insert(UserIgnoreKeywordEntity("k2", "com.test.bank", "Hai", "hai", 2L))
+            dao.insert(UserIgnoreKeywordEntity("k1", "com.test.bank", "Một", "mot", 1L))
+            dao.insert(UserIgnoreKeywordEntity("k3", "com.other", "Ba", "ba", 1L))
+
+            assertEquals(listOf("mot", "hai"), repo.getUserKeywords("com.test.bank"))
         }
 
     @Test

@@ -383,6 +383,32 @@ class CaptureNotificationUseCaseTest {
             assertEquals(CaptureResult.Failed, e.useCase(raw(postTime = 2L)))
         }
 
+    @Test
+    fun `capture passes the package's user keywords`() =
+        runTest {
+            val e = env(rule())
+            e.repo.userKeywords[PKG] = listOf("moi ban")
+
+            assertEquals(
+                CaptureResult.Ignored("user_keyword:moi ban"),
+                e.useCase(raw(content = "Mời bạn mua sắm", postTime = 1L)),
+            )
+            val log = e.repo.logs.single()
+            assertEquals(NotificationStatus.IGNORED_SPAM, log.status)
+            assertEquals("Mời bạn mua sắm", log.content)
+            // the same words in a notification a rule parses stay a transaction
+            assertEquals(CaptureResult.Stored, e.useCase(raw(content = "Mời bạn -50,000", postTime = 2L)))
+            // another package's keywords do not apply
+            e.repo.userKeywords.clear()
+            e.repo.userKeywords["com.other"] = listOf("mua sam")
+            assertEquals(CaptureResult.Failed, e.useCase(raw(content = "Mua sắm", postTime = 3L)))
+        }
+
+    @Test
+    fun `CaptureResult Ignored toString hides the reason`() {
+        assertEquals(false, CaptureResult.Ignored("user_keyword:moi ban").toString().contains("moi ban"))
+    }
+
     private companion object {
         const val PKG = "com.test.bank"
     }

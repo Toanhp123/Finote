@@ -64,7 +64,12 @@ fun Selectors(
         Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = gap) {
             SelectorRow(
                 label = stringResource(R.string.cash_entry_date),
-                text = dateLabel(state.date, state.isToday),
+                text =
+                    if (state.isDateMissing) {
+                        stringResource(R.string.cash_entry_no_date)
+                    } else {
+                        dateLabel(state.date, state.isToday)
+                    },
                 onClick = onDateClick,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             )

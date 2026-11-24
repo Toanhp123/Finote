@@ -71,6 +71,19 @@ private fun FinoteNavBarPreview() {
     }
 }
 
+/** The red dot on the Settings tab, unselected and selected (on the primary fill). */
+@PreviewTest
+@FinotePreviews
+@Composable
+private fun FinoteNavBarBadgePreview() {
+    FinotePreviewSurface {
+        Column {
+            FinoteNavBar(items = previewNavItems(hasSettingsBadge = true), selectedIndex = 0, onSelect = {})
+            FinoteNavBar(items = previewNavItems(hasSettingsBadge = true), selectedIndex = 3, onSelect = {})
+        }
+    }
+}
+
 /** Blur off, the bar over a row: the icons must stay readable on the solid fill. */
 @PreviewTest
 @FinotePreviews

@@ -9,13 +9,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
- * Copies from the real repository: rule order, a repeated `contentHash` is rejected, `getFailedLogs` filter and order.
+ * Copies from the real repository: rule order, a repeated `contentHash` is rejected, `getReparseLogs` filter and order.
  * Does not copy: business `require` checks (R4/R5 of a later plan move them into the domain).
  */
 class FakeNotificationCaptureRepository(
     private val rules: List<ParserRule> = emptyList(),
 ) : NotificationCaptureRepository {
     val logs = mutableListOf<NotificationLog>()
+
+    /** Normalized user keywords per package; tests fill it. */
+    val userKeywords = mutableMapOf<String, List<String>>()
 
     /** Ids whose outcome write throws, to test that one bad row is skipped. */
     val failingUpdateIds = mutableSetOf<String>()
@@ -38,13 +41,12 @@ class FakeNotificationCaptureRepository(
         return true
     }
 
-    override suspend fun getFailedLogs(packages: Set<String>): List<NotificationLog> =
+    override suspend fun getUserKeywords(packageName: String): List<String> = userKeywords[packageName].orEmpty()
+
+    override suspend fun getReparseLogs(packages: Set<String>): List<NotificationLog> =
         logs
-            .filter {
-                it.status == NotificationStatus.FAILED &&
-                    it.failureReason == "no_rule_matched" &&
-                    it.packageName in packages
-            }.sortedWith(compareBy({ it.receivedAt }, { it.id }))
+            .filter { it.isReparseCandidate() && it.packageName in packages }
+            .sortedWith(compareBy({ it.receivedAt }, { it.id }))
 
     override suspend fun updateFailedOutcome(
         id: String,
@@ -52,7 +54,7 @@ class FakeNotificationCaptureRepository(
     ): Boolean {
         updateCount++
         check(id !in failingUpdateIds)
-        val index = logs.indexOfFirst { it.id == id && it.status == NotificationStatus.FAILED }
+        val index = logs.indexOfFirst { it.id == id && it.isReparseCandidate() }
         if (index < 0) return false
         logs[index] =
             logs[index].copy(
@@ -65,4 +67,8 @@ class FakeNotificationCaptureRepository(
             )
         return true
     }
+
+    private fun NotificationLog.isReparseCandidate() =
+        (status == NotificationStatus.FAILED && failureReason == "no_rule_matched") ||
+            (status == NotificationStatus.IGNORED_SPAM && failureReason.orEmpty().startsWith("user_keyword:"))
 }

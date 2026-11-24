@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.component.glass.finoteGlass
@@ -55,10 +56,11 @@ fun FinoteNavBar(
     }
 }
 
-/** One tab of [FinoteNavBar]. [label] is spoken by a screen reader. */
+/** One tab of [FinoteNavBar]. [label] is spoken by a screen reader; [hasBadge] adds a red dot and "new" to it. */
 data class FinoteNavItem(
     @DrawableRes val iconRes: Int,
     val label: String,
+    val hasBadge: Boolean = false,
 )
 
 @Composable
@@ -81,23 +83,34 @@ private fun NavTab(
                     .background(if (selected) scheme.primary else Color.Transparent),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                painter = painterResource(item.iconRes),
-                contentDescription = item.label,
-                modifier = Modifier.size(FinoteTheme.sizes.iconMd),
-                tint = if (selected) scheme.onPrimary else scheme.onSurfaceVariant,
-            )
+            Box {
+                Icon(
+                    painter = painterResource(item.iconRes),
+                    contentDescription =
+                        if (item.hasBadge) stringResource(R.string.nav_item_new_cd, item.label) else item.label,
+                    modifier = Modifier.size(FinoteTheme.sizes.iconMd),
+                    tint = if (selected) scheme.onPrimary else scheme.onSurfaceVariant,
+                )
+                if (item.hasBadge) {
+                    Box(
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .size(FinoteTheme.sizes.badgeDot)
+                            .background(scheme.error, FinoteTheme.shapes.full),
+                    )
+                }
+            }
         }
     }
 }
 
 /** The four main destinations, for previews and screenshot tests. */
-internal fun previewNavItems(): List<FinoteNavItem> =
+internal fun previewNavItems(hasSettingsBadge: Boolean = false): List<FinoteNavItem> =
     listOf(
         FinoteNavItem(R.drawable.ic_home, "Home"),
         FinoteNavItem(R.drawable.ic_receipt_long, "Transactions"),
         FinoteNavItem(R.drawable.ic_pie_chart, "Reports"),
-        FinoteNavItem(R.drawable.ic_settings, "Settings"),
+        FinoteNavItem(R.drawable.ic_settings, "Settings", hasBadge = hasSettingsBadge),
     )
 
 @FinotePreviews
@@ -105,5 +118,6 @@ internal fun previewNavItems(): List<FinoteNavItem> =
 private fun FinoteNavBarPreview() {
     FinotePreviewSurface {
         FinoteNavBar(items = previewNavItems(), selectedIndex = 0, onSelect = {})
+        FinoteNavBar(items = previewNavItems(hasSettingsBadge = true), selectedIndex = 3, onSelect = {})
     }
 }

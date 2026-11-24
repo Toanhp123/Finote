@@ -76,6 +76,60 @@ class NotificationClassifierTest {
     }
 
     @Test
+    fun `user keyword never hides a parsed notification`() {
+        val result = classifyNotification(raw(content = "Mời bạn -50,000"), listOf(rule()), listOf("moi ban"))
+
+        assertEquals(NotificationStatus.PENDING, result.status)
+        assertEquals(50_000L, result.parsed?.fields?.amount)
+    }
+
+    @Test
+    fun `user keyword hides unparsed text as user_keyword`() {
+        val result = classifyNotification(raw(content = "Mời  bạn mua sắm"), listOf(rule()), listOf("mời bạn"))
+
+        assertEquals(NotificationStatus.IGNORED_SPAM, result.status)
+        assertEquals("user_keyword:moi ban", result.failureReason)
+        assertFalse(result.isSecret)
+        assertNull(result.parsed)
+    }
+
+    @Test
+    fun `unparsed text without a user keyword match stays FAILED`() {
+        val result = classifyNotification(raw(content = "khong co so tien"), listOf(rule()), listOf("moi ban"))
+
+        assertEquals(NotificationStatus.FAILED, result.status)
+        assertEquals("no_rule_matched", result.failureReason)
+    }
+
+    @Test
+    fun `rule keyword still wins before parse`() {
+        val result =
+            classifyNotification(
+                raw(content = "Ưu đãi mời bạn"),
+                listOf(rule(keywords = listOf("ưu đãi"))),
+                listOf("moi ban"),
+            )
+
+        assertEquals("keyword:ưu đãi", result.failureReason)
+    }
+
+    @Test
+    fun `secret wins over a user keyword`() {
+        val result = classifyNotification(raw(content = "Mã OTP mời bạn"), listOf(rule()), listOf("moi ban"))
+
+        assertEquals("secret:OTP", result.failureReason)
+        assertTrue(result.isSecret)
+    }
+
+    @Test
+    fun `classification toString hides the reason`() {
+        val result = classifyNotification(raw(content = "Mời bạn mua sắm"), listOf(rule()), listOf("moi ban"))
+
+        assertFalse(result.toString().contains("moi ban"))
+        assertFalse(result.toString().contains("user_keyword"))
+    }
+
+    @Test
     fun `regexGroupNames lists named groups only`() {
         assertEquals(setOf("sign", "amount"), regexGroupNames("(?<sign>[+-])(?<amount>\\d+)(\\w)"))
         assertNotNull(regexGroupNames("abc"))

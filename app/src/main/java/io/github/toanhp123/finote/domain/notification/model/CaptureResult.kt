@@ -4,10 +4,13 @@ sealed interface CaptureResult {
     /** Stored as `PENDING` with the fields a rule parsed. */
     data object Stored : CaptureResult
 
-    /** Stored as `IGNORED_SPAM`, metadata only. [reason] is `keyword:<word>` or `channel:<id>`. */
+    /** Stored as `IGNORED_SPAM`. [reason] is `keyword:<word>`, `user_keyword:<word>` or `channel:<id>`. */
     data class Ignored(
         val reason: String,
-    ) : CaptureResult
+    ) : CaptureResult {
+        // The reason can echo notification text.
+        override fun toString() = "Ignored"
+    }
 
     /** Stored as `FAILED`: it passed the filter but no rule matched. */
     data object Failed : CaptureResult

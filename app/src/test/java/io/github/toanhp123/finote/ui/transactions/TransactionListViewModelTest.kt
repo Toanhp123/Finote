@@ -20,6 +20,12 @@ import io.github.toanhp123.finote.domain.category.usecase.FakeCategoryRepository
 import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
 import io.github.toanhp123.finote.domain.common.FakeTransactionRunner
 import io.github.toanhp123.finote.domain.common.StorageException
+import io.github.toanhp123.finote.domain.notification.model.FailedInboxItem
+import io.github.toanhp123.finote.domain.notification.usecase.DismissInboxBannerUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.FakeFailedInboxRepository
+import io.github.toanhp123.finote.domain.notification.usecase.FakeInboxMarkerRepository
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveFailedInboxUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveInboxAlertsUseCase
 import io.github.toanhp123.finote.domain.transaction.model.AdjustmentDirection
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
@@ -57,6 +63,8 @@ class TransactionListViewModelTest {
     private val categories = FakeCategoryRepository()
     private val fakeTx = FakeTransactionRepository(activeAccounts = setOf(A))
     private val acks = FakeDriftAcknowledgementRepository()
+    private val inbox = FakeFailedInboxRepository()
+    private val markers = FakeInboxMarkerRepository()
 
     private fun seed() {
         accounts.stored[A] = testAccount(A)
@@ -79,9 +87,29 @@ class TransactionListViewModelTest {
             reconcileBalance = ReconcileBalanceUseCase(fakeTx, acks, FakeTransactionRunner(), clock),
             deleteTransaction = DeleteTransactionUseCase(fakeTx, FakeTransactionRunner(), clock),
             observeAutoPairedIds = ObserveAutoPairedIdsUseCase(FakeTransferPairRepository(fakeTx)),
+            observeInboxAlerts = ObserveInboxAlertsUseCase(ObserveFailedInboxUseCase(inbox), markers),
+            observeInbox = ObserveFailedInboxUseCase(inbox),
+            dismissInboxBanner = DismissInboxBannerUseCase(markers),
             clock = clock,
             isDebuggable = true,
         )
+
+    private fun inboxItem(
+        id: String,
+        isHidden: Boolean = false,
+    ) = FailedInboxItem(
+        id = id,
+        logIds = listOf(id),
+        packageName = "pkg",
+        title = "t",
+        content = "c",
+        postTime = 1L,
+        receivedAt = 1L,
+        reason = "no_rule_matched",
+        parsed = null,
+        isHidden = isHidden,
+        isKeywordHidden = false,
+    )
 
     private fun TestScope.open(handle: SavedStateHandle = SavedStateHandle()) = viewModel(handle).also { runCurrent() }
 
@@ -531,6 +559,44 @@ class TransactionListViewModelTest {
                 vm.onIntent(TransactionListIntent.DeleteConfirmed)
                 runCurrent()
                 assertEquals(TransactionListEffect.DeleteFailed, awaitItem())
+            }
+        }
+
+    @Test
+    fun `banner shows the shown count`() =
+        runTest(mainRule.dispatcher) {
+            inbox.items.value = listOf(inboxItem("a"), inboxItem("b"), inboxItem("h", isHidden = true))
+
+            val vm = open()
+
+            assertEquals(2, vm.state.value.inboxBannerCount)
+        }
+
+    @Test
+    fun `close hides it until a new item`() =
+        runTest(mainRule.dispatcher) {
+            inbox.items.value = listOf(inboxItem("a"))
+            val vm = open()
+            assertEquals(1, vm.state.value.inboxBannerCount)
+
+            vm.onIntent(TransactionListIntent.InboxBannerClosed)
+            runCurrent()
+            assertEquals(0, vm.state.value.inboxBannerCount)
+
+            inbox.items.value = listOf(inboxItem("a"), inboxItem("b"))
+            runCurrent()
+            assertEquals(2, vm.state.value.inboxBannerCount)
+        }
+
+    @Test
+    fun `click opens the inbox`() =
+        runTest(mainRule.dispatcher) {
+            inbox.items.value = listOf(inboxItem("a"))
+            val vm = open()
+
+            vm.effects.test {
+                vm.onIntent(TransactionListIntent.InboxBannerClicked)
+                assertEquals(TransactionListEffect.OpenInbox, awaitItem())
             }
         }
 

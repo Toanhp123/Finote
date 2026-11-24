@@ -83,6 +83,14 @@
     <string name="cash_entry_unpair">Not a transfer</string>
     <string name="cash_entry_unpair_confirm_title">Split into two transactions?</string>
     <string name="cash_entry_unpair_confirm_body">This splits it back into the original expense and income. Any changes you made to this row will be lost.</string>
+    <string name="cash_entry_source_title">Original notification</string>
+    <string name="cash_entry_source_expand">Show all</string>
+    <string name="cash_entry_source_collapse">Show less</string>
+    <string name="cash_entry_no_date">Choose date</string>
+    <string name="cash_entry_archived_account">Archived account: %1$s</string>
+    <string name="cash_entry_covered_text">A balance adjustment you made already includes this transaction, so it was not added.</string>
+    <string name="cash_entry_adjust_title">Add this transaction?</string>
+    <string name="cash_entry_adjust_text">A balance adjustment after this time may already include this. Saving will change the account\'s current balance by this amount.</string>
     <string name="cash_entry_backspace">Delete</string>
     <string name="cash_entry_tile_label">Cash entry</string>
     <string name="cash_entry_shortcut_short">Cash entry</string>
@@ -91,6 +99,7 @@
     <string name="tab_transactions">Transactions</string>
     <string name="tab_budget">Budget</string>
     <string name="tab_settings">Settings</string>
+    <string name="nav_item_new_cd">%1$s, new</string>
     <string name="coming_soon_title">Coming soon</string>
     <string name="transactions_all">All</string>
     <string name="transactions_today">Today</string>
@@ -152,6 +161,8 @@
         <item quantity="other">%1$d patterns · v%2$d</item>
     </plurals>
     <string name="capture_bank_edited">has your edits</string>
+    <string name="capture_group_ad_keywords">AD KEYWORDS</string>
+    <string name="capture_ad_keyword_delete">Delete keyword</string>
     <string name="balance_drift_message">%1$s balance may differ from the bank</string>
     <plurals name="balance_drift_others">
         <item quantity="one">and %d other account</item>
@@ -159,6 +170,11 @@
     </plurals>
     <string name="balance_drift_adjust">Enter real balance</string>
     <string name="balance_drift_adjust_cd">Enter the real balance of %1$s</string>
+    <plurals name="inbox_banner_message">
+        <item quantity="one">%d transaction could not be recorded · Review</item>
+        <item quantity="other">%d transactions could not be recorded · Review</item>
+    </plurals>
+    <string name="inbox_banner_close">Dismiss</string>
     <string name="reconcile_title">Real balance</string>
     <string name="reconcile_field">Balance in your bank app</string>
     <string name="reconcile_in_app">In app</string>
@@ -191,4 +207,35 @@
     <string name="accounts_snack_following">Following the account again</string>
     <string name="accounts_snack_transfer">Cannot merge: a transfer links the two accounts</string>
     <string name="accounts_snack_failed">That did not work. Try again later.</string>
+    <string name="settings_inbox_title">Failed notifications</string>
+    <string name="settings_inbox_subtitle_empty">Nothing to review</string>
+    <plurals name="settings_inbox_subtitle">
+        <item quantity="one">%d transaction to review</item>
+        <item quantity="other">%d transactions to review</item>
+    </plurals>
+    <string name="settings_inbox_new">New</string>
+    <string name="inbox_empty_title">Nothing to review</string>
+    <string name="inbox_empty_message">Every bank notification was recorded or handled.</string>
+    <string name="inbox_action_dismiss">Dismiss</string>
+    <string name="inbox_action_ad">This is an ad</string>
+    <string name="inbox_action_restore">Restore</string>
+    <string name="inbox_hidden_header">Hidden (%1$d)</string>
+    <string name="inbox_snack_handled">This item was already handled</string>
+    <string name="inbox_snack_failed">That did not work. Try again later.</string>
+    <string name="inbox_ad_title">Hide ad notifications</string>
+    <string name="inbox_ad_field">Phrase to match</string>
+    <string name="inbox_ad_preview_none">No other items will be hidden</string>
+    <plurals name="inbox_ad_preview">
+        <item quantity="one">%d other item will be hidden too</item>
+        <item quantity="other">%d other items will be hidden too</item>
+    </plurals>
+    <string name="inbox_ad_save">Hide</string>
+    <string name="inbox_ad_refusal_too_short">The phrase needs at least 3 characters</string>
+    <string name="inbox_ad_refusal_not_in_selected">This phrase is not in the selected notification</string>
+    <string name="inbox_ad_refusal_bank_name">This is the bank\'s name, which every notification of the bank carries</string>
+    <string name="inbox_ad_refusal_in_real_transaction">This phrase is also in a real transaction</string>
+    <string name="inbox_ad_refusal_in_other_money_item">This phrase is also in another notification that looks like a transaction</string>
+    <string name="inbox_ad_refusal_duplicate">You already added this phrase</string>
+    <string name="inbox_snack_ad_learned">Ad notifications hidden</string>
+    <string name="inbox_snack_undo">Undo</string>
 </resources>

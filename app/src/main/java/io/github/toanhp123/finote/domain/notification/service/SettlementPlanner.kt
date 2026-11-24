@@ -25,6 +25,26 @@ const val FAIL_INVALID_AMOUNT = "invalid_amount"
 const val FAIL_INVALID_TIME = "invalid_time"
 const val FAIL_SETTLE_ERROR = "settle_error"
 const val FAIL_ADJUSTED_AFTER = "adjusted_after"
+const val FAIL_PARTNER_FAILED = "partner_failed"
+const val FAIL_STUCK_REPOST = "stuck_repost"
+const val FAIL_STUCK_IGNORED = "stuck_ignored"
+
+// Written by `dismissFromInbox` (SQL literal); tests assert it through this constant.
+const val FAIL_USER_DISMISSED = "user_dismissed"
+
+// Capture writes this one. DAO queries repeat it as a literal (Room needs constant SQL).
+const val FAIL_NO_RULE_MATCHED = "no_rule_matched"
+
+/** The failure reasons the inbox shows. `no_rule_matched` is shown or hidden by the money-signal filter. */
+val INBOX_REASONS: Set<String> =
+    setOf(
+        FAIL_NO_RULE_MATCHED,
+        FAIL_AMBIGUOUS_ACCOUNT,
+        FAIL_ACCOUNT_ARCHIVED,
+        FAIL_INVALID_AMOUNT,
+        FAIL_INVALID_TIME,
+        FAIL_SETTLE_ERROR,
+    )
 
 // 10^15 VND: far above any real balance, far below Long.MAX_VALUE, so balance sums cannot overflow.
 const val MAX_AMOUNT = 1_000_000_000_000_000L

@@ -8,6 +8,7 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
+import io.github.toanhp123.finote.domain.notification.service.FAIL_PARTNER_FAILED
 
 /**
  * Copies from the real repository: log filters and order, and each write moves only `PENDING` logs out of `PENDING`.
@@ -27,6 +28,12 @@ class FakeNotificationSettlementRepository(
 
     /** Log id -> error thrown by [fail] before anything is written. */
     val failErrors = mutableMapOf<String, Throwable>()
+
+    /** Log id -> error thrown by [ignore] before anything is written. */
+    val ignoreErrors = mutableMapOf<String, Throwable>()
+
+    /** Log id -> error thrown by [markRepost] before anything is written. */
+    val repostErrors = mutableMapOf<String, Throwable>()
 
     /** Bank side log id -> transaction id, for each successful [book]. */
     val booked = mutableMapOf<String, String>()
@@ -78,11 +85,13 @@ class FakeNotificationSettlementRepository(
         failErrors[decision.log.id]?.let { throw it }
         failed[decision.log.id] = decision.reason
         val changed = update(decision.log.id, NotificationStatus.FAILED, null, decision.reason)
-        val partnerChanged = decision.partner?.let { update(it.id, NotificationStatus.FAILED, null, decision.reason) }
+        val partnerChanged =
+            decision.partner?.let { update(it.id, NotificationStatus.FAILED, null, FAIL_PARTNER_FAILED) }
         return changed || partnerChanged == true
     }
 
     override suspend fun ignore(decision: SettlementDecision.Ignore): Boolean {
+        ignoreErrors[decision.log.id]?.let { throw it }
         val ids = listOfNotNull(decision.log.id, decision.partner?.id)
         ignored += ids
         return ids.map { update(it, NotificationStatus.IGNORED_ACCOUNT, null, null) }.any { it }
@@ -92,6 +101,7 @@ class FakeNotificationSettlementRepository(
         logId: String,
         linkedTransactionId: String?,
     ): Boolean {
+        repostErrors[logId]?.let { throw it }
         reposted[logId] = linkedTransactionId
         return update(logId, NotificationStatus.DEDUPLICATED, linkedTransactionId, null)
     }

@@ -23,7 +23,7 @@ class FakeNotificationCaptureRepositoryTest {
     )
 
     @Test
-    fun `failed logs keep only no_rule_matched of the packages, oldest first`() =
+    fun `reparse logs keep no_rule_matched and user_keyword logs of the packages, oldest first`() =
         runTest {
             repository.insertLog(failed("b", receivedAt = 2))
             repository.insertLog(failed("a", receivedAt = 2))
@@ -31,6 +31,18 @@ class FakeNotificationCaptureRepositoryTest {
             repository.insertLog(failed("other-reason", receivedAt = 0, reason = "parse_error"))
             repository.insertLog(failed("other-pkg", receivedAt = 0, packageName = "elsewhere"))
 
-            assertEquals(listOf("old", "a", "b"), repository.getFailedLogs(setOf("pkg")).map { it.id })
+            repository.insertLog(
+                failed("hidden", receivedAt = 1, reason = "user_keyword:moi ban")
+                    .copy(status = NotificationStatus.IGNORED_SPAM),
+            )
+            repository.insertLog(
+                failed(
+                    "rule-hidden",
+                    receivedAt = 0,
+                    reason = "keyword:x",
+                ).copy(status = NotificationStatus.IGNORED_SPAM),
+            )
+
+            assertEquals(listOf("hidden", "old", "a", "b"), repository.getReparseLogs(setOf("pkg")).map { it.id })
         }
 }

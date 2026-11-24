@@ -46,6 +46,7 @@ import io.github.toanhp123.finote.ui.common.rememberNotificationListenerEnabled
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.transactions.component.BalanceDriftBanner
 import io.github.toanhp123.finote.ui.transactions.component.DeleteAdjustmentDialog
+import io.github.toanhp123.finote.ui.transactions.component.FailedInboxBanner
 import io.github.toanhp123.finote.ui.transactions.component.ListenerOffBanner
 import io.github.toanhp123.finote.ui.transactions.component.ReconcileSheet
 import io.github.toanhp123.finote.ui.transactions.component.TransactionFilterChips
@@ -65,6 +66,7 @@ fun TransactionListRoute(
     snackbarState: FinoteSnackbarState,
     onOpenSetup: () -> Unit,
     onOpenEditor: (String) -> Unit,
+    onOpenInbox: () -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
@@ -76,6 +78,10 @@ fun TransactionListRoute(
         when (effect) {
             is TransactionListEffect.OpenEditor -> {
                 onOpenEditor(effect.id)
+            }
+
+            TransactionListEffect.OpenInbox -> {
+                onOpenInbox()
             }
 
             TransactionListEffect.DeleteFailed -> {
@@ -114,6 +120,14 @@ fun TransactionListScreen(
             if (isListenerOff) {
                 ListenerOffBanner(
                     onClick = onOpenSetup,
+                    modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg, vertical = FinoteTheme.spacing.sm),
+                )
+            }
+            if (state.inboxBannerCount > 0) {
+                FailedInboxBanner(
+                    count = state.inboxBannerCount,
+                    onReview = { onIntent(TransactionListIntent.InboxBannerClicked) },
+                    onClose = { onIntent(TransactionListIntent.InboxBannerClosed) },
                     modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg, vertical = FinoteTheme.spacing.sm),
                 )
             }

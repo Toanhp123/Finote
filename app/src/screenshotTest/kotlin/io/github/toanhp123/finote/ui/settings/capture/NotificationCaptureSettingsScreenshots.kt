@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import com.android.tools.screenshot.PreviewTest
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
+import io.github.toanhp123.finote.domain.notification.model.UserIgnoreKeyword
 import io.github.toanhp123.finote.ui.ScreenPreviews
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.settings.logic.BankSummary
@@ -22,6 +23,32 @@ private val banks =
         BankSummary("a", "Vietcombank", activeRuleCount = 3, highestVersion = 2, hasUserEdits = false),
         BankSummary("b", "MB Bank", activeRuleCount = 2, highestVersion = 1, hasUserEdits = false),
         BankSummary("c", "MoMo", activeRuleCount = 5, highestVersion = 1, hasUserEdits = true),
+    )
+
+private fun adKeyword(
+    id: String,
+    packageName: String,
+    text: String,
+) = UserIgnoreKeyword(id, packageName, text, text.lowercase(), createdAt = 1L)
+
+@PreviewTest
+@ScreenPreviews
+@Composable
+private fun CaptureAdKeywordsPreview() =
+    Frame(
+        NotificationCaptureSettingsState(
+            // No banks, so the page is short enough to show the list; the groups fall back to the package name.
+            adKeywords =
+                mapOf(
+                    "com.test.bank" to
+                        listOf(
+                            adKeyword("1", "com.test.bank", "Mời bạn ly cà phê"),
+                            adKeyword("2", "com.test.bank", "Ưu đãi cuối tuần"),
+                        ),
+                    "com.test.wallet" to listOf(adKeyword("3", "com.test.wallet", "Khuyến mãi")),
+                ),
+        ),
+        isAccessEnabled = true,
     )
 
 @PreviewTest

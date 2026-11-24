@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.ui.cashentry.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -24,12 +25,14 @@ fun KeypadPage(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.md)) {
+        state.sourceText?.let { SourceNotificationBlock(it) }
         TypeRow(
             type = state.type,
             onTypeChange = { onIntent(CashEntryIntent.TypeChanged(it)) },
             isEditing = state.isEditing,
             isSaving = state.isSaving,
             onDelete = { onIntent(CashEntryIntent.DeleteClicked) },
+            isTransferAllowed = state.sourceText == null,
         )
         if (state.isEditing && state.isAutoPaired) {
             FinoteButton(
@@ -42,6 +45,13 @@ fun KeypadPage(
         }
         AmountHeader(state)
         Selectors(state, onIntent, onDateClick = { onIntent(CashEntryIntent.PageOpened(CashEntryPage.DATE)) })
+        if (state.selectedAccountId == null && state.archivedAccountName != null) {
+            Text(
+                text = stringResource(R.string.cash_entry_archived_account, state.archivedAccountName),
+                color = FinoteTheme.scheme.onSurfaceVariant,
+                style = FinoteTheme.typography.material.bodySmall,
+            )
+        }
         if (state.isEditing && state.type == TransactionType.EXPENSE) {
             ReimbursementRow(
                 selected = state.reimbursement,
@@ -49,6 +59,9 @@ fun KeypadPage(
             )
         }
         CashKeypad(onKey = { onIntent(CashEntryIntent.KeyPressed(it)) })
+        if (state.isCoveredNotice) {
+            CoveredNotice(onDismiss = { onIntent(CashEntryIntent.DismissFromCovered) }, enabled = !state.isSaving)
+        }
         FinoteButton(
             text = stringResource(R.string.cash_entry_save),
             onClick = { onIntent(CashEntryIntent.SaveClicked) },

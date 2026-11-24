@@ -10,10 +10,13 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
@@ -34,9 +37,11 @@ import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.settings.SettingsRoute
 import io.github.toanhp123.finote.ui.settings.accounts.AccountsSettingsRoute
 import io.github.toanhp123.finote.ui.settings.capture.NotificationCaptureSettingsRoute
+import io.github.toanhp123.finote.ui.settings.inbox.FailedInboxRoute
 import io.github.toanhp123.finote.ui.settings.logs.NotificationLogsRoute
 import io.github.toanhp123.finote.ui.setup.SetupRoute
 import io.github.toanhp123.finote.ui.transactions.TransactionListRoute
+import kotlinx.coroutines.launch
 
 @Composable
 fun FinoteNavHost(
@@ -48,12 +53,22 @@ fun FinoteNavHost(
     val backStack = rememberNavBackStack(start)
     val snackbarState = rememberFinoteSnackbarState()
     val motion = FinoteTheme.motion
+    val navBar by hiltViewModel<NavBarViewModel>().state.collectAsStateWithLifecycle()
+    // The booking sheet leaves before its message ends, so the message belongs to this scope, not to the entry.
+    val scope = rememberCoroutineScope()
+    val handled = stringResource(R.string.inbox_snack_handled)
     FinoteScaffold(
         modifier = modifier,
         snackbarState = snackbarState,
         bottomBar =
             if (isTabBarVisible(backStack)) {
-                { TabBar(selected = currentTab(backStack), onSelect = { selectTab(backStack, it) }) }
+                {
+                    TabBar(
+                        selected = currentTab(backStack),
+                        hasSettingsBadge = navBar.hasSettingsBadge,
+                        onSelect = { selectTab(backStack, it) },
+                    )
+                }
             } else {
                 null
             },
@@ -80,13 +95,16 @@ fun FinoteNavHost(
                             snackbarState = snackbarState,
                             onOpenSetup = { openSetup(backStack) },
                             onOpenEditor = { id -> openEditor(backStack, id) },
+                            onOpenInbox = { openFailedInbox(backStack) },
                             contentPadding = padding,
                         )
                     }
                     entry<Budget> { ComingSoonScreen(R.string.tab_budget) }
                     settingsEntries(backStack, snackbarState, padding)
+                    inboxEntry(backStack, snackbarState, padding)
                     if (isToolsEnabled) logsEntry(backStack, snackbarState, padding)
                     editorEntry(backStack)
+                    bookingEntry(backStack) { scope.launch { snackbarState.show(handled) } }
                     entry<Setup> { key ->
                         SetupRoute(
                             viewModel = hiltViewModel(),
@@ -114,6 +132,7 @@ private fun EntryProviderScope<NavKey>.settingsEntries(
             viewModel = hiltViewModel(),
             onOpenCapture = { openNotificationCaptureSettings(backStack) },
             onOpenAccounts = { openAccountsSettings(backStack) },
+            onOpenInbox = { openFailedInbox(backStack) },
             onOpenLogs = { openNotificationLogs(backStack) },
             modifier = Modifier.padding(padding),
         )
@@ -129,6 +148,23 @@ private fun EntryProviderScope<NavKey>.settingsEntries(
     entry<NotificationCaptureSettings> {
         NotificationCaptureSettingsRoute(
             viewModel = hiltViewModel(),
+            onClose = { backStack.removeLastOrNull() },
+            modifier = Modifier.padding(padding),
+        )
+    }
+}
+
+/** The failed notifications inbox. Every build has it. */
+private fun EntryProviderScope<NavKey>.inboxEntry(
+    backStack: MutableList<NavKey>,
+    snackbarState: FinoteSnackbarState,
+    padding: PaddingValues,
+) {
+    entry<FailedInbox> {
+        FailedInboxRoute(
+            viewModel = hiltViewModel(),
+            snackbarState = snackbarState,
+            onOpenBooking = { itemId -> openBooking(backStack, itemId) },
             onClose = { backStack.removeLastOrNull() },
             modifier = Modifier.padding(padding),
         )
@@ -164,12 +200,38 @@ private fun EntryProviderScope<NavKey>.editorEntry(backStack: MutableList<NavKey
     }
 }
 
+/** The booking sheet of a failed inbox item: the cash entry sheet in from-log mode, drawn over the inbox. */
+private fun EntryProviderScope<NavKey>.bookingEntry(
+    backStack: MutableList<NavKey>,
+    onShowStaleNotice: () -> Unit,
+) {
+    entry<BookInboxItem>(metadata = SheetSceneStrategy.sheet()) { key ->
+        CashEntryRoute(
+            viewModel =
+                hiltViewModel<CashEntryViewModel, CashEntryViewModel.Factory>(
+                    creationCallback = { it.create(null, key.itemId) },
+                ),
+            onClose = { backStack.remove(key) },
+            onShowStaleNotice = onShowStaleNotice,
+        )
+    }
+}
+
 @Composable
 private fun TabBar(
     selected: NavKey,
+    hasSettingsBadge: Boolean,
     onSelect: (NavKey) -> Unit,
 ) {
-    val items = TopLevelTabs.map { FinoteNavItem(it.iconRes(), stringResource(it.labelRes())) }
+    val items =
+        TopLevelTabs.map {
+            FinoteNavItem(
+                it.iconRes(),
+                stringResource(it.labelRes()),
+                hasBadge =
+                    it == Settings && hasSettingsBadge,
+            )
+        }
     FinoteNavBar(
         items = items,
         selectedIndex = TopLevelTabs.indexOf(selected),

@@ -44,6 +44,19 @@ fun openNotificationCaptureSettings(backStack: MutableList<NavKey>) {
     if (backStack.lastOrNull() != NotificationCaptureSettings) backStack.add(NotificationCaptureSettings)
 }
 
+/** Opens [FailedInbox]. A second call while it is on top does nothing, so a double tap cannot stack it. */
+fun openFailedInbox(backStack: MutableList<NavKey>) {
+    if (backStack.lastOrNull() != FailedInbox) backStack.add(FailedInbox)
+}
+
+/** Opens [BookInboxItem]. While a booking sheet is on top this does nothing, so a double tap cannot stack a second. */
+fun openBooking(
+    backStack: MutableList<NavKey>,
+    itemId: String,
+) {
+    if (backStack.lastOrNull() !is BookInboxItem) backStack.add(BookInboxItem(itemId))
+}
+
 /** Opens [EditTransaction]. While an editor is on top this does nothing, so a double tap cannot stack a second one. */
 fun openEditor(
     backStack: MutableList<NavKey>,

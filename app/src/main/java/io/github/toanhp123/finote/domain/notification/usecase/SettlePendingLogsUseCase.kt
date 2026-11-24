@@ -9,6 +9,8 @@ import io.github.toanhp123.finote.domain.notification.model.SettlementDecision.F
 import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
 import io.github.toanhp123.finote.domain.notification.service.FAIL_ADJUSTED_AFTER
 import io.github.toanhp123.finote.domain.notification.service.FAIL_SETTLE_ERROR
+import io.github.toanhp123.finote.domain.notification.service.FAIL_STUCK_IGNORED
+import io.github.toanhp123.finote.domain.notification.service.FAIL_STUCK_REPOST
 import io.github.toanhp123.finote.domain.notification.service.REPOST_WINDOW_WITH_BALANCE_MILLIS
 import io.github.toanhp123.finote.domain.notification.service.planSettlement
 import kotlinx.coroutines.CancellationException
@@ -30,7 +32,8 @@ class SettlePendingLogsUseCase
          * throws or comes back with a [SettlementError] (stale or refused, rolled back) is skipped and the next
          * decisions still run. Its logs stay `PENDING` and are retried, unless the log that carries it is older than
          * [STUCK_AFTER_MILLIS]: then they are written `FAILED` with [FAIL_SETTLE_ERROR] (if that write throws too,
-         * they stay `PENDING`). A log that an adjustment already covers ([SettlementError.AdjustedAfter]) is the one
+         * they stay `PENDING`); a stuck `Repost` or `Ignore` gets [FAIL_STUCK_REPOST] or [FAIL_STUCK_IGNORED] instead.
+         * A log that an adjustment already covers ([SettlementError.AdjustedAfter]) is the one
          * exception: it is written `FAILED` with [FAIL_ADJUSTED_AFTER] at once and never retried. Returns true when
          * `PENDING` logs remain (the worker retries). Runs one at a time in the whole process.
          */
@@ -78,9 +81,13 @@ class SettlePendingLogsUseCase
             val fallback =
                 when (decision) {
                     is SettlementDecision.Book -> Fail(decision.bankSide, decision.walletSide, FAIL_SETTLE_ERROR)
+
                     is SettlementDecision.Fail -> decision.copy(reason = FAIL_SETTLE_ERROR)
-                    is SettlementDecision.Ignore -> Fail(decision.log, decision.partner, FAIL_SETTLE_ERROR)
-                    is SettlementDecision.Repost -> Fail(decision.log, null, FAIL_SETTLE_ERROR)
+
+                    // Outside the inbox set: a stuck repost must not make a booked event bookable again.
+                    is SettlementDecision.Ignore -> Fail(decision.log, decision.partner, FAIL_STUCK_IGNORED)
+
+                    is SettlementDecision.Repost -> Fail(decision.log, null, FAIL_STUCK_REPOST)
                 }
             if (now - fallback.log.receivedAt <= STUCK_AFTER_MILLIS) return
             try {

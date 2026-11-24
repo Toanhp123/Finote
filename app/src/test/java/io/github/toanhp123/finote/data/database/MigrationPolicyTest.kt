@@ -344,6 +344,24 @@ class MigrationPolicyTest {
         }
 
     @Test
+    fun `migrating 10 to 11 keeps every row and adds an empty keyword table`() =
+        runTest {
+            helper.createDatabase(10).use { connection -> V8_ROWS.forEach(connection::execSQL) }
+
+            helper.runMigrationsAndValidate(11, listOf(MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)).close()
+
+            listOf(
+                "accounts" to "acc-a",
+                "categories" to "cat-1",
+                "notification_logs" to "log-1",
+                "parser_rules" to CUSTOM_RULE_ID,
+                "transactions" to "tx-1",
+                "account_balance_snapshots" to "snap-1",
+            ).forEach { (table, id) -> assertTrue("$table/$id", rowExists(table, id)) }
+            assertEquals(0L, longColumn("SELECT COUNT(*) FROM user_ignore_keywords"))
+        }
+
+    @Test
     fun `migrated schema validates`() = runTest { migrateKeyedRows() }
 
     private suspend fun migrateKeyedRows() {

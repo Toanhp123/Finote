@@ -21,14 +21,27 @@ class NotificationCaptureRepositoryImpl
     ) : NotificationCaptureRepository {
         private val rules = db.parserRuleDao()
         private val logs = db.notificationLogDao()
+        private val userKeywords = db.userIgnoreKeywordDao()
 
         override suspend fun getRules(packageName: String): List<ParserRule> =
             storage { rules.getByPackage(packageName).mapNotNull { it.toDomain() } }
 
         override suspend fun insertLog(log: NotificationLog): Boolean = storage { logs.insert(log.toEntity()) != -1L }
 
-        override suspend fun getFailedLogs(packages: Set<String>): List<NotificationLog> =
-            storage { if (packages.isEmpty()) emptyList() else logs.getFailed(packages).map { it.toFailedLog() } }
+        override suspend fun getUserKeywords(packageName: String): List<String> =
+            storage { userKeywords.getByPackage(packageName).map { it.normalizedKeyword } }
+
+        override suspend fun getReparseLogs(packages: Set<String>): List<NotificationLog> =
+            storage {
+                if (packages.isEmpty()) {
+                    emptyList()
+                } else {
+                    logs
+                        .getReparseCandidates(
+                            packages,
+                        ).map { it.toReparseLog() }
+                }
+            }
 
         override suspend fun updateFailedOutcome(
             id: String,
@@ -55,8 +68,8 @@ class NotificationCaptureRepositoryImpl
         override fun observeRecentLogs(limit: Int): Flow<List<NotificationLog>> =
             logs.observeRecent(limit).map { list -> list.map { it.toDomain() } }.mapStorageErrors()
 
-        // A FAILED row has no match, so there is nothing parsed to restore.
-        private fun NotificationLogEntity.toFailedLog() =
+        // A re-parse candidate has no match, so there is nothing parsed to restore.
+        private fun NotificationLogEntity.toReparseLog() =
             NotificationLog(
                 id = id,
                 packageName = packageName,

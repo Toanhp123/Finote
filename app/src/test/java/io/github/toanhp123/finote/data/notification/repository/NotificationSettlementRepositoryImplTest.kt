@@ -17,6 +17,7 @@ import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.account.model.defaultKind
 import io.github.toanhp123.finote.domain.account.service.balanceDriftKey
 import io.github.toanhp123.finote.domain.common.Outcome
+import io.github.toanhp123.finote.domain.common.StorageException
 import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
@@ -473,7 +474,7 @@ class NotificationSettlementRepositoryImplTest {
         }
 
     @Test
-    fun `fail marks both logs`() =
+    fun `fail of a pair gives the bank the reason and the wallet partner_failed`() =
         runTest {
             val a = log("a")
             val b = log("b")
@@ -484,7 +485,39 @@ class NotificationSettlementRepositoryImplTest {
             assertEquals(NotificationStatus.FAILED, storedLog("a").status)
             assertEquals("no account", storedLog("a").failureReason)
             assertEquals(NotificationStatus.FAILED, storedLog("b").status)
+            assertEquals("partner_failed", storedLog("b").failureReason)
             assertFalse(repo.fail(SettlementDecision.Fail(a, b, "again")))
+        }
+
+    @Test
+    fun `fail without a partner gives the log the reason`() =
+        runTest {
+            val a = log("a")
+            seed(a)
+
+            assertTrue(repo.fail(SettlementDecision.Fail(a, null, "no account")))
+
+            assertEquals("no account", storedLog("a").failureReason)
+        }
+
+    @Test
+    fun `fail of a pair writes both or neither`() =
+        runTest {
+            val a = log("a")
+            val b = log("b")
+            seed(a, b)
+            // The wallet update is the second write; making it throw must undo the bank update.
+            dbRule.execSql(
+                "CREATE TRIGGER wallet_fails BEFORE UPDATE ON notification_logs " +
+                    "WHEN NEW.failureReason = 'partner_failed' BEGIN SELECT RAISE(ABORT, 'boom'); END",
+            )
+
+            val thrown = runCatching { repo.fail(SettlementDecision.Fail(a, b, "no account")) }.exceptionOrNull()
+
+            assertTrue(thrown is StorageException)
+            assertEquals(NotificationStatus.PENDING, storedLog("a").status)
+            assertNull(storedLog("a").failureReason)
+            assertEquals(NotificationStatus.PENDING, storedLog("b").status)
         }
 
     @Test

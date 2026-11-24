@@ -7,10 +7,10 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 ## 1. Hiện trạng (2026-11-23)
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2d (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản, ghép chuyển khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Đoạn A xong: v0.2.0 phát hành 2026-11-23 (tag `v0.2.0`). Tiếp theo: đoạn B, bắt đầu bước 13 (`feature/failed-inbox`).
+- Đoạn A xong: v0.2.0 phát hành 2026-11-23 (tag `v0.2.0`). Đang làm: bước 13 (`feature/failed-inbox`), chờ user dogfood. Sau đó đoạn B tiếp tục.
 - Dogfood đóng 2026-11-23 (chỉ Techcombank): APK dogfood (R8) chạy ổn trên máy thật; `EncryptedDatabaseTest` qua trên máy thật; chưa gặp báo lệch số dư; luồng bình thường của bản sửa N-03 đã thử trên máy Vivo.
 - Mẫu thật chỉ gom được của Techcombank (2026-11-22): user không có tài khoản VCB, MB, MoMo. Rule VCB, MB, MoMo chỉ kiểm trên mẫu tổng hợp (D4).
-- DB version 10, có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
+- DB version 11 (nhánh `feature/failed-inbox`, migration 10→11), có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
 - Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Chưa có: tạo và sửa tài khoản, quản lý danh mục, dashboard.
 
 ## 2. Nguyên tắc làm việc
@@ -145,7 +145,8 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 
 | # | Nhánh | Loại | Dùng | Trạng thái |
 |---|---|---|---|---|
-| 13 | `feature/failed-inbox` | Should-Have | N1, N2, N3 | ⬜ |
+| 13 | `feature/failed-inbox` | Should-Have | N1, N2, N3 | 🔧 |
+| 13b | `feature/regex-sandbox` (beta) | Should-Have | N2 | ⬜ |
 | 14 | `feature/account-manage` | Must-Have | N5 | ⬜ |
 | 15 | `feature/category-ui` | Must-Have | | ⬜ |
 | 16 | `feature/merchant-normalize` | Should-Have | N1 | ⬜ |
@@ -155,7 +156,8 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 20 | `feature/tags`, `feature/fts-search` | Should-Have | N2 | ⬜ |
 | 21 | `release/0.3.0` | | | ⬜ |
 
-- **13. `failed-inbox`**: liệt kê log `FAILED`, bấm để mở form điền sẵn (N2) thành giao dịch tay. Kèm bộ dạy mẫu: bôi đen số tiền, số dư, 4 số cuối; app sinh regex `isUserCustom = true` rồi gọi `ReparseFailedLogsUseCase`. Gộp `feature/regex-sandbox` của bản cũ vào đây. Còn phải bàn: ngân hàng chưa có rule bị `NotTracked` nên không có dòng `FAILED` để dạy.
+- **13. `failed-inbox`**: hộp thư thông báo lỗi trong Cài đặt: liệt kê log `FAILED` có dấu hiệu tiền (lọc quảng cáo), bấm để mở form điền sẵn (N2) thành giao dịch tay; từ khóa quảng cáo của user (ẩn, khôi phục); chấm đỏ trên tab Cài đặt và banner "N giao dịch chưa ghi được · Xem" ở danh sách giao dịch. Không có bộ dạy mẫu (đã tách sang 13b). Spec `2026-11-23-failed-inbox-design.md`. Mã xong, chờ user dogfood.
+- **13b. `regex-sandbox` (beta)**: dạy mẫu cho thông báo chưa có rule: user bôi đen số tiền, số dư, 4 số cuối; app sinh regex rule `isUserCustom = true` rồi gọi `ReparseFailedLogsUseCase`. Mở từ một mục trong hộp thư lỗi. Gắn nhãn beta. Còn phải bàn: ngân hàng chưa có rule bị `NotTracked` nên không có dòng `FAILED` để dạy.
 - **14. `account-manage`**: tạo, sửa tài khoản; liên kết app ngân hàng + 4 số cuối (N5); `setInitialBalance` (đặt `isInitialized = true` và tính lại); gắn sao tài khoản chính (`isPrimary`); gợi ý gộp khi tài khoản tự tạo giống tài khoản cũ; nhóm tài khoản theo ngân hàng: dòng nhóm hiện tổng số dư (cộng các tài khoản cùng app, không lưu), bấm vào mở các tài khoản con, mỗi tài khoản có số dư riêng (ý user 2026-11-22).
 - **15. `category-ui`**: quản lý cây 2 cấp, biểu tượng, màu.
 - **16. `merchant-normalize`**: bảng `CategoryKeywordRule`; tự gán danh mục và chuẩn hóa tên cửa hàng ngay trên đường ghi sổ (N1). Đặt trước dashboard, vì giao dịch từ thông báo hiện không có danh mục thì biểu đồ theo danh mục vô nghĩa.
@@ -222,7 +224,6 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 |---|---|---|
 | N-01 | Rule hệ thống chưa đọc được số dư âm (thấu chi): `MONEY` không bắt dấu `-`. `parseMoney` đã sẵn sàng | Khi có mẫu thấu chi thật (thêm `-?` vào nhóm balance, tăng version) |
 | N-06 | `vcb_card` có thể đọc hạn mức thẻ tín dụng thành số dư (nợ #8 cũ) | Bước 10 |
-| N-07 | Rule `isActive = false` vẫn lọc và vẫn tính để quyết định `NotTracked` | Bước 13 |
 | N-09 | `HttpParserRuleFeed` đọc chặn trên dispatcher của worker | Bước 30 |
 | N-10 | Màn Tài khoản gom mọi lỗi thành một snackbar; sheet không tự cập nhật khi danh sách đổi | Bước 14 |
 | N-11 | Fake `FakeRuleUpdateSettingsRepository` mặc định bật tự cập nhật (thật: tắt); `CategoryDao.observeCategories` thiếu tie-break `id`; Konsist lách được bằng tên đầy đủ và hàm top-level trong `di` | Bước 15 (DAO), còn lại khi chạm tới |
@@ -239,6 +240,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-24 | Nút Copy mẫu (`masked()`) chỉ che chữ số; tên người chuyển trong ghi chú vẫn lộ. Che tên chung thì phá dạng ghi chú (chữ hoa). Tạm thời: đổi tên bằng tay trước khi đưa mẫu vào corpus | Khi có cách che theo rule |
 | N-25 | Hộp thoại gộp (`MergeDialog.kt`) và `Selectors.kt` đưa số tiền vào câu bằng `formatMoney`, ngoài `MoneyText`; ẩn số dư ở bước 28 sẽ không che được | Bước 28 |
 | N-26 | Mốc "đã xác nhận" (`drift_ack.xml`) lưu SHA-256 của `accountId:T:L`, không phải số dư rõ, nhưng số dư ít entropy nên đọc được file prefs (máy root) thì dò ngược được. Hướng sửa: HMAC bằng khóa Keystore, hoặc thay `L` bằng dấu vết không chứa tiền (số dòng, `updatedAt` lớn nhất) | Bước 32 |
+| N-27 | Cặp ví + ngân hàng lỗi trước khi có `partner_failed` hiện thành hai mục trong hộp thư lỗi (không gộp được) | Khi có mẫu MoMo |
 
 ## 7. Quyết định
 

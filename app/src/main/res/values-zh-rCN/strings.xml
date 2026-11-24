@@ -83,6 +83,14 @@
     <string name="cash_entry_unpair">不是转账</string>
     <string name="cash_entry_unpair_confirm_title">拆分为两笔交易？</string>
     <string name="cash_entry_unpair_confirm_body">将拆回原来的支出和收入两笔交易。你对这一行所做的修改将会丢失。</string>
+    <string name="cash_entry_source_title">原始通知</string>
+    <string name="cash_entry_source_expand">显示全部</string>
+    <string name="cash_entry_source_collapse">收起</string>
+    <string name="cash_entry_no_date">选择日期</string>
+    <string name="cash_entry_archived_account">已归档账户：%1$s</string>
+    <string name="cash_entry_covered_text">您的余额调整已包含这笔交易，因此没有添加。</string>
+    <string name="cash_entry_adjust_title">添加这笔交易？</string>
+    <string name="cash_entry_adjust_text">此时间之后的余额调整可能已包含这笔交易。保存将使账户当前余额恰好变动这笔金额。</string>
     <string name="cash_entry_backspace">删除</string>
     <string name="cash_entry_tile_label">记现金</string>
     <string name="cash_entry_shortcut_short">记现金</string>
@@ -91,6 +99,7 @@
     <string name="tab_transactions">交易</string>
     <string name="tab_budget">预算</string>
     <string name="tab_settings">设置</string>
+    <string name="nav_item_new_cd">%1$s，有新内容</string>
     <string name="coming_soon_title">即将推出</string>
     <string name="transactions_all">全部</string>
     <string name="transactions_today">今天</string>
@@ -149,12 +158,18 @@
         <item quantity="other">%1$d 条规则 · v%2$d</item>
     </plurals>
     <string name="capture_bank_edited">含你的修改</string>
+    <string name="capture_group_ad_keywords">广告关键词</string>
+    <string name="capture_ad_keyword_delete">删除关键词</string>
     <string name="balance_drift_message">%1$s的余额可能与银行不一致</string>
     <plurals name="balance_drift_others">
         <item quantity="other">还有%d个其他账户</item>
     </plurals>
     <string name="balance_drift_adjust">输入真实余额</string>
     <string name="balance_drift_adjust_cd">输入%1$s的真实余额</string>
+    <plurals name="inbox_banner_message">
+        <item quantity="other">%d 笔交易未能记录 · 查看</item>
+    </plurals>
+    <string name="inbox_banner_close">关闭</string>
     <string name="reconcile_title">真实余额</string>
     <string name="reconcile_field">银行应用中的余额</string>
     <string name="reconcile_in_app">应用内</string>
@@ -185,4 +200,33 @@
     <string name="accounts_snack_following">已重新记录该账户</string>
     <string name="accounts_snack_transfer">无法合并：两个账户之间有转账</string>
     <string name="accounts_snack_failed">操作失败，请稍后再试。</string>
+    <string name="settings_inbox_title">未能记录的交易</string>
+    <string name="settings_inbox_subtitle_empty">没有需要查看的内容</string>
+    <plurals name="settings_inbox_subtitle">
+        <item quantity="other">%d 笔交易待查看</item>
+    </plurals>
+    <string name="settings_inbox_new">新</string>
+    <string name="inbox_empty_title">没有需要查看的内容</string>
+    <string name="inbox_empty_message">所有银行通知都已记录或处理。</string>
+    <string name="inbox_action_dismiss">忽略</string>
+    <string name="inbox_action_ad">这是广告</string>
+    <string name="inbox_action_restore">恢复</string>
+    <string name="inbox_hidden_header">已隐藏（%1$d）</string>
+    <string name="inbox_snack_handled">此项已处理</string>
+    <string name="inbox_snack_failed">操作失败，请稍后再试。</string>
+    <string name="inbox_ad_title">隐藏广告通知</string>
+    <string name="inbox_ad_field">匹配的短语</string>
+    <string name="inbox_ad_preview_none">不会隐藏其他条目</string>
+    <plurals name="inbox_ad_preview">
+        <item quantity="other">另外 %d 条也会被隐藏</item>
+    </plurals>
+    <string name="inbox_ad_save">隐藏</string>
+    <string name="inbox_ad_refusal_too_short">短语至少需要 3 个字符</string>
+    <string name="inbox_ad_refusal_not_in_selected">所选通知中没有这个短语</string>
+    <string name="inbox_ad_refusal_bank_name">这是银行名称，该银行的每条通知都有</string>
+    <string name="inbox_ad_refusal_in_real_transaction">这个短语也出现在真实交易中</string>
+    <string name="inbox_ad_refusal_in_other_money_item">这个短语也出现在另一条看起来像交易的通知中</string>
+    <string name="inbox_ad_refusal_duplicate">你已添加过这个短语</string>
+    <string name="inbox_snack_ad_learned">已隐藏广告通知</string>
+    <string name="inbox_snack_undo">撤销</string>
 </resources>

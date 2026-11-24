@@ -83,6 +83,14 @@
     <string name="cash_entry_unpair">Không phải chuyển khoản</string>
     <string name="cash_entry_unpair_confirm_title">Tách thành hai giao dịch?</string>
     <string name="cash_entry_unpair_confirm_body">Tách lại thành hai giao dịch Chi và Thu ban đầu. Những thay đổi bạn đã sửa trên dòng này sẽ mất.</string>
+    <string name="cash_entry_source_title">Thông báo gốc</string>
+    <string name="cash_entry_source_expand">Xem đầy đủ</string>
+    <string name="cash_entry_source_collapse">Thu gọn</string>
+    <string name="cash_entry_no_date">Chọn ngày</string>
+    <string name="cash_entry_archived_account">Tài khoản đã lưu trữ: %1$s</string>
+    <string name="cash_entry_covered_text">Lần điều chỉnh số dư của bạn đã bao gồm giao dịch này, nên giao dịch chưa được thêm.</string>
+    <string name="cash_entry_adjust_title">Ghi giao dịch này?</string>
+    <string name="cash_entry_adjust_text">Một lần điều chỉnh số dư sau thời điểm này có thể đã bao gồm giao dịch này. Lưu sẽ làm số dư hiện tại của tài khoản thay đổi đúng bằng số tiền này.</string>
     <string name="cash_entry_backspace">Xóa</string>
     <string name="cash_entry_tile_label">Ghi tiền mặt</string>
     <string name="cash_entry_shortcut_short">Ghi tiền mặt</string>
@@ -91,6 +99,7 @@
     <string name="tab_transactions">Giao dịch</string>
     <string name="tab_budget">Ngân sách</string>
     <string name="tab_settings">Cài đặt</string>
+    <string name="nav_item_new_cd">%1$s, mới</string>
     <string name="coming_soon_title">Sắp có</string>
     <string name="transactions_all">Tất cả</string>
     <string name="transactions_today">Hôm nay</string>
@@ -149,12 +158,18 @@
         <item quantity="other">%1$d mẫu · v%2$d</item>
     </plurals>
     <string name="capture_bank_edited">có chỉnh sửa của bạn</string>
+    <string name="capture_group_ad_keywords">TỪ KHÓA QUẢNG CÁO</string>
+    <string name="capture_ad_keyword_delete">Xóa từ khóa</string>
     <string name="balance_drift_message">Số dư %1$s có thể lệch với ngân hàng</string>
     <plurals name="balance_drift_others">
         <item quantity="other">và %d tài khoản khác</item>
     </plurals>
     <string name="balance_drift_adjust">Nhập số dư thật</string>
     <string name="balance_drift_adjust_cd">Nhập số dư thật của %1$s</string>
+    <plurals name="inbox_banner_message">
+        <item quantity="other">%d giao dịch chưa ghi được · Xem</item>
+    </plurals>
+    <string name="inbox_banner_close">Ẩn thông báo</string>
     <string name="reconcile_title">Số dư thật</string>
     <string name="reconcile_field">Số dư trong app ngân hàng</string>
     <string name="reconcile_in_app">Trong app</string>
@@ -185,6 +200,35 @@
     <string name="accounts_snack_following">Đang theo dõi lại tài khoản</string>
     <string name="accounts_snack_transfer">Không thể gộp: có giao dịch chuyển giữa hai tài khoản</string>
     <string name="accounts_snack_failed">Không thực hiện được. Thử lại sau.</string>
+    <string name="settings_inbox_title">Giao dịch chưa ghi được</string>
+    <string name="settings_inbox_subtitle_empty">Không có gì cần xem</string>
+    <plurals name="settings_inbox_subtitle">
+        <item quantity="other">%d giao dịch cần xem</item>
+    </plurals>
+    <string name="settings_inbox_new">Mới</string>
+    <string name="inbox_empty_title">Không có gì cần xem</string>
+    <string name="inbox_empty_message">Mọi thông báo ngân hàng đã được ghi hoặc xử lý.</string>
+    <string name="inbox_action_dismiss">Bỏ qua</string>
+    <string name="inbox_action_ad">Là quảng cáo</string>
+    <string name="inbox_action_restore">Khôi phục</string>
+    <string name="inbox_hidden_header">Đã ẩn (%1$d)</string>
+    <string name="inbox_snack_handled">Mục này đã được xử lý rồi</string>
+    <string name="inbox_snack_failed">Không thực hiện được. Thử lại sau.</string>
+    <string name="inbox_ad_title">Ẩn thông báo quảng cáo</string>
+    <string name="inbox_ad_field">Cụm từ nhận biết</string>
+    <string name="inbox_ad_preview_none">Không có mục nào khác bị ẩn</string>
+    <plurals name="inbox_ad_preview">
+        <item quantity="other">%d mục khác cũng sẽ bị ẩn</item>
+    </plurals>
+    <string name="inbox_ad_save">Ẩn</string>
+    <string name="inbox_ad_refusal_too_short">Cụm từ cần ít nhất 3 ký tự</string>
+    <string name="inbox_ad_refusal_not_in_selected">Cụm từ này không có trong thông báo đang chọn</string>
+    <string name="inbox_ad_refusal_bank_name">Đây là tên ngân hàng, có trong mọi thông báo của ngân hàng</string>
+    <string name="inbox_ad_refusal_in_real_transaction">Cụm từ này cũng nằm trong một giao dịch thật</string>
+    <string name="inbox_ad_refusal_in_other_money_item">Cụm từ này cũng nằm trong một thông báo khác có vẻ là giao dịch</string>
+    <string name="inbox_ad_refusal_duplicate">Bạn đã thêm cụm từ này rồi</string>
+    <string name="inbox_snack_ad_learned">Đã ẩn thông báo quảng cáo</string>
+    <string name="inbox_snack_undo">Hoàn tác</string>
     <string name="settings_logs_title" translatable="false">Nhật ký thông báo</string>
     <string name="settings_logs_subtitle" translatable="false">Chỉ có ở bản debug và dogfood</string>
     <string name="logs_empty" translatable="false">Chưa có thông báo nào</string>

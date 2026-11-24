@@ -28,6 +28,7 @@ class CaptureNotificationUseCase
         /**
          * Filters the notification by the rules of its package and stores it: when it passes, `PENDING` with the
          * parsed fields or `FAILED` when no rule matches; an `IGNORED_SPAM` row when it is blocked (never parsed).
+         * The package's user ad keywords hide only text no rule parses, as `IGNORED_SPAM` / `user_keyword:<kw>`.
          * Only a secret ([SECRET_KEYWORDS]) drops the text; a channel or rule keyword
          * block keeps it, so a false positive can be recovered. The hash is taken from the original text
          * first, so two different blocked notifications at the same `postTime` stay two rows. A stored `PENDING` log
@@ -36,10 +37,11 @@ class CaptureNotificationUseCase
         suspend operator fun invoke(raw: RawNotification): CaptureResult {
             val rules = repository.getRules(raw.packageName)
             if (rules.isEmpty()) return CaptureResult.NotTracked
+            val userKeywords = repository.getUserKeywords(raw.packageName)
             val hash = contentHash(raw.packageName, raw.postTime, raw.title, raw.content)
             // shortcut: ICU regex cannot be interrupted, so a pathological rule blocks one background thread;
             // add an on-device limit if users can type raw regex.
-            val result = withContext(parseDispatcher) { classifyNotification(raw, rules) }
+            val result = withContext(parseDispatcher) { classifyNotification(raw, rules, userKeywords) }
             val log =
                 newLog(
                     raw = raw,

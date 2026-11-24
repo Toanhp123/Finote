@@ -7,6 +7,9 @@ import java.util.regex.Pattern
 
 private val DIACRITICS = Regex("\\p{InCombiningDiacriticalMarks}+")
 
+// Horizontal only, so a keyword cannot match across the newline between title and content. Covers NBSP.
+private val HORIZONTAL_SPACE_RUN = Regex("[\\h\\p{Zs}]+")
+
 /** Lowercase, no Vietnamese accents, `đ` → `d`. NFD first so composed and decomposed input compare equal. */
 fun normalizeForMatch(text: String): String =
     Normalizer
@@ -15,6 +18,9 @@ fun normalizeForMatch(text: String): String =
         .replace('đ', 'd')
         .replace('Đ', 'd')
         .lowercase(Locale.ROOT)
+
+/** [normalizeForMatch] with every horizontal whitespace run (NBSP included) as one space, trimmed. Newlines stay. */
+fun normalizeKeyword(text: String): String = normalizeForMatch(text).replace(HORIZONTAL_SPACE_RUN, " ").trim()
 
 /**
  * The first of [keywords], in list order, that appears in [text] as a whole word or phrase.
@@ -25,9 +31,9 @@ fun firstMatchingKeyword(
     text: String,
     keywords: List<String>,
 ): String? {
-    val normalized = normalizeForMatch(text)
+    val normalized = normalizeKeyword(text)
     return keywords.firstOrNull { keyword ->
-        val needle = normalizeForMatch(keyword).trim()
+        val needle = normalizeKeyword(keyword)
         needle.isNotEmpty() &&
             Regex("(?<![\\p{L}\\p{N}])${Pattern.quote(needle)}(?!\\p{L})").containsMatchIn(normalized)
     }

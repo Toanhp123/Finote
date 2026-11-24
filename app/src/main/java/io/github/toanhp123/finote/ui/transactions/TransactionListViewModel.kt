@@ -9,6 +9,10 @@ import io.github.toanhp123.finote.domain.account.usecase.ObserveBalanceDriftUseC
 import io.github.toanhp123.finote.domain.category.usecase.ObserveCategoriesUseCase
 import io.github.toanhp123.finote.domain.common.IsDebuggable
 import io.github.toanhp123.finote.domain.common.Outcome
+import io.github.toanhp123.finote.domain.notification.model.InboxAlerts
+import io.github.toanhp123.finote.domain.notification.usecase.DismissInboxBannerUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveFailedInboxUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveInboxAlertsUseCase
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
@@ -19,6 +23,7 @@ import io.github.toanhp123.finote.ui.common.BaseViewModel
 import io.github.toanhp123.finote.ui.transactions.logic.isOpenable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -39,6 +44,9 @@ class TransactionListViewModel
         private val reconcileBalance: ReconcileBalanceUseCase,
         private val deleteTransaction: DeleteTransactionUseCase,
         observeAutoPairedIds: ObserveAutoPairedIdsUseCase,
+        observeInboxAlerts: ObserveInboxAlertsUseCase,
+        private val observeInbox: ObserveFailedInboxUseCase,
+        private val dismissInboxBanner: DismissInboxBannerUseCase,
         private val clock: Clock,
         @IsDebuggable isDebuggable: Boolean,
     ) : BaseViewModel<TransactionListState, TransactionListIntent, TransactionListEffect>(
@@ -109,6 +117,14 @@ class TransactionListViewModel
                     .catchStorage { emit(emptySet()) }
                     .collect { setState { copy(autoPairedIds = it) } }
             }
+            // The banner is only a hint; a failed flow drops it. Nothing is logged: the inbox holds notifications.
+            viewModelScope.launch {
+                observeInboxAlerts()
+                    .catchStorage { emit(InboxAlerts(shownCount = 0, hasUnseen = false, isBannerVisible = false)) }
+                    .collect { alerts ->
+                        setState { copy(inboxBannerCount = if (alerts.isBannerVisible) alerts.shownCount else 0) }
+                    }
+            }
         }
 
         override fun onIntent(intent: TransactionListIntent) {
@@ -146,6 +162,23 @@ class TransactionListViewModel
                 TransactionListIntent.ReconcileDismissed -> {
                     setState { copy(reconcilingAccountId = null) }
                 }
+
+                TransactionListIntent.InboxBannerClicked -> {
+                    sendEffect(TransactionListEffect.OpenInbox)
+                }
+
+                TransactionListIntent.InboxBannerClosed -> {
+                    closeInboxBanner()
+                }
+            }
+        }
+
+        // The ids are the items shown now, so the banner returns only for an item that is not among them.
+        // A failed write keeps the banner; nothing is logged: the inbox holds notifications.
+        private fun closeInboxBanner() {
+            launchCatching(onStorageError = {}) {
+                val shown = observeInbox().first().filterNot { it.isHidden }.mapTo(mutableSetOf()) { it.id }
+                dismissInboxBanner(shown)
             }
         }
 

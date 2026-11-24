@@ -29,13 +29,48 @@ class NotificationLogDaoTest {
         }
 
     @Test
-    fun `getFailed returns only logs no rule matched`() =
+    fun `getReparseCandidates returns no_rule_matched and keyword-hidden logs oldest first`() =
         runTest {
-            val noRule = notificationLogEntity(id = "a", contentHash = "a", status = NotificationStatus.FAILED)
-            dao.insert(noRule.copy(failureReason = "no_rule_matched"))
-            dao.insert(noRule.copy(id = "b", contentHash = "b", failureReason = "account_archived"))
+            val base = notificationLogEntity(id = "a", contentHash = "a", status = NotificationStatus.FAILED)
+            dao.insert(base.copy(failureReason = "no_rule_matched", receivedAt = 3L))
+            dao.insert(base.copy(id = "b", contentHash = "b", failureReason = "account_archived"))
+            val hidden = base.copy(status = NotificationStatus.IGNORED_SPAM, receivedAt = 2L)
+            dao.insert(hidden.copy(id = "c", contentHash = "c", failureReason = "user_keyword:moi ban"))
+            dao.insert(hidden.copy(id = "d", contentHash = "d", failureReason = "keyword:x"))
+            dao.insert(hidden.copy(id = "e", contentHash = "e", failureReason = null))
+            dao.insert(base.copy(id = "f", contentHash = "f", failureReason = "no_rule_matched", packageName = "other"))
 
-            assertEquals(listOf("a"), dao.getFailed(setOf("com.test.bank")).map { it.id })
+            assertEquals(listOf("c", "a"), dao.getReparseCandidates(setOf("com.test.bank")).map { it.id })
+        }
+
+    @Test
+    fun `updateFailedOutcome guard accepts no_rule_matched and keyword-hidden rows only`() =
+        runTest {
+            val base = notificationLogEntity(id = "a", contentHash = "a", status = NotificationStatus.FAILED)
+            dao.insert(base.copy(failureReason = "no_rule_matched"))
+            dao.insert(base.copy(id = "b", contentHash = "b", failureReason = "account_archived"))
+            val hidden = base.copy(status = NotificationStatus.IGNORED_SPAM)
+            dao.insert(hidden.copy(id = "c", contentHash = "c", failureReason = "user_keyword:moi ban"))
+            dao.insert(hidden.copy(id = "d", contentHash = "d", failureReason = "keyword:x"))
+
+            val moved =
+                listOf("a", "b", "c", "d").map { id ->
+                    dao.updateFailedOutcome(
+                        id,
+                        false,
+                        NotificationStatus.PENDING,
+                        null,
+                        "r",
+                        1L,
+                        "EXPENSE",
+                        null,
+                        null,
+                        null,
+                        null,
+                    )
+                }
+
+            assertEquals(listOf(1, 0, 1, 0), moved)
         }
 
     @Test

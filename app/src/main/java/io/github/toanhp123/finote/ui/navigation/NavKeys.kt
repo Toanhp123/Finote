@@ -36,6 +36,16 @@ data object NotificationCaptureSettings : NavKey
 @Serializable
 data object NotificationLogs : NavKey
 
+/** The failed notifications inbox, pushed on top of [Settings]. */
+@Serializable
+data object FailedInbox : NavKey
+
+/** The booking sheet of the inbox item [itemId], drawn over the inbox. */
+@Serializable
+data class BookInboxItem(
+    val itemId: String,
+) : NavKey
+
 /** The cash entry sheet in edit mode for the transaction [id], drawn over the list below it. */
 @Serializable
 data class EditTransaction(

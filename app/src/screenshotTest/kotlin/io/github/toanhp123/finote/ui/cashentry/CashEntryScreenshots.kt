@@ -11,7 +11,9 @@ import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
+import io.github.toanhp123.finote.domain.notification.model.AdjustmentToken
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
+import io.github.toanhp123.finote.ui.cashentry.component.AdjustmentConfirmDialog
 import io.github.toanhp123.finote.ui.cashentry.component.DeleteConfirmDialog
 import io.github.toanhp123.finote.ui.cashentry.logic.AmountResult
 import io.github.toanhp123.finote.ui.cashentry.logic.InvalidReason
@@ -107,6 +109,35 @@ private fun CashEntryEditTransferPreview() =
 private fun CashEntryDeleteConfirmPreview() =
     SheetOverScrim(keypadState().copy(isEditing = true, isDeleteConfirmOpen = true))
 
+@PreviewTest
+@CashEntryPreviews
+@Composable
+private fun CashEntryFromLogPreview() = SheetOverScrim(fromLogState())
+
+@PreviewTest
+@CashEntryPreviews
+@Composable
+private fun CashEntryFromLogNoDatePreview() =
+    SheetOverScrim(fromLogState().copy(isDateMissing = true, selectedAccountId = cash.id, archivedAccountName = null))
+
+@PreviewTest
+@CashEntryPreviews
+@Composable
+private fun CashEntryFromLogCoveredPreview() =
+    SheetOverScrim(fromLogState().copy(selectedAccountId = cash.id, archivedAccountName = null, isCoveredNotice = true))
+
+@PreviewTest
+@CashEntryPreviews
+@Composable
+private fun CashEntryAdjustConfirmPreview() =
+    SheetOverScrim(
+        fromLogState().copy(
+            selectedAccountId = cash.id,
+            archivedAccountName = null,
+            pendingConfirmation = AdjustmentToken(cash.id, 0, 0),
+        ),
+    )
+
 @Composable
 private fun SheetOverScrim(state: CashEntryState) {
     FinoteTheme(dynamicColor = false) {
@@ -116,6 +147,7 @@ private fun SheetOverScrim(state: CashEntryState) {
             }
             // Called last, as the route does, so its inline scrim covers the sheet.
             DeleteConfirmDialog(isVisible = state.isDeleteConfirmOpen, onIntent = {})
+            AdjustmentConfirmDialog(isVisible = state.pendingConfirmation != null, onIntent = {})
         }
     }
 }
@@ -131,6 +163,17 @@ private fun keypadState() =
         selectedAccountId = cash.id,
         categories = categories,
         selectedCategoryIds = mapOf(TransactionType.EXPENSE to "sys_food_coffee"),
+    )
+
+// Made-up notification text. No account yet, so the archived account is named under the empty field.
+private fun fromLogState() =
+    keypadState().copy(
+        expression = "150000",
+        result = AmountResult.Ok(150_000),
+        selectedAccountId = null,
+        note = "Cafe",
+        sourceText = SourceText("Card spend", "Payment at Cafe on 03/03/2025 at 08:30:00"),
+        archivedAccountName = "Old card",
     )
 
 private val cash =

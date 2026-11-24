@@ -21,19 +21,33 @@ class ReparseFailedLogsUseCase
         private val settleScheduler: SettleScheduler,
     ) {
         /**
-         * Runs the current rules again over the `FAILED` logs of [packages]. A log that now matches becomes
-         * `PENDING`; one that a new filter blocks becomes `IGNORED_SPAM`; one that still has no match is left alone.
-         * A log that throws is skipped and stays `FAILED`. Schedules one settle when a log became `PENDING`.
-         * Returns the number of logs changed.
+         * Runs the current rules and user keywords again over the `FAILED` logs of [packages] and the logs a user
+         * keyword hid. A log that now matches becomes `PENDING`; one that a filter blocks becomes `IGNORED_SPAM`; a
+         * keyword-hidden log whose keyword is gone and no rule reads becomes `FAILED` again. A log whose new outcome
+         * equals its stored status and reason is left alone. A log that throws is skipped and keeps its status.
+         * Schedules one settle when a log became `PENDING`. Returns the number of logs changed.
          */
         suspend operator fun invoke(packages: Set<String>): Int {
             val rulesByPackage = packages.associateWith { repository.getRules(it) }
+            val keywordsByPackage =
+                rulesByPackage.mapValues { (packageName, rules) ->
+                    if (rules.isEmpty()) emptyList() else repository.getUserKeywords(packageName)
+                }
             var changed = 0
             var hasPending = false
-            for (log in repository.getFailedLogs(packages)) {
+            for (log in repository.getReparseLogs(packages)) {
                 // A package without rules would read as "channel not allowed", so its logs are left as they are.
                 val rules = rulesByPackage[log.packageName].orEmpty()
-                val status = if (rules.isEmpty()) null else reparse(log, rules)
+                val status =
+                    if (rules.isEmpty()) {
+                        null
+                    } else {
+                        reparse(
+                            log,
+                            rules,
+                            keywordsByPackage[log.packageName].orEmpty(),
+                        )
+                    }
                 if (status != null) changed++
                 if (status == NotificationStatus.PENDING) hasPending = true
             }
@@ -44,6 +58,7 @@ class ReparseFailedLogsUseCase
         private suspend fun reparse(
             log: NotificationLog,
             rules: List<ParserRule>,
+            userKeywords: List<String>,
         ): NotificationStatus? =
             try {
                 val raw =
@@ -55,9 +70,9 @@ class ReparseFailedLogsUseCase
                         log.postTime,
                         log.notificationKey,
                     )
-                val outcome = withContext(parseDispatcher) { classifyNotification(raw, rules) }
-                val isChanged =
-                    outcome.status != NotificationStatus.FAILED && repository.updateFailedOutcome(log.id, outcome)
+                val outcome = withContext(parseDispatcher) { classifyNotification(raw, rules, userKeywords) }
+                val isSame = outcome.status == log.status && outcome.failureReason == log.failureReason
+                val isChanged = !isSame && repository.updateFailedOutcome(log.id, outcome)
                 if (isChanged) outcome.status else null
             } catch (error: CancellationException) {
                 throw error

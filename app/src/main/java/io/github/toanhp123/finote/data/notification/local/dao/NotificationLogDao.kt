@@ -9,7 +9,7 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface NotificationLogDao {
+interface NotificationLogDao : FailedInboxQueries {
     /** Returns the new row id, or -1 when a row with the same `contentHash` exists. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(log: NotificationLogEntity): Long
@@ -21,14 +21,16 @@ interface NotificationLogDao {
     @Query("SELECT * FROM notification_logs ORDER BY receivedAt ASC, id ASC")
     suspend fun getAll(): List<NotificationLogEntity>
 
+    /** Logs a re-parse may change: `FAILED` / `no_rule_matched`, or `IGNORED_SPAM` hidden by a user keyword. */
     @Query(
-        "SELECT * FROM notification_logs WHERE status = 'FAILED' AND failureReason = 'no_rule_matched' " +
-            "AND packageName IN (:packages) ORDER BY receivedAt ASC, id ASC",
+        "SELECT * FROM notification_logs WHERE packageName IN (:packages) AND " +
+            "((status = 'FAILED' AND failureReason = 'no_rule_matched') OR " +
+            "(status = 'IGNORED_SPAM' AND failureReason LIKE 'user_keyword:%')) ORDER BY receivedAt ASC, id ASC",
     )
-    suspend fun getFailed(packages: Set<String>): List<NotificationLogEntity>
+    suspend fun getReparseCandidates(packages: Set<String>): List<NotificationLogEntity>
 
     /**
-     * Writes a re-parse outcome. Returns 0 when the row is gone or is no longer `FAILED`.
+     * Writes a re-parse outcome. Returns 0 when the row is gone or is no longer a re-parse candidate.
      * [isSecret] blanks title and content, as capture does.
      */
     @Suppress("LongParameterList") // why: one parameter per column the outcome writes
@@ -39,7 +41,8 @@ interface NotificationLogDao {
             "parsedMerchant = :parsedMerchant, parsedNote = :parsedNote, " +
             "title = CASE WHEN :isSecret THEN '' ELSE title END, " +
             "content = CASE WHEN :isSecret THEN '' ELSE content END " +
-            "WHERE id = :id AND status = 'FAILED'",
+            "WHERE id = :id AND ((status = 'FAILED' AND failureReason = 'no_rule_matched') OR " +
+            "(status = 'IGNORED_SPAM' AND failureReason LIKE 'user_keyword:%'))",
     )
     suspend fun updateFailedOutcome(
         id: String,

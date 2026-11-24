@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.cashentry.component.AccountList
+import io.github.toanhp123.finote.ui.cashentry.component.AdjustmentConfirmDialog
 import io.github.toanhp123.finote.ui.cashentry.component.CategoryList
 import io.github.toanhp123.finote.ui.cashentry.component.DeleteConfirmDialog
 import io.github.toanhp123.finote.ui.cashentry.component.KeypadPage
@@ -48,6 +49,7 @@ private const val FALLBACK_HEIGHT_FRACTION = 0.6f
 fun CashEntryRoute(
     viewModel: CashEntryViewModel,
     onClose: () -> Unit,
+    onShowStaleNotice: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val keyboard = LocalSoftwareKeyboardController.current
@@ -56,7 +58,12 @@ fun CashEntryRoute(
         viewModel.onIntent(CashEntryIntent.PageClosed)
     }
     // The row cannot be edited and the sheet was never shown: leave at once, without the exit animation.
-    ObserveEffects(viewModel.effects) { if (it is CashEntryEffect.Close) onClose() }
+    ObserveEffects(viewModel.effects) {
+        when (it) {
+            CashEntryEffect.Close -> onClose()
+            CashEntryEffect.ShowAlreadyHandled -> onShowStaleNotice()
+        }
+    }
     FinoteBottomSheet(
         // Edit mode stays hidden until the row filled the form, so the create defaults never flash.
         isVisible = state.isVisible && !state.isLoading,
@@ -69,6 +76,7 @@ fun CashEntryRoute(
     }
     DeleteConfirmDialog(isVisible = state.isDeleteConfirmOpen, onIntent = viewModel::onIntent)
     UnpairConfirmDialog(isVisible = state.isUnpairConfirmOpen, onIntent = viewModel::onIntent)
+    AdjustmentConfirmDialog(isVisible = state.pendingConfirmation != null, onIntent = viewModel::onIntent)
 }
 
 /**

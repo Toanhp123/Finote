@@ -12,12 +12,18 @@ interface NotificationCaptureRepository {
     /** Stores the log. False, and nothing stored, when a log with the same `contentHash` exists. */
     suspend fun insertLog(log: NotificationLog): Boolean
 
-    /** The `FAILED` logs of these packages, oldest first. */
-    suspend fun getFailedLogs(packages: Set<String>): List<NotificationLog>
+    /** The normalized ad keywords the user taught for one package, oldest first. */
+    suspend fun getUserKeywords(packageName: String): List<String>
 
     /**
-     * Writes a re-parse [outcome] (status, reason, matched rule, parsed fields) to a log that is still `FAILED`.
-     * True when the row changed; false when it is gone or its status has moved on.
+     * The logs of these packages a re-parse may change, oldest first: `FAILED` with `no_rule_matched`, and
+     * `IGNORED_SPAM` hidden by a user keyword.
+     */
+    suspend fun getReparseLogs(packages: Set<String>): List<NotificationLog>
+
+    /**
+     * Writes a re-parse [outcome] (status, reason, matched rule, parsed fields) to a log that is still a re-parse
+     * candidate (see [getReparseLogs]). True when the row changed; false when it is gone or has moved on.
      */
     suspend fun updateFailedOutcome(
         id: String,

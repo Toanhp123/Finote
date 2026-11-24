@@ -44,6 +44,24 @@ class NotificationTextTest {
     }
 
     @Test
+    fun `double space and NBSP still match`() {
+        assertEquals("ưu đãi lớn", firstMatchingKeyword("Ưu  đãi lớn", listOf("ưu đãi lớn")))
+        assertEquals("ưu đãi lớn", firstMatchingKeyword("Ưu\u00A0đãi \u00A0lớn", listOf("ưu đãi lớn")))
+        assertEquals("ưu  đãi\u00A0lớn", firstMatchingKeyword("Ưu đãi lớn", listOf("ưu  đãi\u00A0lớn")))
+    }
+
+    @Test
+    fun `a keyword does not match across a newline`() {
+        assertNull(firstMatchingKeyword("Ưu\nđãi lớn", listOf("ưu đãi lớn")))
+        assertEquals("ưu đãi", firstMatchingKeyword("Ưu đãi\nlớn", listOf("ưu đãi")))
+    }
+
+    @Test
+    fun `normalizeKeyword collapses whitespace and trims`() {
+        assertEquals("ma xac thuc", normalizeKeyword("  Mã\u00A0 XÁC   thực \n"))
+    }
+
+    @Test
     fun `no keywords never match`() {
         assertNull(firstMatchingKeyword("x", emptyList()))
         assertNull(firstMatchingKeyword("x", listOf(" ")))

@@ -13,8 +13,6 @@ import io.github.toanhp123.finote.data.account.local.dao.AccountMergeDao
 import io.github.toanhp123.finote.data.category.local.dao.CategoryDao
 import io.github.toanhp123.finote.data.database.FinoteDatabase
 import io.github.toanhp123.finote.data.database.createFinoteDatabase
-import io.github.toanhp123.finote.data.notification.local.dao.NotificationLogDao
-import io.github.toanhp123.finote.data.notification.local.dao.ParserRuleDao
 import io.github.toanhp123.finote.data.transaction.local.dao.TagDao
 import io.github.toanhp123.finote.data.transaction.local.dao.TransactionDao
 import io.github.toanhp123.finote.data.transaction.local.dao.TransferPairDao
@@ -54,10 +52,4 @@ object DatabaseModule {
 
     @Provides
     fun provideTagDao(db: FinoteDatabase): TagDao = db.tagDao()
-
-    @Provides
-    fun provideParserRuleDao(db: FinoteDatabase): ParserRuleDao = db.parserRuleDao()
-
-    @Provides
-    fun provideNotificationLogDao(db: FinoteDatabase): NotificationLogDao = db.notificationLogDao()
 }

@@ -201,19 +201,48 @@ class SettlePendingLogsUseCaseTest {
         }
 
     @Test
-    fun `a throwing book older than one hour fails the pair with settle_error`() =
+    fun `a throwing book older than one hour fails the bank with settle_error and the wallet with partner_failed`() =
         runTest {
             val stuck = old - 1
             val repository = repo(log("bank", BANK, stuck, text = "x"), log("wallet", OTHER, stuck + 1_000, text = "w"))
             repository.bookErrors["bank"] = IllegalStateException()
             assertFalse(useCase(repository)())
             assertEquals(mapOf("bank" to "settle_error"), repository.failed)
-            assertTrue(
-                repository.logs.all {
-                    it.status == NotificationStatus.FAILED &&
-                        it.failureReason == "settle_error"
-                },
-            )
+            assertEquals(NotificationStatus.FAILED, repository.logs.first { it.id == "bank" }.status)
+            assertEquals("settle_error", repository.logs.first { it.id == "bank" }.failureReason)
+            assertEquals(NotificationStatus.FAILED, repository.logs.first { it.id == "wallet" }.status)
+            assertEquals("partner_failed", repository.logs.first { it.id == "wallet" }.failureReason)
+        }
+
+    @Test
+    fun `stuck book keeps settle_error`() =
+        runTest {
+            val repository = repo(log("a", BANK, old - 1))
+            repository.bookErrors["a"] = IllegalStateException()
+            assertFalse(useCase(repository)())
+            assertEquals("settle_error", repository.logs.single().failureReason)
+        }
+
+    @Test
+    fun `stuck repost fails with stuck_repost`() =
+        runTest {
+            val repository =
+                repo(log("a", BANK, old - 2_000, text = "same"), log("b", BANK, old - 1_000, text = "same"))
+            repository.repostErrors["b"] = IllegalStateException()
+            assertFalse(useCase(repository)())
+            assertEquals(NotificationStatus.CONFIRMED, repository.logs.first { it.id == "a" }.status)
+            assertEquals(mapOf("b" to "stuck_repost"), repository.failed)
+            assertEquals("stuck_repost", repository.logs.first { it.id == "b" }.failureReason)
+        }
+
+    @Test
+    fun `stuck ignore fails with stuck_ignored`() =
+        runTest {
+            val ignoredBank = testAccount(id = "ign").copy(bankPackageName = BANK, isIgnored = true)
+            val repository = repo(log("bank", BANK, old - 1, text = "x"), accounts = listOf(ignoredBank))
+            repository.ignoreErrors["bank"] = IllegalStateException()
+            assertFalse(useCase(repository)())
+            assertEquals("stuck_ignored", repository.logs.single().failureReason)
         }
 
     @Test
@@ -247,7 +276,7 @@ class SettlePendingLogsUseCaseTest {
         }
 
     @Test
-    fun `adjusted after fails both sides for good`() =
+    fun `adjusted after fails the pair for good, the wallet as partner_failed`() =
         runTest {
             val repository =
                 repo(
@@ -258,10 +287,9 @@ class SettlePendingLogsUseCaseTest {
             repository.bookRejections["bank"] = SettlementError.AdjustedAfter
             assertFalse(useCase(repository)())
             assertEquals(mapOf("bank" to "adjusted_after"), repository.failed)
-            repository.logs.forEach {
-                assertEquals(NotificationStatus.FAILED, it.status)
-                assertEquals("adjusted_after", it.failureReason)
-            }
+            repository.logs.forEach { assertEquals(NotificationStatus.FAILED, it.status) }
+            assertEquals("adjusted_after", repository.logs.first { it.id == "bank" }.failureReason)
+            assertEquals("partner_failed", repository.logs.first { it.id == "wallet" }.failureReason)
             assertTrue(repository.booked.isEmpty())
             assertFalse(useCase(repository)())
             assertEquals(1, repository.failed.size)

@@ -36,6 +36,7 @@ import io.github.toanhp123.finote.ui.common.format.formatShortDateTime
 import io.github.toanhp123.finote.ui.common.openListenerSettings
 import io.github.toanhp123.finote.ui.common.rememberNotificationListenerEnabled
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
+import io.github.toanhp123.finote.ui.settings.capture.component.AdKeywordList
 import io.github.toanhp123.finote.ui.settings.logic.BankSummary
 import java.time.ZoneId
 
@@ -87,6 +88,13 @@ fun NotificationCaptureSettingsScreen(
             AccessSection(isAccessEnabled, onIntent)
             PatternsSection(state, onIntent, zone)
             if (state.banks.isNotEmpty()) BanksSection(state.banks)
+            if (state.adKeywords.isNotEmpty()) {
+                AdKeywordList(
+                    keywords = state.adKeywords,
+                    banks = state.banks,
+                    onDelete = { onIntent(NotificationCaptureSettingsIntent.AdKeywordDeleteClicked(it)) },
+                )
+            }
         }
     }
 }

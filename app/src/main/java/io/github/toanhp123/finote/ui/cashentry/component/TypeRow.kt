@@ -15,7 +15,10 @@ import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
 private val TypeOptions = listOf(TransactionType.EXPENSE, TransactionType.INCOME, TransactionType.TRANSFER)
 
-/** The type selector. Editing a stored transaction adds a trash button at the end, off while a save runs. */
+/**
+ * The type selector. Editing a stored transaction adds a trash button at the end, off while a save runs.
+ * [isTransferAllowed] is false when booking a notification: it is a spend or an income.
+ */
 @Composable
 fun TypeRow(
     type: TransactionType,
@@ -24,6 +27,7 @@ fun TypeRow(
     isSaving: Boolean,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    isTransferAllowed: Boolean = true,
 ) {
     val expense = stringResource(R.string.cash_entry_expense)
     val income = stringResource(R.string.cash_entry_income)
@@ -34,7 +38,7 @@ fun TypeRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FinoteSegmented(
-            options = TypeOptions,
+            options = if (isTransferAllowed) TypeOptions else TypeOptions.dropLast(1),
             selected = type,
             onSelect = onTypeChange,
             label = {

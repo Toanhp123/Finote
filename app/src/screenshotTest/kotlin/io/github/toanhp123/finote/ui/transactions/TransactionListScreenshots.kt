@@ -91,6 +91,11 @@ private fun TransactionListDriftPreview() =
         ),
     )
 
+@PreviewTest
+@Preview(name = "Light", device = PHONE)
+@Composable
+private fun TransactionListInboxBannerPreview() = Frame(populated().copy(inboxBannerCount = 3))
+
 @Composable
 private fun Frame(state: TransactionListState) {
     FinoteTheme(dynamicColor = false) {

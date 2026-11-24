@@ -30,6 +30,8 @@ data class TransactionListState(
     val deletingId: String? = null,
     /** Ids of the transfers made by auto-pairing; their row says so. */
     val autoPairedIds: Set<String> = emptySet(),
+    /** Failed notifications waiting in the inbox; above zero shows the banner. */
+    val inboxBannerCount: Int = 0,
 )
 
 sealed interface TransactionListIntent {
@@ -56,12 +58,18 @@ sealed interface TransactionListIntent {
     data object DeleteConfirmed : TransactionListIntent
 
     data object DeleteDismissed : TransactionListIntent
+
+    data object InboxBannerClicked : TransactionListIntent
+
+    data object InboxBannerClosed : TransactionListIntent
 }
 
 sealed interface TransactionListEffect {
     data class OpenEditor(
         val id: String,
     ) : TransactionListEffect
+
+    data object OpenInbox : TransactionListEffect
 
     data object DeleteFailed : TransactionListEffect
 

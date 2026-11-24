@@ -1,8 +1,11 @@
 package io.github.toanhp123.finote.ui.settings
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,11 +14,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.ObserveEffects
@@ -30,6 +36,7 @@ fun SettingsRoute(
     viewModel: SettingsViewModel,
     onOpenCapture: () -> Unit,
     onOpenAccounts: () -> Unit,
+    onOpenInbox: () -> Unit,
     onOpenLogs: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -38,6 +45,7 @@ fun SettingsRoute(
         when (effect) {
             SettingsEffect.OpenCaptureSettings -> onOpenCapture()
             SettingsEffect.OpenAccountsSettings -> onOpenAccounts()
+            SettingsEffect.OpenFailedInbox -> onOpenInbox()
             SettingsEffect.OpenNotificationLogs -> onOpenLogs()
         }
     }
@@ -75,6 +83,13 @@ fun SettingsScreen(
                     trailing = { RowIcon(R.drawable.ic_chevron_right, FinoteTheme.scheme.onSurfaceVariant) },
                     onClick = { onIntent(SettingsIntent.CaptureClicked) },
                 )
+                FinoteListRow(
+                    title = stringResource(R.string.settings_inbox_title),
+                    subtitle = inboxSubtitle(state.inboxCount),
+                    leading = { RowIcon(R.drawable.ic_inbox, FinoteTheme.scheme.primary) },
+                    trailing = { InboxTrailing(state.hasUnseenInbox) },
+                    onClick = { onIntent(SettingsIntent.InboxClicked) },
+                )
                 if (state.isToolsEnabled) {
                     FinoteListRow(
                         title = stringResource(R.string.settings_logs_title),
@@ -101,6 +116,34 @@ private fun RowIcon(
         tint = tint,
     )
 }
+
+/** The red dot says "new" in text for a screen reader; the subtitle already says how many. */
+@Composable
+private fun InboxTrailing(hasUnseen: Boolean) {
+    val newLabel = stringResource(R.string.settings_inbox_new)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
+    ) {
+        if (hasUnseen) {
+            Box(
+                Modifier
+                    .size(FinoteTheme.sizes.badgeDot)
+                    .background(FinoteTheme.scheme.error, FinoteTheme.shapes.full)
+                    .semantics { contentDescription = newLabel },
+            )
+        }
+        RowIcon(R.drawable.ic_chevron_right, FinoteTheme.scheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun inboxSubtitle(count: Int): String =
+    if (count == 0) {
+        stringResource(R.string.settings_inbox_subtitle_empty)
+    } else {
+        pluralStringResource(R.plurals.settings_inbox_subtitle, count, count)
+    }
 
 @Composable
 private fun captureSubtitle(

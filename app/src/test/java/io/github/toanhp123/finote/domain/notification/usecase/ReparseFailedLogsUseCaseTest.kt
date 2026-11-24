@@ -173,6 +173,85 @@ class ReparseFailedLogsUseCaseTest {
             assertEquals(0, scheduler.afterCaptureCount)
         }
 
+    private fun hiddenLog(
+        id: String,
+        content: String,
+    ) = failedLog(id, content).copy(
+        status = NotificationStatus.IGNORED_SPAM,
+        failureReason = "user_keyword:moi ban",
+    )
+
+    @Test
+    fun `reparse restores a keyword-hidden log once the keyword is gone`() =
+        runTest {
+            val repo = FakeNotificationCaptureRepository(listOf(rule()))
+            repo.logs += hiddenLog("a", "Mời bạn mua sắm")
+
+            assertEquals(1, useCase(repo)(setOf(PKG)))
+
+            val log = repo.logs.single()
+            assertEquals(NotificationStatus.FAILED, log.status)
+            assertEquals("no_rule_matched", log.failureReason)
+            assertEquals(0, scheduler.afterCaptureCount)
+        }
+
+    @Test
+    fun `reparse books a keyword-hidden log a new rule parses`() =
+        runTest {
+            val repo = FakeNotificationCaptureRepository(listOf(rule()))
+            repo.userKeywords[PKG] = listOf("moi ban")
+            repo.logs += hiddenLog("a", "Mời bạn -50,000")
+
+            assertEquals(1, useCase(repo)(setOf(PKG)))
+
+            val log = repo.logs.single()
+            assertEquals(NotificationStatus.PENDING, log.status)
+            assertNull(log.failureReason)
+            assertEquals(50_000L, log.parsed?.amount)
+            assertEquals(1, scheduler.afterCaptureCount)
+        }
+
+    @Test
+    fun `a keyword-hidden log whose keyword still hides it is not written`() =
+        runTest {
+            val repo = FakeNotificationCaptureRepository(listOf(rule()))
+            repo.userKeywords[PKG] = listOf("moi ban")
+            val original = hiddenLog("a", "Mời bạn mua sắm")
+            repo.logs += original
+
+            assertEquals(0, useCase(repo)(setOf(PKG)))
+
+            assertEquals(original, repo.logs.single())
+            assertEquals(0, repo.updateCount)
+        }
+
+    @Test
+    fun `a FAILED log a user keyword matches becomes hidden`() =
+        runTest {
+            val repo = FakeNotificationCaptureRepository(listOf(rule()))
+            repo.userKeywords[PKG] = listOf("moi ban")
+            repo.logs += failedLog("a", "Mời bạn mua sắm")
+
+            assertEquals(1, useCase(repo)(setOf(PKG)))
+
+            val log = repo.logs.single()
+            assertEquals(NotificationStatus.IGNORED_SPAM, log.status)
+            assertEquals("user_keyword:moi ban", log.failureReason)
+            assertEquals("Mời bạn mua sắm", log.content)
+        }
+
+    @Test
+    fun `a package with no rules leaves a keyword-hidden log alone`() =
+        runTest {
+            val repo = FakeNotificationCaptureRepository(emptyList())
+            val original = hiddenLog("a", "Mời bạn -50,000")
+            repo.logs += original
+
+            assertEquals(0, useCase(repo)(setOf(PKG)))
+
+            assertEquals(original, repo.logs.single())
+        }
+
     private companion object {
         const val PKG = "com.bank.app"
     }

@@ -2,6 +2,7 @@ package io.github.toanhp123.finote.ui.cashentry
 
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.category.model.Category
+import io.github.toanhp123.finote.domain.notification.model.AdjustmentToken
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.cashentry.logic.AmountResult
 import io.github.toanhp123.finote.ui.cashentry.logic.CalcKey
@@ -43,6 +44,16 @@ data class CashEntryState(
     /** Edit mode: original rows were folded into this one by auto-pairing, whatever its type is now. Read once. */
     val isAutoPaired: Boolean = false,
     val isUnpairConfirmOpen: Boolean = false,
+    /** From-log mode: the notification the form books, shown above it. Null in every other mode. */
+    val sourceText: SourceText? = null,
+    /** The adjustment the user is asked to confirm; the dialog shows while it is set. */
+    val pendingConfirmation: AdjustmentToken? = null,
+    /** An adjustment of the user already includes the notification; the sheet says so and offers Dismiss. */
+    val isCoveredNotice: Boolean = false,
+    /** From-log mode: the archived account the notification belongs to, named under an empty account field. */
+    val archivedAccountName: String? = null,
+    /** From-log mode with no valid time in the notification: Save waits until the user picks a date. */
+    val isDateMissing: Boolean = false,
 ) {
     /** The accounts a transfer can go to: every live account except the source. */
     val destinationChoices: List<Account> get() = accounts.filter { it.id != selectedAccountId }
@@ -52,6 +63,7 @@ data class CashEntryState(
             result is AmountResult.Ok &&
                 selectedAccountId != null &&
                 !isSaving &&
+                !isDateMissing &&
                 (type != TransactionType.TRANSFER || destinationId != null)
 }
 
@@ -115,11 +127,31 @@ sealed interface CashEntryIntent {
     data object UnpairConfirmed : CashEntryIntent
 
     data object UnpairDismissed : CashEntryIntent
+
+    /** The user agreed to book although an adjustment may already include it. */
+    data object AdjustmentConfirmed : CashEntryIntent
+
+    data object AdjustmentDismissed : CashEntryIntent
+
+    /** "Already entered": the covered notice's action. */
+    data object DismissFromCovered : CashEntryIntent
 }
 
 sealed interface CashEntryEffect {
     /** The sheet was never shown, so the Activity must finish without the exit animation. */
     data object Close : CashEntryEffect
+
+    /** From-log mode: the notification was handled meanwhile; the host says so and the sheet leaves. */
+    data object ShowAlreadyHandled : CashEntryEffect
+}
+
+/** The title and text of the notification a from-log sheet books. */
+data class SourceText(
+    val title: String,
+    val content: String,
+) {
+    // The notification text stays out of logs and crash reports.
+    override fun toString() = "SourceText"
 }
 
 /** The content the cash-entry sheet shows. Only [KEYPAD] shows the calculator keypad. */

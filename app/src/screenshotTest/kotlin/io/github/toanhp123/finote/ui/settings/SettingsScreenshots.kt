@@ -20,6 +20,12 @@ private fun SettingsAccessOnPreview() = Frame(SettingsState(bankCount = 4), isAc
 @Composable
 private fun SettingsAccessOffPreview() = Frame(SettingsState(bankCount = 4), isAccessEnabled = false)
 
+@PreviewTest
+@ScreenPreviews
+@Composable
+private fun SettingsInboxUnseenPreview() =
+    Frame(SettingsState(bankCount = 4, inboxCount = 3, hasUnseenInbox = true), isAccessEnabled = true)
+
 @Composable
 private fun Frame(
     state: SettingsState,

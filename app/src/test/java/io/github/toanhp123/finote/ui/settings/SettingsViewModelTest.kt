@@ -1,9 +1,14 @@
 package io.github.toanhp123.finote.ui.settings
 
 import app.cash.turbine.test
+import io.github.toanhp123.finote.domain.notification.model.FailedInboxItem
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.repository.ParserRuleRepository
 import io.github.toanhp123.finote.domain.notification.testRule
+import io.github.toanhp123.finote.domain.notification.usecase.FakeFailedInboxRepository
+import io.github.toanhp123.finote.domain.notification.usecase.FakeInboxMarkerRepository
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveFailedInboxUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveInboxAlertsUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,6 +36,33 @@ class SettingsViewModelTest {
     }
 
     private val repo = FakeParserRuleRepository()
+    private val inbox = FakeFailedInboxRepository()
+    private val markers = FakeInboxMarkerRepository()
+
+    private fun viewModel(isToolsEnabled: Boolean = true) =
+        SettingsViewModel(
+            ObserveParserRulesUseCase(repo),
+            ObserveInboxAlertsUseCase(ObserveFailedInboxUseCase(inbox), markers),
+            isToolsEnabled = isToolsEnabled,
+            isDebuggable = true,
+        )
+
+    private fun inboxItem(
+        id: String,
+        isHidden: Boolean = false,
+    ) = FailedInboxItem(
+        id = id,
+        logIds = listOf(id),
+        packageName = "a",
+        title = "t",
+        content = "c",
+        postTime = 1L,
+        receivedAt = 1L,
+        reason = "no_rule_matched",
+        parsed = null,
+        isHidden = isHidden,
+        isKeywordHidden = false,
+    )
 
     private fun rule(
         id: String,
@@ -47,7 +79,7 @@ class SettingsViewModelTest {
     @Test
     fun `bank count follows rules`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = true, isDebuggable = true)
+            val vm = viewModel(isToolsEnabled = true)
             runCurrent()
             assertEquals(0, vm.state.value.bankCount)
 
@@ -60,7 +92,7 @@ class SettingsViewModelTest {
     @Test
     fun `capture click emits OpenCaptureSettings`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = true, isDebuggable = true)
+            val vm = viewModel(isToolsEnabled = true)
 
             vm.effects.test {
                 vm.onIntent(SettingsIntent.CaptureClicked)
@@ -74,7 +106,7 @@ class SettingsViewModelTest {
     @Test
     fun `accounts click emits OpenAccountsSettings`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = true, isDebuggable = true)
+            val vm = viewModel(isToolsEnabled = true)
 
             vm.effects.test {
                 vm.onIntent(SettingsIntent.AccountsClicked)
@@ -88,7 +120,7 @@ class SettingsViewModelTest {
     @Test
     fun `logs row hidden when tools are off`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = false, isDebuggable = true)
+            val vm = viewModel(isToolsEnabled = false)
 
             assertFalse(vm.state.value.isToolsEnabled)
         }
@@ -96,7 +128,7 @@ class SettingsViewModelTest {
     @Test
     fun `logs click emits OpenNotificationLogs`() =
         runTest(mainRule.dispatcher) {
-            val vm = SettingsViewModel(ObserveParserRulesUseCase(repo), isToolsEnabled = true, isDebuggable = true)
+            val vm = viewModel(isToolsEnabled = true)
 
             assertTrue(vm.state.value.isToolsEnabled)
             vm.effects.test {
@@ -104,6 +136,39 @@ class SettingsViewModelTest {
                 runCurrent()
 
                 assertEquals(SettingsEffect.OpenNotificationLogs, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `inbox row shows the shown count and the unseen dot`() =
+        runTest(mainRule.dispatcher) {
+            val vm = viewModel()
+            runCurrent()
+            assertEquals(0, vm.state.value.inboxCount)
+            assertFalse(vm.state.value.hasUnseenInbox)
+
+            inbox.items.value = listOf(inboxItem("a"), inboxItem("b"), inboxItem("hidden", isHidden = true))
+            runCurrent()
+            assertEquals(2, vm.state.value.inboxCount)
+            assertTrue(vm.state.value.hasUnseenInbox)
+
+            markers.markSeen(setOf("a", "b"))
+            runCurrent()
+            assertEquals(2, vm.state.value.inboxCount)
+            assertFalse(vm.state.value.hasUnseenInbox)
+        }
+
+    @Test
+    fun `inbox click emits OpenFailedInbox in every build`() =
+        runTest(mainRule.dispatcher) {
+            val vm = viewModel(isToolsEnabled = false)
+
+            vm.effects.test {
+                vm.onIntent(SettingsIntent.InboxClicked)
+                runCurrent()
+
+                assertEquals(SettingsEffect.OpenFailedInbox, awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
         }

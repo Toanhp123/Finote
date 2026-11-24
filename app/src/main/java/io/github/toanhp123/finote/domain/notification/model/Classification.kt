@@ -6,4 +6,7 @@ data class Classification(
     val failureReason: String?,
     val parsed: ParseResult.Parsed?,
     val isSecret: Boolean,
-)
+) {
+    // The reason can echo a user keyword or a rule keyword, which come from notification text.
+    override fun toString() = "Classification(status=$status, isSecret=$isSecret)"
+}

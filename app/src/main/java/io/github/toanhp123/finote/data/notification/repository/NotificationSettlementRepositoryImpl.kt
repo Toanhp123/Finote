@@ -20,6 +20,7 @@ import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParserRule
 import io.github.toanhp123.finote.domain.notification.model.SettlementDecision
 import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
+import io.github.toanhp123.finote.domain.notification.service.FAIL_PARTNER_FAILED
 import io.github.toanhp123.finote.domain.notification.service.resolveAccount
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
@@ -166,15 +167,21 @@ class NotificationSettlementRepositoryImpl
             return if (refused == null) PairedBooking(partner, transfer) else null
         }
 
+        /**
+         * The bank side gets the decision's reason, the wallet partner [FAIL_PARTNER_FAILED]: only the bank side is an
+         * inbox item. One write, so a crash cannot leave the wallet `PENDING` to be booked alone.
+         */
         override suspend fun fail(decision: SettlementDecision.Fail): Boolean =
-            storage {
-                logs.markSettled(
-                    ids = listOfNotNull(decision.log.id, decision.partner?.id),
-                    status = NotificationStatus.FAILED,
-                    linkedTransactionId = null,
-                    failureReason = decision.reason,
-                ) > 0
+            db.storageWrite {
+                val bank = markFailed(decision.log.id, decision.reason)
+                val wallet = decision.partner?.let { markFailed(it.id, FAIL_PARTNER_FAILED) } ?: 0
+                bank + wallet > 0
             }
+
+        private suspend fun markFailed(
+            id: String,
+            reason: String,
+        ): Int = logs.markSettled(listOf(id), NotificationStatus.FAILED, null, reason)
 
         override suspend fun ignore(decision: SettlementDecision.Ignore): Boolean =
             storage {

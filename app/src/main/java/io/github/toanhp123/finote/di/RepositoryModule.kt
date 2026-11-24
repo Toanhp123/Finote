@@ -9,9 +9,6 @@ import io.github.toanhp123.finote.data.account.repository.AccountRepositoryImpl
 import io.github.toanhp123.finote.data.account.repository.DriftAcknowledgementRepositoryImpl
 import io.github.toanhp123.finote.data.category.repository.CategoryRepositoryImpl
 import io.github.toanhp123.finote.data.database.RoomTransactionRunner
-import io.github.toanhp123.finote.data.notification.repository.NotificationCaptureRepositoryImpl
-import io.github.toanhp123.finote.data.notification.repository.NotificationSettlementRepositoryImpl
-import io.github.toanhp123.finote.data.notification.repository.ParserRuleRepositoryImpl
 import io.github.toanhp123.finote.data.setup.repository.SetupRepositoryImpl
 import io.github.toanhp123.finote.data.transaction.repository.TransactionRepositoryImpl
 import io.github.toanhp123.finote.data.transaction.repository.TransferPairRepositoryImpl
@@ -20,9 +17,6 @@ import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.account.repository.DriftAcknowledgementRepository
 import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
 import io.github.toanhp123.finote.domain.common.TransactionRunner
-import io.github.toanhp123.finote.domain.notification.repository.NotificationCaptureRepository
-import io.github.toanhp123.finote.domain.notification.repository.NotificationSettlementRepository
-import io.github.toanhp123.finote.domain.notification.repository.ParserRuleRepository
 import io.github.toanhp123.finote.domain.setup.repository.SetupRepository
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
 import io.github.toanhp123.finote.domain.transaction.repository.TransferPairRepository
@@ -47,17 +41,6 @@ interface RepositoryModule {
 
     @Binds
     fun bindTransferPairRepository(impl: TransferPairRepositoryImpl): TransferPairRepository
-
-    @Binds
-    fun bindNotificationCaptureRepository(impl: NotificationCaptureRepositoryImpl): NotificationCaptureRepository
-
-    @Binds
-    fun bindNotificationSettlementRepository(
-        impl: NotificationSettlementRepositoryImpl,
-    ): NotificationSettlementRepository
-
-    @Binds
-    fun bindParserRuleRepository(impl: ParserRuleRepositoryImpl): ParserRuleRepository
 
     @Binds
     fun bindSetupRepository(impl: SetupRepositoryImpl): SetupRepository

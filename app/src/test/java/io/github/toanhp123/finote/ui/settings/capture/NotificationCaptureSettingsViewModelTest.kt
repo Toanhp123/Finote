@@ -1,16 +1,24 @@
 package io.github.toanhp123.finote.ui.settings.capture
 
 import app.cash.turbine.test
+import io.github.toanhp123.finote.domain.common.FakeTransactionRunner
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateCheck
 import io.github.toanhp123.finote.domain.notification.model.RuleUpdateResult
+import io.github.toanhp123.finote.domain.notification.model.UserIgnoreKeyword
 import io.github.toanhp123.finote.domain.notification.testRule
 import io.github.toanhp123.finote.domain.notification.usecase.CheckRulesNowUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.DeleteAdKeywordUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.FakeNotificationCaptureRepository
 import io.github.toanhp123.finote.domain.notification.usecase.FakeParserRuleRepository
 import io.github.toanhp123.finote.domain.notification.usecase.FakeRuleUpdateScheduler
 import io.github.toanhp123.finote.domain.notification.usecase.FakeRuleUpdateSettingsRepository
+import io.github.toanhp123.finote.domain.notification.usecase.FakeSettleScheduler
+import io.github.toanhp123.finote.domain.notification.usecase.FakeUserKeywordRepository
+import io.github.toanhp123.finote.domain.notification.usecase.ObserveAdKeywordsUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveParserRulesUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveRuleCheckingUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.ObserveRuleUpdateStatusUseCase
+import io.github.toanhp123.finote.domain.notification.usecase.ReparseFailedLogsUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.SetRuleAutoUpdateUseCase
 import io.github.toanhp123.finote.ui.common.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,16 +38,27 @@ class NotificationCaptureSettingsViewModelTest {
     private val settings = FakeRuleUpdateSettingsRepository()
     private val rules = FakeParserRuleRepository()
     private val scheduler = FakeRuleUpdateScheduler()
+    private val keywordRepo = FakeUserKeywordRepository()
 
-    private fun viewModel() =
-        NotificationCaptureSettingsViewModel(
+    private fun viewModel(): NotificationCaptureSettingsViewModel {
+        val reparse =
+            ReparseFailedLogsUseCase(FakeNotificationCaptureRepository(), mainRule.dispatcher, FakeSettleScheduler())
+        return NotificationCaptureSettingsViewModel(
             ObserveRuleUpdateStatusUseCase(settings),
             ObserveParserRulesUseCase(rules),
             ObserveRuleCheckingUseCase(scheduler),
+            ObserveAdKeywordsUseCase(keywordRepo),
             CheckRulesNowUseCase(scheduler),
             SetRuleAutoUpdateUseCase(settings, scheduler),
+            DeleteAdKeywordUseCase(keywordRepo, FakeTransactionRunner(), reparse),
             isDebuggable = true,
         )
+    }
+
+    private fun keyword(
+        id: String,
+        packageName: String,
+    ) = UserIgnoreKeyword(id, packageName, "ưu đãi $id", "uu dai $id", createdAt = 1L)
 
     private fun rule(
         id: String,
@@ -85,6 +104,35 @@ class NotificationCaptureSettingsViewModelTest {
             runCurrent()
             vm.onIntent(NotificationCaptureSettingsIntent.CheckNowClicked)
             assertEquals(1, scheduler.checkNowCount)
+        }
+
+    @Test
+    fun `capture settings lists and deletes keywords`() =
+        runTest(mainRule.dispatcher) {
+            val vm = viewModel()
+            keywordRepo.keywords.value = listOf(keyword("1", "a"), keyword("2", "a"), keyword("3", "b"))
+            runCurrent()
+
+            assertEquals(
+                listOf("1", "2"),
+                vm.state.value.adKeywords["a"]
+                    ?.map { it.id },
+            )
+            assertEquals(
+                listOf("3"),
+                vm.state.value.adKeywords["b"]
+                    ?.map { it.id },
+            )
+
+            vm.onIntent(NotificationCaptureSettingsIntent.AdKeywordDeleteClicked("2"))
+            runCurrent()
+
+            assertEquals(listOf("2"), keywordRepo.removedIds)
+            assertEquals(
+                listOf("1"),
+                vm.state.value.adKeywords["a"]
+                    ?.map { it.id },
+            )
         }
 
     @Test

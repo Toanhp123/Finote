@@ -54,7 +54,7 @@ A component file sits directly in one group. No group has a sub-group. `DesignSy
 |---|---|---|
 | `FinoteScaffold` | `(modifier, topBar, bottomBar?, snackbarState, content: (PaddingValues) -> Unit)` | Root of every screen. Owns the blur source. Content gets the padding that clears the floating bar, or only the system nav bar when `bottomBar` is null |
 | `FinoteTopBar` | `(title, modifier, onBack?, actions)` | Screen title, back button, right-side actions |
-| `FinoteNavBar` | `(items: List<FinoteNavItem>, selectedIndex, onSelect, modifier)` | Floating bottom navigation. Pass it as `bottomBar` |
+| `FinoteNavBar` | `(items: List<FinoteNavItem>, selectedIndex, onSelect, modifier)` | Floating bottom navigation. Pass it as `bottomBar`. `FinoteNavItem(iconRes, label, hasBadge = false)`: `hasBadge` draws a small dot (`scheme.error`, `sizes.badgeDot`) at the icon's top-end and the content description becomes "label, new" (`nav_item_new_cd`). See the badge rule below |
 | `FinoteBottomSheet` | `(isVisible, onDismiss, modifier, onDismissComplete, content)` | Pick or edit something without leaving the screen. `onDismissComplete` runs each time the sheet has settled hidden while `isVisible` is false (also on a hidden first composition), never in previews |
 | `FinoteDialog` | `(isVisible, title, confirmText, onConfirm, onDismiss, modifier, text?, isDestructive, dismissText, content?)` | Confirm a destructive or irreversible action. It draws the Cancel and confirm buttons; `isDestructive` makes the confirm button red. `content` is one extra control between the text and the buttons, such as a checkbox row |
 | `FinoteDatePicker` | `(isVisible, selected: LocalDate, onConfirm: (LocalDate), onDismiss, modifier, onDismissComplete)` | Date input. Never expose `DatePickerState` |
@@ -100,6 +100,8 @@ Only `reviewer` can check these. They are also in `docs/architecture.md`:
 - The hero gradient (`brushes.hero`) is used only by `BalanceHeroCard`, at most once per screen.
 - Glass is only for floating chrome: the nav bar, sheets, the snackbar. Never for content cards.
 - Color is never the only signal. An amount has a sign, a transaction has a type icon, an error has text.
+
+Badge rule: a nav tab flags "something new" only with `FinoteNavItem.hasBadge`, a dot with no number. The dot is never the only signal: the tab's content description gets the "new" suffix, and the screen the tab opens says what is new in text. Clear it when the user opens what it points to.
 
 Every component must also:
 - Show every relevant state: normal, pressed, disabled, error, loading.
