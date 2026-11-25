@@ -7,6 +7,7 @@ import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.cashentry.logic.AmountResult
 import io.github.toanhp123.finote.ui.cashentry.logic.CalcKey
 import io.github.toanhp123.finote.ui.cashentry.logic.ReimbursementChoice
+import io.github.toanhp123.finote.ui.cashentry.logic.RuleOfferState
 import java.time.LocalDate
 
 /**
@@ -56,6 +57,10 @@ data class CashEntryState(
     val archivedAccountName: String? = null,
     /** From-log mode with no valid time in the notification: Save waits until the user picks a date. */
     val isDateMissing: Boolean = false,
+    /** Edit and from-log mode, after a save that changed the category: the rule step shows instead of the form. */
+    val ruleOffer: RuleOfferState? = null,
+    /** How many past rows the saved rule matches; the bulk apply dialog asks about them while it is set. */
+    val bulkApplyCount: Int? = null,
 ) {
     /** The accounts a transfer can go to: every live account except the source. */
     val destinationChoices: List<Account> get() = accounts.filter { it.id != selectedAccountId }
@@ -137,6 +142,26 @@ sealed interface CashEntryIntent {
 
     /** "Already entered": the covered notice's action. */
     data object DismissFromCovered : CashEntryIntent
+
+    /** The intents of the rule step after a save. */
+    sealed interface RuleStep : CashEntryIntent
+
+    data class RuleKeywordChanged(
+        val text: String,
+    ) : RuleStep
+
+    data class RuleNameChanged(
+        val text: String,
+    ) : RuleStep
+
+    data object RuleSaveClicked : RuleStep
+
+    /** Skip, Back or a swipe: the row is saved already, so the sheet leaves. */
+    data object RuleSkipped : RuleStep
+
+    data object BulkApplyConfirmed : RuleStep
+
+    data object BulkApplyDismissed : RuleStep
 }
 
 sealed interface CashEntryEffect {

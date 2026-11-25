@@ -15,24 +15,21 @@ import io.github.toanhp123.finote.domain.notification.model.AdjustmentToken
 import io.github.toanhp123.finote.domain.notification.model.BookInboxResult
 import io.github.toanhp123.finote.domain.notification.usecase.BookInboxItemUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.DismissInboxItemUseCase
-import io.github.toanhp123.finote.domain.notification.usecase.GetInboxItemUseCase
-import io.github.toanhp123.finote.domain.notification.usecase.GetInboxPrefillUseCase
 import io.github.toanhp123.finote.domain.transaction.error.TransactionError
-import io.github.toanhp123.finote.domain.transaction.model.ManualChoices
-import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionEdit
 import io.github.toanhp123.finote.domain.transaction.model.TransactionFields
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.usecase.AddManualTransactionUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.DeleteTransactionUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.GetLastManualChoicesUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.GetTransactionUseCase
-import io.github.toanhp123.finote.domain.transaction.usecase.IsAutoPairedUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.UnpairTransferUseCase
 import io.github.toanhp123.finote.domain.transaction.usecase.UpdateTransactionUseCase
 import io.github.toanhp123.finote.ui.cashentry.logic.AmountResult
 import io.github.toanhp123.finote.ui.cashentry.logic.CashEntryDefaults
+import io.github.toanhp123.finote.ui.cashentry.logic.CashEntryStart
+import io.github.toanhp123.finote.ui.cashentry.logic.CashEntryStartReader
 import io.github.toanhp123.finote.ui.cashentry.logic.InboxSource
+import io.github.toanhp123.finote.ui.cashentry.logic.RuleOfferActions
+import io.github.toanhp123.finote.ui.cashentry.logic.RuleOfferState
 import io.github.toanhp123.finote.ui.cashentry.logic.afterBooking
 import io.github.toanhp123.finote.ui.cashentry.logic.afterKey
 import io.github.toanhp123.finote.ui.cashentry.logic.backToKeypad
@@ -41,6 +38,9 @@ import io.github.toanhp123.finote.ui.cashentry.logic.feeOf
 import io.github.toanhp123.finote.ui.cashentry.logic.filledFrom
 import io.github.toanhp123.finote.ui.cashentry.logic.filledFromInbox
 import io.github.toanhp123.finote.ui.cashentry.logic.offeredFor
+import io.github.toanhp123.finote.ui.cashentry.logic.ruleOffer
+import io.github.toanhp123.finote.ui.cashentry.logic.ruleWriteFailed
+import io.github.toanhp123.finote.ui.cashentry.logic.ruleWriting
 import io.github.toanhp123.finote.ui.cashentry.logic.saveErrorOf
 import io.github.toanhp123.finote.ui.cashentry.logic.toCategoryType
 import io.github.toanhp123.finote.ui.cashentry.logic.toInboxBooking
@@ -50,6 +50,8 @@ import io.github.toanhp123.finote.ui.cashentry.logic.withCreateLists
 import io.github.toanhp123.finote.ui.cashentry.logic.withDestination
 import io.github.toanhp123.finote.ui.cashentry.logic.withEditLists
 import io.github.toanhp123.finote.ui.cashentry.logic.withInboxLists
+import io.github.toanhp123.finote.ui.cashentry.logic.withKeyword
+import io.github.toanhp123.finote.ui.cashentry.logic.withRuleName
 import io.github.toanhp123.finote.ui.cashentry.logic.withoutConfirms
 import io.github.toanhp123.finote.ui.common.BaseViewModel
 import kotlinx.coroutines.flow.combine
@@ -69,17 +71,14 @@ class CashEntryViewModel
         @Assisted("inbox") private val inboxItemId: String?,
         private val observeUsableAccounts: ObserveUsableAccountsUseCase,
         private val observeCategories: ObserveCategoriesUseCase,
-        private val getLastManualChoices: GetLastManualChoicesUseCase,
+        private val startReader: CashEntryStartReader,
         private val addManualTransaction: AddManualTransactionUseCase,
-        private val getTransaction: GetTransactionUseCase,
         private val updateTransaction: UpdateTransactionUseCase,
         private val deleteTransaction: DeleteTransactionUseCase,
         private val unpairTransfer: UnpairTransferUseCase,
-        private val isAutoPaired: IsAutoPairedUseCase,
-        private val getInboxItem: GetInboxItemUseCase,
-        private val getInboxPrefill: GetInboxPrefillUseCase,
         private val bookInboxItem: BookInboxItemUseCase,
         private val dismissInboxItem: DismissInboxItemUseCase,
+        private val ruleOffers: RuleOfferActions,
         private val clock: Clock,
         @IsDebuggable isDebuggable: Boolean,
     ) : BaseViewModel<CashEntryState, CashEntryIntent, CashEntryEffect>(
@@ -98,15 +97,16 @@ class CashEntryViewModel
             ): CashEntryViewModel
         }
 
-        private var isSeeded = false
-        private var source: InboxSource? = null
         private var allCategories: List<Category> = emptyList()
+
+        // The first read; the combine gives the same one with every list. Null until the first lists came.
+        private var start: CashEntryStart? = null
 
         init {
             viewModelScope.launch {
                 // The first read is inside the flow, so a failure reaches catch; the lists then stay empty.
                 combine(
-                    flow { emit(readStart()) },
+                    flow { emit(startReader.read(transactionId, inboxItemId)) },
                     observeUsableAccounts(),
                     observeCategories(),
                 ) { start, a, c -> Triple(start, a, c) }
@@ -117,20 +117,7 @@ class CashEntryViewModel
             }
         }
 
-        /** Create mode reads the last choices, edit mode the stored row. Read once, kept by the combine. */
-        private suspend fun readStart(): Start =
-            when {
-                inboxItemId != null -> Start(NO_CHOICES, null, inbox = readInbox(inboxItemId))
-                transactionId == null -> Start(getLastManualChoices(), null)
-                else -> Start(NO_CHOICES, getTransaction(transactionId), isAutoPaired(transactionId))
-            }
-
-        // Null when the item was handled since the inbox showed it.
-        private suspend fun readInbox(id: String): InboxSource? {
-            val item = getInboxItem(id) ?: return null
-            return getInboxPrefill(id)?.let { InboxSource(item, it) }
-        }
-
+        @Suppress("CyclomaticComplexMethod") // why: a flat table of intents; each branch calls one reducer or helper
         override fun onIntent(intent: CashEntryIntent) {
             when (intent) {
                 is CashEntryIntent.KeyPressed -> {
@@ -199,18 +186,25 @@ class CashEntryViewModel
                     onEdit(intent)
                     onInbox(intent)
                 }
+
+                is CashEntryIntent.RuleStep -> {
+                    onRule(intent)
+                }
             }
         }
 
         private fun onLists(
-            start: Start,
+            start: CashEntryStart,
             accountList: List<Account>,
             categoryList: List<Category>,
         ) {
             allCategories = categoryList
+            // Create mode: the last choices seed the categories on the first lists only.
+            val isFirst = this.start == null
+            this.start = start
             when {
                 inboxItemId != null -> onInboxLists(start.inbox, accountList, categoryList)
-                transactionId == null -> onCreateLists(start.choices, accountList, categoryList)
+                transactionId == null -> setState { withCreateLists(start.choices, isFirst, accountList, categoryList) }
                 state.value.isLoading -> onFirstEditLists(start, accountList, categoryList)
                 else -> onLaterEditLists(accountList, categoryList)
             }
@@ -218,7 +212,7 @@ class CashEntryViewModel
 
         // The row fills the form once. A row that cannot be edited, or whose account is gone, closes the screen.
         private fun onFirstEditLists(
-            start: Start,
+            start: CashEntryStart,
             accountList: List<Account>,
             categoryList: List<Category>,
         ) {
@@ -263,7 +257,6 @@ class CashEntryViewModel
                 }
 
                 state.value.isLoading -> {
-                    source = inbox
                     setState { filledFromInbox(inbox, accountList, visible(inbox.prefill.type), clock) }
                 }
 
@@ -271,16 +264,6 @@ class CashEntryViewModel
                     setState { withInboxLists(accountList, categoryList) }
                 }
             }
-        }
-
-        private fun onCreateLists(
-            choices: ManualChoices,
-            accountList: List<Account>,
-            categoryList: List<Category>,
-        ) {
-            val isFirst = !isSeeded
-            isSeeded = true
-            setState { withCreateLists(choices, isFirst, accountList, categoryList) }
         }
 
         private fun visible(type: TransactionType): List<Category> =
@@ -291,13 +274,14 @@ class CashEntryViewModel
             val amount = (s.result as? AmountResult.Ok)?.amount
             val accountId = s.selectedAccountId
             if (!s.isSaveEnabled || amount == null || accountId == null) return
-            source?.let { return saveInbox(it, null) }
+            if (start?.inbox != null) return saveInbox(null)
             // Destination and fee belong to a transfer only; a transfer has no category.
             val isTransfer = s.type == TransactionType.TRANSFER
             val categoryId = if (isTransfer) null else s.selectedCategoryIds[s.type]
             val toAccountId = if (isTransfer) s.destinationId else null
             val feeAmount = if (isTransfer) s.fee else 0L
-            leaveAfter {
+            val offer = start?.row?.ruleOffer(s.type, s.note, categoryId)
+            leaveAfter(offer) {
                 if (transactionId == null) {
                     addManualTransaction(amount, s.type, accountId, categoryId, s.date, s.note, toAccountId, feeAmount)
                 } else {
@@ -318,15 +302,14 @@ class CashEntryViewModel
         // From-log mode never calls AddManualTransactionUseCase: one use case books the item and settles its logs.
         // [confirmation] is null on a plain Save and the dialog's token after a confirm; the use case checks it
         // against the current account and time and asks again when they differ.
-        private fun saveInbox(
-            inbox: InboxSource,
-            confirmation: AdjustmentToken?,
-        ) {
+        private fun saveInbox(confirmation: AdjustmentToken?) {
+            val inbox = start?.inbox ?: return
             val booking = state.value.toInboxBooking(inbox, clock.zone) ?: return
+            val offer = inbox.ruleOffer(booking)
             setState { busy().copy(isCoveredNotice = false, pendingConfirmation = null) }
             launchCatching(onStorageError = { showSaveError() }) {
                 val result = bookInboxItem(booking, confirmation)
-                setState { afterBooking(result) }
+                if (result == BookInboxResult.Booked) showOffer(offer) else setState { afterBooking(result) }
                 if (result == BookInboxResult.AlreadyHandled) sendEffect(CashEntryEffect.ShowAlreadyHandled)
             }
         }
@@ -334,9 +317,9 @@ class CashEntryViewModel
         // The adjustment and dismiss intents. Anything else, and any intent outside from-log mode or while a save
         // runs, does nothing.
         private fun onInbox(intent: CashEntryIntent) {
-            val inbox = source?.takeUnless { state.value.isSaving } ?: return
+            val inbox = start?.inbox?.takeUnless { state.value.isSaving } ?: return
             when (intent) {
-                CashEntryIntent.AdjustmentConfirmed -> state.value.pendingConfirmation?.let { saveInbox(inbox, it) }
+                CashEntryIntent.AdjustmentConfirmed -> state.value.pendingConfirmation?.let { saveInbox(it) }
                 CashEntryIntent.AdjustmentDismissed -> setState { copy(pendingConfirmation = null) }
                 CashEntryIntent.DismissFromCovered -> dismissInbox(inbox)
                 else -> return
@@ -352,13 +335,16 @@ class CashEntryViewModel
             }
         }
 
-        // Runs [action] with the sheet busy and both confirm dialogs closed: Ok hides the sheet (isSaving stays true so
-        // a second save cannot run while it leaves), Err shows the save error.
-        private fun leaveAfter(action: suspend () -> Outcome<*, TransactionError>) {
+        // Runs [action] with the sheet busy and both confirm dialogs closed: Ok hides the sheet, or shows the rule step
+        // for [offer] (isSaving stays true either way so a second save cannot run), Err shows the save error.
+        private fun leaveAfter(
+            offer: RuleOfferState? = null,
+            action: suspend () -> Outcome<*, TransactionError>,
+        ) {
             setState { busy().withoutConfirms() }
             launchCatching(onStorageError = { showSaveError() }) {
                 when (val outcome = action()) {
-                    is Outcome.Ok -> setState { copy(isVisible = false) }
+                    is Outcome.Ok -> showOffer(offer)
                     is Outcome.Err -> showSaveError(saveErrorOf(outcome.error))
                 }
             }
@@ -378,22 +364,37 @@ class CashEntryViewModel
             }
         }
 
+        // The rule step after a save. Skip leaves even during a rule write (the row is saved); the rest waits for it.
+        private fun onRule(intent: CashEntryIntent.RuleStep) {
+            val offer = state.value.ruleOffer ?: return
+            if (offer.isSaving && intent != CashEntryIntent.RuleSkipped) return
+            when (intent) {
+                is CashEntryIntent.RuleKeywordChanged -> showOffer(offer.withKeyword(intent.text))
+                is CashEntryIntent.RuleNameChanged -> setState { withRuleName(intent.text) }
+                CashEntryIntent.RuleSaveClicked -> writeRule { ruleOffers.save(offer) }
+                CashEntryIntent.BulkApplyConfirmed -> writeRule { ruleOffers.applyToPast(offer) }
+                CashEntryIntent.RuleSkipped, CashEntryIntent.BulkApplyDismissed -> setState { copy(isVisible = false) }
+            }
+        }
+
+        // Shows [offer], then whether its keyword is a user rule already; until then, or after a failed look-up, it
+        // offers Create. Null: nothing to offer, the sheet leaves.
+        private fun showOffer(offer: RuleOfferState?) {
+            setState { if (offer == null) copy(isVisible = false) else copy(ruleOffer = offer) }
+            if (offer != null) launchCatching(onStorageError = {}) { setState(ruleOffers.lookUp(offer)) }
+        }
+
+        // The step is busy while [write] runs, so a second tap does nothing. A storage failure keeps it with the error.
+        private fun writeRule(write: suspend () -> CashEntryState.() -> CashEntryState) {
+            val offer = state.value.ruleOffer ?: return
+            setState { ruleWriting(offer) }
+            launchCatching(onStorageError = { setState { ruleWriteFailed(offer) } }) { setState(write()) }
+        }
+
         private fun showSaveError(error: CashEntrySaveError = CashEntrySaveError.GENERIC) =
             setState { copy(isSaving = false, saveError = error) }
 
-        /**
-         * What the first read gives: the last choices in create mode, the stored row (null if gone) and whether
-         * auto-pairing made it in edit mode, the inbox item and its prefill (null if gone) in from-log mode.
-         */
-        private class Start(
-            val choices: ManualChoices,
-            val row: Transaction?,
-            val isAutoPaired: Boolean = false,
-            val inbox: InboxSource? = null,
-        )
-
         companion object {
             const val MAX_NOTE_LENGTH = 200
-            private val NO_CHOICES = ManualChoices(null, emptyMap())
         }
     }

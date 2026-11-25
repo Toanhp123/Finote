@@ -3,11 +3,13 @@ package io.github.toanhp123.finote.data.database
 import io.github.toanhp123.finote.data.account.local.entity.AccountBalanceSnapshotEntity
 import io.github.toanhp123.finote.data.account.local.entity.AccountEntity
 import io.github.toanhp123.finote.data.category.local.entity.CategoryEntity
+import io.github.toanhp123.finote.data.category.local.entity.CategoryKeywordRuleEntity
 import io.github.toanhp123.finote.data.transaction.local.entity.TagEntity
 import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntity
 import io.github.toanhp123.finote.data.transaction.local.entity.TransactionTagCrossRef
 import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.category.model.CategoryType
+import io.github.toanhp123.finote.domain.category.model.KeywordMatchType
 import io.github.toanhp123.finote.domain.transaction.model.ReimbursementStatus
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
 import io.github.toanhp123.finote.domain.transaction.model.TransactionType
@@ -67,6 +69,26 @@ fun category(
         createdAt = createdAt,
         updatedAt = createdAt,
         deletedAt = deletedAt,
+    )
+
+fun userKeywordRule(
+    id: String,
+    categoryId: String,
+    keyword: String = id,
+): CategoryKeywordRuleEntity =
+    CategoryKeywordRuleEntity(
+        id = id,
+        keyword = keyword,
+        normalizedKeyword = keyword,
+        matchType = KeywordMatchType.CONTAINS,
+        normalizedMerchantName = null,
+        categoryId = categoryId,
+        priority = 0,
+        isUserDefined = true,
+        isActive = true,
+        version = 0,
+        createdAt = 1L,
+        updatedAt = 1L,
     )
 
 fun snapshot(

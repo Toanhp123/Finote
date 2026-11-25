@@ -1,12 +1,12 @@
 package io.github.toanhp123.finote.data.notification.seed
 
 import io.github.toanhp123.finote.data.notification.mapper.toDomain
+import io.github.toanhp123.finote.domain.common.normalizeForMatch
 import io.github.toanhp123.finote.domain.notification.NotificationCorpusFixtures
 import io.github.toanhp123.finote.domain.notification.NotificationCorpusItem
 import io.github.toanhp123.finote.domain.notification.model.CaptureResult
 import io.github.toanhp123.finote.domain.notification.model.RawNotification
 import io.github.toanhp123.finote.domain.notification.service.SECRET_KEYWORDS
-import io.github.toanhp123.finote.domain.notification.service.normalizeForMatch
 import io.github.toanhp123.finote.domain.notification.usecase.CaptureNotificationUseCase
 import io.github.toanhp123.finote.domain.notification.usecase.FakeNotificationCaptureRepository
 import io.github.toanhp123.finote.domain.notification.usecase.FakeSettleScheduler

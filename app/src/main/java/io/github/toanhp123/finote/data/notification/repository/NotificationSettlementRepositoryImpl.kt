@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.data.notification.repository
 import io.github.toanhp123.finote.data.account.local.entity.AccountEntity
 import io.github.toanhp123.finote.data.account.mapper.toDomain
 import io.github.toanhp123.finote.data.account.mapper.toEntity
+import io.github.toanhp123.finote.data.category.mapper.toDomain
 import io.github.toanhp123.finote.data.database.FinoteDatabase
 import io.github.toanhp123.finote.data.database.storage
 import io.github.toanhp123.finote.data.database.storageWrite
@@ -12,6 +13,9 @@ import io.github.toanhp123.finote.data.transaction.repository.LedgerWriter
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.AccountIdentifier
 import io.github.toanhp123.finote.domain.account.service.isCoveredByAdjustment
+import io.github.toanhp123.finote.domain.category.model.CategoryType
+import io.github.toanhp123.finote.domain.category.model.RuleMatch
+import io.github.toanhp123.finote.domain.category.service.classify
 import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.AccountResolution
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
@@ -24,6 +28,7 @@ import io.github.toanhp123.finote.domain.notification.service.FAIL_PARTNER_FAILE
 import io.github.toanhp123.finote.domain.notification.service.resolveAccount
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionSource
+import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.domain.transaction.service.TRANSFER_PAIR_WINDOW_MILLIS
 import io.github.toanhp123.finote.domain.transaction.service.TransactionRules
 import io.github.toanhp123.finote.domain.transaction.service.buildPairedTransfer
@@ -87,6 +92,7 @@ class NotificationSettlementRepositoryImpl
                 ) {
                     return@storageWrite SettlementError.AdjustedAfter
                 }
+                val (match, categoryType) = categorize(decision.merchant, decision.note, parsed.type)
                 val transaction =
                     Transaction(
                         id = transactionId,
@@ -100,14 +106,15 @@ class NotificationSettlementRepositoryImpl
                         deletedAt = null,
                         createdAt = now,
                         updatedAt = now,
-                        merchantName = decision.merchant,
+                        categoryId = match?.categoryId,
+                        merchantName = match?.merchantName ?: decision.merchant,
                         note = decision.note.orEmpty(),
                         source = TransactionSource.NOTIFICATION_PARSER,
                         postBalance = parsed.postBalance,
                         notificationLogId = bank.id,
                     )
                 TransactionRules
-                    .check(transaction, Instant.ofEpochMilli(now), setOf(account.id), categoryType = null)
+                    .check(transaction, Instant.ofEpochMilli(now), setOf(account.id), categoryType)
                     ?.let { return@storageWrite SettlementError.Refused(it) }
                 val pair = findPair(transaction, account, now)
                 if (pair == null) {
@@ -129,6 +136,18 @@ class NotificationSettlementRepositoryImpl
                 if (error == null) pair?.partner?.notificationLogId?.let { logs.markPairedTransfer(it) }
                 error
             }
+
+        /** The first keyword rule that matches, with the type of its category (for [TransactionRules.check]). */
+        private suspend fun categorize(
+            merchant: String?,
+            note: String?,
+            type: TransactionType,
+        ): Pair<RuleMatch?, CategoryType?> {
+            val categories = db.categoryDao().getLive().associate { it.id to it.toDomain() }
+            val rules = db.keywordRuleDao().getAll().map { it.toDomain() }
+            val match = classify(merchant, note, type, rules, categories)
+            return match to match?.let { categories[it.categoryId]?.type }
+        }
 
         private class PairedBooking(
             val partner: Transaction,

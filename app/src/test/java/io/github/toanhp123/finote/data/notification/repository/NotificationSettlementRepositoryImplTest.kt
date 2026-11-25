@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.account.local.entity.AccountIdentifierEntity
 import io.github.toanhp123.finote.data.account.mapper.toDomain
 import io.github.toanhp123.finote.data.account.repository.AccountMergeRepositoryImpl
+import io.github.toanhp123.finote.data.category.local.entity.CategoryKeywordRuleEntity
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.database.RoomTransactionRunner
 import io.github.toanhp123.finote.data.database.account
@@ -16,8 +17,10 @@ import io.github.toanhp123.finote.domain.account.model.AccountType
 import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.account.model.defaultKind
 import io.github.toanhp123.finote.domain.account.service.balanceDriftKey
+import io.github.toanhp123.finote.domain.category.model.KeywordMatchType
 import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.common.StorageException
+import io.github.toanhp123.finote.domain.common.normalizeKeyword
 import io.github.toanhp123.finote.domain.notification.error.SettlementError
 import io.github.toanhp123.finote.domain.notification.model.AccountTarget
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
@@ -50,7 +53,7 @@ import java.time.ZoneOffset
 @RunWith(AndroidJUnit4::class)
 class NotificationSettlementRepositoryImplTest {
     @get:Rule
-    val dbRule = InMemoryDatabaseRule()
+    val dbRule = InMemoryDatabaseRule(seedSystemCategories = true)
 
     private lateinit var repo: NotificationSettlementRepositoryImpl
 
@@ -162,6 +165,98 @@ class NotificationSettlementRepositoryImplTest {
             val stored = storedLog("b1")
             assertEquals(NotificationStatus.CONFIRMED, stored.status)
             assertEquals("tx-1", stored.linkedTransactionId)
+        }
+
+    private suspend fun addRule(
+        keyword: String,
+        categoryId: String,
+        merchantName: String? = null,
+    ) = dbRule.db.keywordRuleDao().upsert(
+        CategoryKeywordRuleEntity(
+            id = "rule-$keyword",
+            keyword = keyword,
+            normalizedKeyword = normalizeKeyword(keyword),
+            matchType = KeywordMatchType.CONTAINS,
+            normalizedMerchantName = merchantName,
+            categoryId = categoryId,
+            priority = 0,
+            isUserDefined = true,
+            isActive = true,
+            version = 1,
+            createdAt = NOW,
+            updatedAt = NOW,
+        ),
+    )
+
+    @Test
+    fun `book sets category and rule merchant name`() =
+        runTest {
+            val bank = log("b1")
+            seed(bank)
+            addRule("shop", "sys_food_coffee", merchantName = "Coffee House")
+
+            repo.book(book(bank), "tx-1", NOW)
+
+            val tx = dbRule.db.transactionDao().getById("tx-1")!!
+            assertEquals("sys_food_coffee", tx.categoryId)
+            assertEquals("Coffee House", tx.merchantName)
+        }
+
+    @Test
+    fun `book keeps the parsed merchant when the rule has no name`() =
+        runTest {
+            val bank = log("b1")
+            seed(bank)
+            addRule("shop", "sys_food_coffee")
+
+            repo.book(book(bank), "tx-1", NOW)
+
+            val tx = dbRule.db.transactionDao().getById("tx-1")!!
+            assertEquals("sys_food_coffee", tx.categoryId)
+            assertEquals("Shop", tx.merchantName)
+        }
+
+    @Test
+    fun `book uses the wallet merchant of a pair`() =
+        runTest {
+            val bank = log("b1")
+            val wallet = log("w1")
+            seed(bank, wallet)
+            addRule("highlands", "sys_food_coffee", merchantName = "Highlands Coffee")
+
+            repo.book(book(bank, wallet).copy(merchant = "HIGHLANDS COFFEE 12"), "tx-1", NOW)
+
+            val tx = dbRule.db.transactionDao().getById("tx-1")!!
+            assertEquals("sys_food_coffee", tx.categoryId)
+            assertEquals("Highlands Coffee", tx.merchantName)
+        }
+
+    @Test
+    fun `book leaves category null when no rule matches`() =
+        runTest {
+            val bank = log("b1")
+            seed(bank)
+            addRule("other", "sys_food_coffee", merchantName = "Other")
+
+            repo.book(book(bank), "tx-1", NOW)
+
+            val tx = dbRule.db.transactionDao().getById("tx-1")!!
+            assertNull(tx.categoryId)
+            assertEquals("Shop", tx.merchantName)
+        }
+
+    @Test
+    fun `a paired transfer has no category`() =
+        runTest {
+            addRule("shop", "sys_food_coffee")
+            seed(debit(), credit())
+            repo.book(book(debit(), target = newAccount(mask = "1111")), "tx-1", NOW)
+            repo.book(book(credit(), target = newAccount(mask = "2222")), "tx-2", NOW)
+
+            val transfer = liveRows().single()
+
+            assertEquals(TransactionType.TRANSFER, transfer.type)
+            assertNull(transfer.categoryId)
         }
 
     @Test

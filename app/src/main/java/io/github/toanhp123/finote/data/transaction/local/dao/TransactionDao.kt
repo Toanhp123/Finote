@@ -68,6 +68,24 @@ interface TransactionDao {
     )
     fun observeTransactions(accountId: String?): Flow<List<TransactionEntity>>
 
+    /** Live income and expense rows booked from a notification that have no category yet. */
+    @Query(
+        "SELECT * FROM transactions WHERE deletedAt IS NULL AND categoryId IS NULL " +
+            "AND notificationLogId IS NOT NULL AND type IN ('EXPENSE', 'INCOME')",
+    )
+    suspend fun getUncategorizedFromNotifications(): List<TransactionEntity>
+
+    /** Sets the category and keeps the stored merchant name when [merchantName] is null. `updatedAt` stays. */
+    @Query(
+        "UPDATE transactions SET categoryId = :categoryId, merchantName = COALESCE(:merchantName, merchantName) " +
+            "WHERE id = :id",
+    )
+    suspend fun setCategory(
+        id: String,
+        categoryId: String,
+        merchantName: String?,
+    )
+
     /** Account of the newest live manual entry; null when there is none. */
     @Query(
         "SELECT accountId FROM transactions " +

@@ -152,4 +152,38 @@ class TransactionRowTextTest {
             rowSubtitle(transfer, names::get, deleted, pendingLabel, settledLabel, autoPairedLabel = null),
         )
     }
+
+    @Test
+    fun `subtitle shows merchant instead of note for expense and income`() {
+        listOf(TransactionType.EXPENSE, TransactionType.INCOME, TransactionType.REFUND).forEach { type ->
+            val row = tx(type, 1, account = "cash").copy(merchantName = "Grab", note = "Bún bò")
+
+            assertEquals("Tiền mặt · Grab", rowSubtitle(row, names::get, deleted, pendingLabel, settledLabel))
+        }
+    }
+
+    @Test
+    fun `subtitle keeps the note without a merchant`() {
+        val expense = tx(TransactionType.EXPENSE, 1, account = "cash").copy(note = "Bún bò")
+
+        assertEquals(
+            "Tiền mặt · Bún bò",
+            rowSubtitle(expense.copy(merchantName = null), names::get, deleted, pendingLabel, settledLabel),
+        )
+        assertEquals(
+            "Tiền mặt · Bún bò",
+            rowSubtitle(expense.copy(merchantName = "  "), names::get, deleted, pendingLabel, settledLabel),
+        )
+    }
+
+    @Test
+    fun `an auto-paired transfer keeps its note`() {
+        // TransferPairing copies the merchant onto the transfer; the row still shows the note.
+        val transfer = tx(TransactionType.TRANSFER, 1, account = A, to = B).copy(merchantName = "Grab", note = "note")
+
+        assertEquals(
+            "Vietcombank → MoMo · note",
+            rowSubtitle(transfer, names::get, deleted, pendingLabel, settledLabel),
+        )
+    }
 }

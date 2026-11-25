@@ -3,7 +3,9 @@ package io.github.toanhp123.finote.data.database
 import android.content.Context
 import androidx.room3.Room
 import io.github.toanhp123.finote.data.account.seed.SystemAccountSeeder
+import io.github.toanhp123.finote.data.category.seed.KeywordRuleSeeder
 import io.github.toanhp123.finote.data.category.seed.SystemCategorySeeder
+import io.github.toanhp123.finote.data.database.migration.applyMigrationPolicy
 import io.github.toanhp123.finote.data.notification.seed.ParserRuleSeeder
 import io.github.toanhp123.finote.data.security.DatabaseKeyStore
 import io.github.toanhp123.finote.data.security.KeystoreKeyCipher
@@ -33,6 +35,8 @@ fun createFinoteDatabase(
         .setDriver(SQLCipherDriver(passphrase, null, null))
         .applyMigrationPolicy()
         .addCallback(SystemCategorySeeder(clock))
+        // After the categories: the rules point at their `sys_*` rows.
+        .addCallback(KeywordRuleSeeder())
         .addCallback(SystemAccountSeeder(clock))
         .addCallback(ParserRuleSeeder())
         .build()

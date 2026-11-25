@@ -11,6 +11,7 @@ import io.github.toanhp123.finote.data.account.local.dao.AccountDao
 import io.github.toanhp123.finote.data.account.local.dao.AccountIdentifierDao
 import io.github.toanhp123.finote.data.account.local.dao.AccountMergeDao
 import io.github.toanhp123.finote.data.category.local.dao.CategoryDao
+import io.github.toanhp123.finote.data.category.local.dao.CategoryKeywordRuleDao
 import io.github.toanhp123.finote.data.database.FinoteDatabase
 import io.github.toanhp123.finote.data.database.createFinoteDatabase
 import io.github.toanhp123.finote.data.transaction.local.dao.TagDao
@@ -43,6 +44,9 @@ object DatabaseModule {
 
     @Provides
     fun provideCategoryDao(db: FinoteDatabase): CategoryDao = db.categoryDao()
+
+    @Provides
+    fun provideKeywordRuleDao(db: FinoteDatabase): CategoryKeywordRuleDao = db.keywordRuleDao()
 
     @Provides
     fun provideTransactionDao(db: FinoteDatabase): TransactionDao = db.transactionDao()

@@ -39,6 +39,7 @@ fun SettingsRoute(
     onOpenCapture: () -> Unit,
     onOpenAccounts: () -> Unit,
     onOpenCategories: () -> Unit,
+    onOpenKeywordRules: () -> Unit,
     onOpenInbox: () -> Unit,
     onOpenLogs: () -> Unit,
     modifier: Modifier = Modifier,
@@ -49,6 +50,7 @@ fun SettingsRoute(
             SettingsEffect.OpenCaptureSettings -> onOpenCapture()
             SettingsEffect.OpenAccountsSettings -> onOpenAccounts()
             SettingsEffect.OpenCategoriesSettings -> onOpenCategories()
+            SettingsEffect.OpenKeywordRulesSettings -> onOpenKeywordRules()
             SettingsEffect.OpenFailedInbox -> onOpenInbox()
             SettingsEffect.OpenNotificationLogs -> onOpenLogs()
         }
@@ -90,6 +92,13 @@ fun SettingsScreen(
                     leading = { RowIcon(R.drawable.ic_category, FinoteTheme.scheme.primary) },
                     trailing = { RowIcon(R.drawable.ic_chevron_right, FinoteTheme.scheme.onSurfaceVariant) },
                     onClick = { onIntent(SettingsIntent.CategoriesClicked) },
+                )
+                FinoteListRow(
+                    title = stringResource(R.string.settings_keyword_rules_title),
+                    subtitle = stringResource(R.string.settings_keyword_rules_subtitle),
+                    leading = { RowIcon(R.drawable.ic_bolt, FinoteTheme.scheme.primary) },
+                    trailing = { RowIcon(R.drawable.ic_chevron_right, FinoteTheme.scheme.onSurfaceVariant) },
+                    onClick = { onIntent(SettingsIntent.KeywordRulesClicked) },
                 )
             }
             FinoteSection(title = stringResource(R.string.settings_group_capture)) {

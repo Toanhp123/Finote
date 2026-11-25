@@ -10,7 +10,9 @@ import io.github.toanhp123.finote.data.account.local.entity.AccountBalanceSnapsh
 import io.github.toanhp123.finote.data.account.local.entity.AccountEntity
 import io.github.toanhp123.finote.data.account.local.entity.AccountIdentifierEntity
 import io.github.toanhp123.finote.data.category.local.dao.CategoryDao
+import io.github.toanhp123.finote.data.category.local.dao.CategoryKeywordRuleDao
 import io.github.toanhp123.finote.data.category.local.entity.CategoryEntity
+import io.github.toanhp123.finote.data.category.local.entity.CategoryKeywordRuleEntity
 import io.github.toanhp123.finote.data.notification.local.dao.NotificationLogDao
 import io.github.toanhp123.finote.data.notification.local.dao.ParserRuleDao
 import io.github.toanhp123.finote.data.notification.local.dao.UserIgnoreKeywordDao
@@ -25,7 +27,7 @@ import io.github.toanhp123.finote.data.transaction.local.entity.TransactionEntit
 import io.github.toanhp123.finote.data.transaction.local.entity.TransactionTagCrossRef
 
 /** Schema version. Raising it needs a new `app/schemas/.../N.json` and a migration; see `MigrationPolicy.kt`. */
-const val DATABASE_VERSION = 12
+const val DATABASE_VERSION = 13
 
 @Database(
     entities =
@@ -40,6 +42,7 @@ const val DATABASE_VERSION = 12
             ParserRuleEntity::class,
             NotificationLogEntity::class,
             UserIgnoreKeywordEntity::class,
+            CategoryKeywordRuleEntity::class,
         ],
     version = DATABASE_VERSION,
     exportSchema = true,
@@ -66,4 +69,6 @@ abstract class FinoteDatabase : RoomDatabase() {
     abstract fun notificationLogDao(): NotificationLogDao
 
     abstract fun userIgnoreKeywordDao(): UserIgnoreKeywordDao
+
+    abstract fun keywordRuleDao(): CategoryKeywordRuleDao
 }

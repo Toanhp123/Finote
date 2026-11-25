@@ -192,15 +192,15 @@ class CategoryEditViewModel
         private fun openDelete() =
             withStored { stored ->
                 launchCatching(onStorageError = ::sendStorageFailed) {
-                    val count = countTransactions(stored.id)
+                    val impact = countTransactions(stored.id)
                     // The category may have gone while the count loaded.
                     if (state.value.stored?.id != stored.id) return@launchCatching
                     val targets =
                         state.value.categories
                             .shown()
                             .filter { it.type == stored.type && it.id != stored.id && it.parentId != stored.id }
-                    val choice = if (count == 0) DeleteChoice.Uncategorized else DeleteChoice.Unset
-                    setState { copy(delete = DeleteSheet(count, targets, choice)) }
+                    val choice = if (impact.isEmpty) DeleteChoice.Uncategorized else DeleteChoice.Unset
+                    setState { copy(delete = DeleteSheet(impact, targets, choice)) }
                 }
             }
 

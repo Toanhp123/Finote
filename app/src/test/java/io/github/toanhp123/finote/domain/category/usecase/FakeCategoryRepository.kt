@@ -19,6 +19,9 @@ class FakeCategoryRepository : CategoryRepository {
 
     /** Ids of [transactionCategory] that are soft-deleted: [countLiveTransactions] skips them. */
     val deletedTransactions = mutableSetOf<String>()
+
+    /** Rule id to category id; stands in for the user keyword rules. Does not copy the duplicate-keyword drop. */
+    val ruleCategory = mutableMapOf<String, String>()
     private val version = MutableStateFlow(0)
     var writes = 0
         private set
@@ -73,6 +76,8 @@ class FakeCategoryRepository : CategoryRepository {
     override suspend fun countLiveTransactions(categoryIds: Set<String>): Int =
         transactionCategory.count { (id, categoryId) -> id !in deletedTransactions && categoryId in categoryIds }
 
+    override suspend fun countRules(categoryIds: Set<String>): Int = ruleCategory.values.count { it in categoryIds }
+
     override suspend fun deleteAndMove(
         categoryIds: Set<String>,
         targetId: String?,
@@ -80,6 +85,11 @@ class FakeCategoryRepository : CategoryRepository {
     ) {
         writes++
         transactionCategory.replaceAll { _, categoryId -> if (categoryId in categoryIds) targetId else categoryId }
+        if (targetId == null) {
+            ruleCategory.values.removeAll { it in categoryIds }
+        } else {
+            ruleCategory.replaceAll { _, categoryId -> if (categoryId in categoryIds) targetId else categoryId }
+        }
         categoryIds.forEach { id ->
             val old = stored[id]
             if (old != null &&

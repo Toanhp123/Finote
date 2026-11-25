@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import io.github.toanhp123.finote.domain.category.error.CategoryError
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
+import io.github.toanhp123.finote.domain.category.model.DeleteImpact
 import io.github.toanhp123.finote.domain.category.testCategory
 import io.github.toanhp123.finote.domain.category.usecase.CountCategoryTransactionsUseCase
 import io.github.toanhp123.finote.domain.category.usecase.CreateCategoryUseCase
@@ -336,7 +337,7 @@ class CategoryEditViewModelTest {
 
             vm.onIntent(CategoryEditIntent.DeleteClicked)
             runCurrent()
-            assertEquals(3, checkNotNull(vm.state.value.delete).transactionCount)
+            assertEquals(3, checkNotNull(vm.state.value.delete).impact.transactions)
             assertEquals(DeleteChoice.Unset, checkNotNull(vm.state.value.delete).choice)
 
             vm.onIntent(CategoryEditIntent.DeleteConfirmed)
@@ -350,6 +351,25 @@ class CategoryEditViewModelTest {
             assertEquals(CategoryEditEffect.Close, effect)
             assertNotNull(repo.stored.getValue("a").deletedAt)
             assertEquals(setOf<String?>(null), repo.transactionCategory.values.toSet())
+        }
+
+    @Test
+    fun `delete with 0 transactions and rules opens the move sheet with the rule count`() =
+        runTest(mainRule.dispatcher) {
+            val vm = loaded(EditCategory(id = "a"), testCategory(id = "a"), testCategory(id = "b"))
+            repo.ruleCategory["r1"] = "a"
+            repo.ruleCategory["r2"] = "a"
+
+            vm.onIntent(CategoryEditIntent.DeleteClicked)
+            runCurrent()
+            assertEquals(DeleteImpact(transactions = 0, rules = 2), checkNotNull(vm.state.value.delete).impact)
+            assertEquals(DeleteChoice.Unset, checkNotNull(vm.state.value.delete).choice)
+
+            vm.onIntent(CategoryEditIntent.DeleteChoicePicked(DeleteChoice.Into("b")))
+            vm.onIntent(CategoryEditIntent.DeleteConfirmed)
+            runCurrent()
+
+            assertEquals(setOf("b"), repo.ruleCategory.values.toSet())
         }
 
     @Test
@@ -374,7 +394,7 @@ class CategoryEditViewModelTest {
 
             vm.onIntent(CategoryEditIntent.DeleteClicked)
             runCurrent()
-            assertEquals(0, checkNotNull(vm.state.value.delete).transactionCount)
+            assertEquals(0, checkNotNull(vm.state.value.delete).impact.transactions)
             val effect = effectOf(vm) { vm.onIntent(CategoryEditIntent.DeleteConfirmed) }
 
             assertEquals(CategoryEditEffect.Close, effect)

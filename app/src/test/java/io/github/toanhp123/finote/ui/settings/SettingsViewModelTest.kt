@@ -132,6 +132,20 @@ class SettingsViewModelTest {
         }
 
     @Test
+    fun `keyword rules row opens the rules page`() =
+        runTest(mainRule.dispatcher) {
+            val vm = viewModel(isToolsEnabled = false)
+
+            vm.effects.test {
+                vm.onIntent(SettingsIntent.KeywordRulesClicked)
+                runCurrent()
+
+                assertEquals(SettingsEffect.OpenKeywordRulesSettings, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
     fun `logs row hidden when tools are off`() =
         runTest(mainRule.dispatcher) {
             val vm = viewModel(isToolsEnabled = false)

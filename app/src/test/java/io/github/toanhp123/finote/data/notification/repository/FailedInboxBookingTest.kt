@@ -111,6 +111,7 @@ class FailedInboxBookingTest {
         logs.forEach { logDao.insert(it) }
     }
 
+    @Suppress("LongParameterList") // why: test helper, one defaulted argument per booking field the tests vary
     private fun booking(
         itemId: String = "log-1",
         logIds: List<String> = listOf(itemId),
@@ -118,6 +119,7 @@ class FailedInboxBookingTest {
         timestamp: Long = POST,
         resolvedAccountId: String? = null,
         categoryId: String? = null,
+        merchantName: String? = null,
     ) = InboxBooking(
         itemId,
         logIds,
@@ -126,6 +128,7 @@ class FailedInboxBookingTest {
         accountId,
         categoryId,
         "Cafe",
+        merchantName,
         timestamp,
         resolvedAccountId,
     )
@@ -152,6 +155,16 @@ class FailedInboxBookingTest {
             assertEquals(rows.single().id, log?.linkedTransactionId)
             assertEquals("log-1", rows.single().notificationLogId)
             assertEquals(1_000_000L - AMOUNT, balanceOf(ACC))
+        }
+
+    @Test
+    fun `booking writes merchantName`() =
+        runTest {
+            seed(failedLog("log-1"))
+
+            assertEquals(BookInboxResult.Booked, book(booking(merchantName = "Cong Ca Phe")))
+
+            assertEquals("Cong Ca Phe", txDao.getActiveByAccount(ACC).single().merchantName)
         }
 
     @Test

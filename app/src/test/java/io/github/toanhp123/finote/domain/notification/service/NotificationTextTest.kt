@@ -1,5 +1,7 @@
 package io.github.toanhp123.finote.domain.notification.service
 
+import io.github.toanhp123.finote.domain.common.normalizeForMatch
+import io.github.toanhp123.finote.domain.common.normalizeKeyword
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull

@@ -331,6 +331,9 @@
     <plurals name="category_delete_move_text">
         <item quantity="other">%1$d件の取引は選択したカテゴリに移動します。元に戻せません。</item>
     </plurals>
+    <plurals name="category_delete_rules_text">
+        <item quantity="other">%1$d件のキーワードルールは選択したカテゴリに移動します。カテゴリを選ばない場合は削除されます。</item>
+    </plurals>
     <string name="category_delete_branch_note">サブカテゴリも削除されます。</string>
     <string name="category_delete_none_option">カテゴリなし</string>
     <string name="category_delete_no_transactions">このカテゴリを使う取引はありません。</string>
@@ -358,4 +361,33 @@
     <string name="categories_hidden_title">非表示（%1$d）</string>
     <string name="categories_empty_title">表示中のカテゴリがありません</string>
     <string name="categories_empty_message">＋をタップして新しいカテゴリを追加します。</string>
+    <string name="cash_entry_rule_title">類似の取引にも適用しますか？</string>
+    <string name="cash_entry_rule_text">今後、このキーワードを含む取引は選んだカテゴリに入ります。</string>
+    <string name="cash_entry_rule_keyword">キーワード</string>
+    <string name="cash_entry_rule_name">短い名前</string>
+    <string name="cash_entry_rule_create">ルールを作成</string>
+    <string name="cash_entry_rule_update">ルールを更新</string>
+    <string name="cash_entry_rule_skip">スキップ</string>
+    <string name="cash_entry_rule_error_too_short">キーワードは2文字以上必要です</string>
+    <string name="cash_entry_rule_error_duplicate">このキーワードのルールは既にあります</string>
+    <string name="cash_entry_rule_error_category_gone">このカテゴリは使用できなくなりました</string>
+    <string name="cash_entry_rule_error_not_found">ルールが見つかりません。もう一度お試しください</string>
+    <plurals name="bulk_apply_title">
+        <item quantity="other">過去の取引 %d 件に適用しますか？</item>
+    </plurals>
+    <string name="bulk_apply_text">キーワードに一致する、通知からの未分類の取引にこのカテゴリを設定します。</string>
+    <string name="bulk_apply_confirm">適用</string>
+    <string name="settings_keyword_rules_title">カテゴリ自動設定ルール</string>
+    <string name="settings_keyword_rules_subtitle">通知のキーワードでカテゴリを自動設定</string>
+    <string name="keyword_rules_add">ルールを追加</string>
+    <string name="keyword_rules_section_user">自分のルール</string>
+    <string name="keyword_rules_section_system">標準ルール</string>
+    <string name="keyword_rules_empty_title">自分のルールはまだありません</string>
+    <string name="keyword_rules_empty_message">＋をタップしてルールを追加します。キーワードを含む通知は選んだカテゴリに入ります。</string>
+    <string name="keyword_rule_edit_title_new">ルールを追加</string>
+    <string name="keyword_rule_edit_title_edit">ルールを編集</string>
+    <string name="keyword_rule_edit_category">カテゴリ</string>
+    <string name="keyword_rule_edit_delete">ルールを削除</string>
+    <string name="keyword_rule_delete_title">ルール「%1$s」を削除しますか？</string>
+    <string name="keyword_rule_delete_text">すでにカテゴリが付いた取引は変わりません。</string>
 </resources>

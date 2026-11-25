@@ -19,6 +19,9 @@ interface CategoryDao {
     @Query("SELECT * FROM categories WHERE id = :id")
     suspend fun getById(id: String): CategoryEntity?
 
+    @Query("SELECT * FROM categories WHERE deletedAt IS NULL")
+    suspend fun getLive(): List<CategoryEntity>
+
     @Query("SELECT COUNT(*) FROM categories WHERE parentId = :parentId AND deletedAt IS NULL")
     suspend fun countLiveChildren(parentId: String): Int
 

@@ -228,7 +228,7 @@ private fun ColumnScope.ReorderBody(
     }
 }
 
-/** A category nobody uses gets a plain confirm; one with transactions asks where they go. */
+/** A category nobody uses gets a plain confirm; one with transactions or rules asks where they go. */
 @Composable
 private fun DeleteOverlays(
     state: CategoryEditState,
@@ -239,14 +239,14 @@ private fun DeleteOverlays(
     val hasChildren = stored != null && state.categories.any { it.parentId == stored.id }
     val delete = state.delete
     DeleteCategoryDialog(
-        isVisible = delete?.transactionCount == 0,
+        isVisible = delete?.impact?.isEmpty == true,
         name = name,
         hasChildren = hasChildren,
         onConfirm = { onIntent(CategoryEditIntent.DeleteConfirmed) },
         onDismiss = { onIntent(CategoryEditIntent.DeleteDismissed) },
     )
     DeleteMoveSheet(
-        sheet = delete?.takeIf { it.transactionCount > 0 },
+        sheet = delete?.takeIf { !it.impact.isEmpty },
         name = name,
         hasChildren = hasChildren,
         onPick = { onIntent(CategoryEditIntent.DeleteChoicePicked(it)) },

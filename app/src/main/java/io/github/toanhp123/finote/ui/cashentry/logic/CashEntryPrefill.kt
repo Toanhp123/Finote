@@ -56,7 +56,8 @@ internal class InboxSource(
 
 /**
  * The form of a from-log sheet: [InboxSource.prefill] as it is (an empty account stays empty, an unknown amount stays
- * empty), with [accountList] and [offered] as the live lists. No category and no reimbursement are preselected.
+ * empty), with [accountList] and [offered] as the live lists. The category is the rule's suggestion when it is
+ * offered, else none. No reimbursement is preselected.
  * A notification without a valid time shows today and waits for the user to pick the date.
  */
 internal fun CashEntryState.filledFromInbox(
@@ -68,6 +69,7 @@ internal fun CashEntryState.filledFromInbox(
     val prefill = source.prefill
     val date = prefill.timestamp?.let { Instant.ofEpochMilli(it).atZone(clock.zone).toLocalDate() }
     val amount = prefill.amount
+    val suggested = prefill.categoryId?.takeIf { id -> offered.any { it.id == id } }
     return copy(
         accounts = accountList,
         categories = offered,
@@ -76,6 +78,7 @@ internal fun CashEntryState.filledFromInbox(
         expression = amount?.toString().orEmpty(),
         result = if (amount == null) AmountResult.Empty else AmountResult.Ok(amount),
         selectedAccountId = prefill.accountId?.takeIf { id -> accountList.any { it.id == id } },
+        selectedCategoryIds = suggested?.let { mapOf(prefill.type to it) }.orEmpty(),
         note = prefill.note,
         date = date ?: LocalDate.now(clock),
         isToday = date == LocalDate.now(clock),
@@ -124,6 +127,7 @@ internal fun CashEntryState.toInboxBooking(
         accountId = accountId,
         categoryId = selectedCategoryIds[type],
         note = note,
+        merchantName = source.prefill.merchantName,
         timestamp = inboxTimestamp(source.prefill.timestamp, date, zone),
         resolvedAccountId = source.prefill.accountId,
     )

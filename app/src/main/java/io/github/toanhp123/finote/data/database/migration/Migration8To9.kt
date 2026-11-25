@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.data.database
+package io.github.toanhp123.finote.data.database.migration
 
 import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection

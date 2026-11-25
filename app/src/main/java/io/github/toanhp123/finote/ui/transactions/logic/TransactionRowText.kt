@@ -9,6 +9,8 @@ import io.github.toanhp123.finote.ui.common.format.formatDayDate
 import java.time.LocalDate
 import java.util.Locale
 
+private val MerchantTypes = setOf(TransactionType.EXPENSE, TransactionType.INCOME, TransactionType.REFUND)
+
 fun dayLabel(
     date: LocalDate,
     today: LocalDate,
@@ -51,7 +53,7 @@ fun moneyKindOf(transaction: Transaction): MoneyKind =
 /**
  * [accountName] resolves an id to a display name, null when the account is gone. A reimbursement status adds its
  * label ([pendingLabel], [settledLabel]) after the accounts and before the note. [autoPairedLabel], when not null,
- * sits right after the accounts.
+ * sits right after the accounts. An expense, income or refund with a merchant name shows it in place of the note.
  */
 fun rowSubtitle(
     transaction: Transaction,
@@ -75,11 +77,12 @@ fun rowSubtitle(
             ReimbursementStatus.PENDING -> pendingLabel
             ReimbursementStatus.SETTLED -> settledLabel
         }
+    val merchant = transaction.merchantName?.takeIf { it.isNotBlank() && transaction.type in MerchantTypes }
     return listOfNotNull(
         accounts,
         autoPairedLabel,
         label,
-        transaction.note.takeIf { it.isNotBlank() },
+        merchant ?: transaction.note.takeIf { it.isNotBlank() },
     ).joinToString(" · ")
 }
 

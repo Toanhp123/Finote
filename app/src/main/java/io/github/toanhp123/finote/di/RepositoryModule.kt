@@ -9,6 +9,7 @@ import io.github.toanhp123.finote.data.account.repository.AccountRepositoryImpl
 import io.github.toanhp123.finote.data.account.repository.DriftAcknowledgementRepositoryImpl
 import io.github.toanhp123.finote.data.account.repository.MergeDismissalRepositoryImpl
 import io.github.toanhp123.finote.data.category.repository.CategoryRepositoryImpl
+import io.github.toanhp123.finote.data.category.repository.KeywordRuleRepositoryImpl
 import io.github.toanhp123.finote.data.database.RoomTransactionRunner
 import io.github.toanhp123.finote.data.setup.repository.SetupRepositoryImpl
 import io.github.toanhp123.finote.data.transaction.repository.TransactionRepositoryImpl
@@ -18,6 +19,7 @@ import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.account.repository.DriftAcknowledgementRepository
 import io.github.toanhp123.finote.domain.account.repository.MergeDismissalRepository
 import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
+import io.github.toanhp123.finote.domain.category.repository.KeywordRuleRepository
 import io.github.toanhp123.finote.domain.common.TransactionRunner
 import io.github.toanhp123.finote.domain.setup.repository.SetupRepository
 import io.github.toanhp123.finote.domain.transaction.repository.TransactionRepository
@@ -40,6 +42,9 @@ interface RepositoryModule {
 
     @Binds
     fun bindCategoryRepository(impl: CategoryRepositoryImpl): CategoryRepository
+
+    @Binds
+    fun bindKeywordRuleRepository(impl: KeywordRuleRepositoryImpl): KeywordRuleRepository
 
     @Binds
     fun bindTransactionRepository(impl: TransactionRepositoryImpl): TransactionRepository

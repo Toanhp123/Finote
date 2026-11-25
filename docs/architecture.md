@@ -16,6 +16,7 @@ domain/<feature>/
   service/           pure logic (NotificationParser, BalanceCalculator, <Feature>Rules)
   usecase/           *UseCase
 data/database/       FinoteDatabase, FinoteDatabaseFactory; RoomTransactionRunner, StorageCalls.kt, SeedTransaction.kt (R2)
+data/database/migration/  MigrationNToM.kt, MigrationPolicy.kt (hand-written migrations and the open policy)
 data/security/       DatabaseKeyStore, KeyCipher, KeystoreKeyCipher, PlaintextDatabase
 data/<feature>/
   local/dao/         *Dao
@@ -56,8 +57,8 @@ di/                  Hilt module
 
 - Write transactions open only through `TransactionRunner` (use cases) or `storageWrite` (repositories). `withWriteTransaction` appears only in `data/database`. A nested `storageWrite` joins the outer transaction as a savepoint.
 - `SQLException` maps to `StorageException` only in `data/database`. `StorageException(` is created only there; `domain/common` holds the definition.
-- Soft delete through `deletedAt` is the rule. The exception: rows of `account_identifiers` are matching keys, not records, and may be hard-deleted when the user removes a masked number.
-- A schema change raises `DATABASE_VERSION`, commits the new `app/schemas/.../N.json`, and adds an `AutoMigration` on `@Database` or a `Migration` in `FINOTE_MIGRATIONS` (`data/database/MigrationPolicy.kt`). Extend `MigrationPolicyTest` when rows move. Destructive fallback is allowed only from v1–v7; from v8 a missing migration or a downgrade crashes and keeps the file.
+- Soft delete through `deletedAt` is the rule. The exception: rows of `account_identifiers` are matching keys, not records, and may be hard-deleted when the user removes a masked number. Rows of `category_keyword_rules` are rules, not records, and may be hard-deleted when the user deletes a rule or a category.
+- A schema change raises `DATABASE_VERSION`, commits the new `app/schemas/.../N.json`, and adds an `AutoMigration` on `@Database` or a `Migration` in `FINOTE_MIGRATIONS` (`data/database/migration/MigrationPolicy.kt`). Extend `MigrationPolicyTest` when rows move. Destructive fallback is allowed only from v1–v7; from v8 a missing migration or a downgrade crashes and keeps the file.
 
 `ProjectRulesKonsistTest` enforces both.
 

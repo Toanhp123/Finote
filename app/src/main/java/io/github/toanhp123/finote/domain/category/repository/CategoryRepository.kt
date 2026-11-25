@@ -46,10 +46,14 @@ interface CategoryRepository {
     /** Live (not soft-deleted) transactions whose category is in [categoryIds]. */
     suspend fun countLiveTransactions(categoryIds: Set<String>): Int
 
+    /** User keyword rules (not the seeded system ones) whose category is in [categoryIds]. */
+    suspend fun countRules(categoryIds: Set<String>): Int
+
     /**
      * Points every transaction of [categoryIds] at [targetId] (null clears it), deleted and paired-away ones too,
-     * without touching `updatedAt`, then soft-deletes the categories. This is the only place that knows which tables
-     * point at a category: step 16 (`CategoryKeywordRule`) and step 18 (`Budget`) add their table here.
+     * without touching `updatedAt`, then soft-deletes the categories. User keyword rules follow the transactions: a
+     * rule whose keyword [targetId] already has is dropped, and with a null [targetId] they are all deleted. This is
+     * the only place that knows which tables point at a category: step 18 (`Budget`) adds its table here.
      */
     suspend fun deleteAndMove(
         categoryIds: Set<String>,

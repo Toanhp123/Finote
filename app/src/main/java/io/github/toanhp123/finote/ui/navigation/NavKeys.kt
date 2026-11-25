@@ -54,6 +54,16 @@ data class EditCategory(
     val parentId: String? = null,
 ) : NavKey
 
+/** The auto category rules page (keyword rules), pushed on top of [Settings]. */
+@Serializable
+data object KeywordRulesSettings : NavKey
+
+/** The keyword rule create screen ([id] null) or edit screen, pushed on top of [KeywordRulesSettings]. */
+@Serializable
+data class EditKeywordRule(
+    val id: String? = null,
+) : NavKey
+
 /** The notification capture page, pushed on top of [Settings]. */
 @Serializable
 data object NotificationCaptureSettings : NavKey

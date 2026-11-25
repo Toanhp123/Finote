@@ -52,6 +52,10 @@ class SettingsViewModel
                     sendEffect(SettingsEffect.OpenCategoriesSettings)
                 }
 
+                SettingsIntent.KeywordRulesClicked -> {
+                    sendEffect(SettingsEffect.OpenKeywordRulesSettings)
+                }
+
                 SettingsIntent.InboxClicked -> {
                     sendEffect(SettingsEffect.OpenFailedInbox)
                 }

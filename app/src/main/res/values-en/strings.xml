@@ -342,6 +342,10 @@
         <item quantity="one">%1$d transaction will move to the category you pick. This cannot be undone.</item>
         <item quantity="other">%1$d transactions will move to the category you pick. This cannot be undone.</item>
     </plurals>
+    <plurals name="category_delete_rules_text">
+        <item quantity="one">%1$d keyword rule follows the category you pick, or is deleted if you pick none.</item>
+        <item quantity="other">%1$d keyword rules follow the category you pick, or are deleted if you pick none.</item>
+    </plurals>
     <string name="category_delete_branch_note">Its subcategories are deleted too.</string>
     <string name="category_delete_none_option">No category</string>
     <string name="category_delete_no_transactions">No transaction uses this category.</string>
@@ -369,4 +373,34 @@
     <string name="categories_hidden_title">Hidden (%1$d)</string>
     <string name="categories_empty_title">No visible categories</string>
     <string name="categories_empty_message">Tap + to add a new category.</string>
+    <string name="cash_entry_rule_title">Apply to similar?</string>
+    <string name="cash_entry_rule_text">Later transactions with this keyword go to the category you picked.</string>
+    <string name="cash_entry_rule_keyword">Keyword</string>
+    <string name="cash_entry_rule_name">Short name</string>
+    <string name="cash_entry_rule_create">Create rule</string>
+    <string name="cash_entry_rule_update">Update rule</string>
+    <string name="cash_entry_rule_skip">Skip</string>
+    <string name="cash_entry_rule_error_too_short">The keyword needs at least 2 characters</string>
+    <string name="cash_entry_rule_error_duplicate">A rule with this keyword already exists</string>
+    <string name="cash_entry_rule_error_category_gone">This category can no longer be used</string>
+    <string name="cash_entry_rule_error_not_found">The rule was not found, try again</string>
+    <plurals name="bulk_apply_title">
+        <item quantity="one">Apply to %d past transaction?</item>
+        <item quantity="other">Apply to %d past transactions?</item>
+    </plurals>
+    <string name="bulk_apply_text">Uncategorized transactions from notifications that match the keyword get this category.</string>
+    <string name="bulk_apply_confirm">Apply</string>
+    <string name="settings_keyword_rules_title">Auto category rules</string>
+    <string name="settings_keyword_rules_subtitle">Notification keywords set the category</string>
+    <string name="keyword_rules_add">Add rule</string>
+    <string name="keyword_rules_section_user">YOUR RULES</string>
+    <string name="keyword_rules_section_system">BUILT-IN RULES</string>
+    <string name="keyword_rules_empty_title">No rules of your own yet</string>
+    <string name="keyword_rules_empty_message">Tap + to add a rule. A notification with the keyword goes to the category you pick.</string>
+    <string name="keyword_rule_edit_title_new">Add rule</string>
+    <string name="keyword_rule_edit_title_edit">Edit rule</string>
+    <string name="keyword_rule_edit_category">Category</string>
+    <string name="keyword_rule_edit_delete">Delete rule</string>
+    <string name="keyword_rule_delete_title">Delete rule \"%1$s\"?</string>
+    <string name="keyword_rule_delete_text">Transactions that already have a category stay as they are.</string>
 </resources>

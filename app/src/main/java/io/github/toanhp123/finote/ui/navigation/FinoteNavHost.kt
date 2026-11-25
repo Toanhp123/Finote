@@ -44,6 +44,9 @@ import io.github.toanhp123.finote.ui.settings.categories.CategoriesSettingsRoute
 import io.github.toanhp123.finote.ui.settings.categoryedit.CategoryEditRoute
 import io.github.toanhp123.finote.ui.settings.categoryedit.CategoryEditViewModel
 import io.github.toanhp123.finote.ui.settings.inbox.FailedInboxRoute
+import io.github.toanhp123.finote.ui.settings.keywordruleedit.KeywordRuleEditRoute
+import io.github.toanhp123.finote.ui.settings.keywordruleedit.KeywordRuleEditViewModel
+import io.github.toanhp123.finote.ui.settings.keywordrules.KeywordRulesRoute
 import io.github.toanhp123.finote.ui.settings.logs.NotificationLogsRoute
 import io.github.toanhp123.finote.ui.setup.SetupRoute
 import io.github.toanhp123.finote.ui.transactions.TransactionListRoute
@@ -110,6 +113,7 @@ fun FinoteNavHost(
                     settingsEntries(backStack, snackbarState, padding)
                     accountEditEntry(backStack, snackbarState, padding, scope)
                     categoryEditEntry(backStack, snackbarState, padding)
+                    keywordRuleEntries(backStack, snackbarState, padding)
                     inboxEntry(backStack, snackbarState, padding)
                     if (isToolsEnabled) logsEntry(backStack, snackbarState, padding)
                     editorEntry(backStack)
@@ -142,6 +146,7 @@ private fun EntryProviderScope<NavKey>.settingsEntries(
             onOpenCapture = { openNotificationCaptureSettings(backStack) },
             onOpenAccounts = { openAccountsSettings(backStack) },
             onOpenCategories = { openCategoriesSettings(backStack) },
+            onOpenKeywordRules = { openPage(backStack, KeywordRulesSettings) },
             onOpenInbox = { openFailedInbox(backStack) },
             onOpenLogs = { openNotificationLogs(backStack) },
             modifier = Modifier.padding(padding),
@@ -151,7 +156,7 @@ private fun EntryProviderScope<NavKey>.settingsEntries(
         AccountsSettingsRoute(
             viewModel = hiltViewModel(),
             snackbarState = snackbarState,
-            onOpenAccount = { key -> openEditAccount(backStack, key) },
+            onOpenAccount = { key -> openPage(backStack, key) },
             onClose = { backStack.removeLastOrNull() },
             modifier = Modifier.padding(padding),
         )
@@ -160,7 +165,7 @@ private fun EntryProviderScope<NavKey>.settingsEntries(
         CategoriesSettingsRoute(
             viewModel = hiltViewModel(),
             snackbarState = snackbarState,
-            onOpenCategory = { key -> openEditCategory(backStack, key) },
+            onOpenCategory = { key -> openPage(backStack, key) },
             onClose = { backStack.removeLastOrNull() },
             modifier = Modifier.padding(padding),
         )
@@ -215,7 +220,36 @@ private fun EntryProviderScope<NavKey>.categoryEditEntry(
                 ),
             snackbarState = snackbarState,
             onClose = { backStack.remove(key) },
-            onOpenCategory = { openEditCategory(backStack, it) },
+            onOpenCategory = { openPage(backStack, it) },
+            // The edit screen applies the keyboard inset itself, so the padding must say it already took the bar inset.
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
+        )
+    }
+}
+
+/** The keyword rules page and its create and edit screen, full screen. */
+private fun EntryProviderScope<NavKey>.keywordRuleEntries(
+    backStack: MutableList<NavKey>,
+    snackbarState: FinoteSnackbarState,
+    padding: PaddingValues,
+) {
+    entry<KeywordRulesSettings> {
+        KeywordRulesRoute(
+            viewModel = hiltViewModel(),
+            snackbarState = snackbarState,
+            onOpenRule = { key -> openPage(backStack, key) },
+            onClose = { backStack.removeLastOrNull() },
+            modifier = Modifier.padding(padding),
+        )
+    }
+    entry<EditKeywordRule> { key ->
+        KeywordRuleEditRoute(
+            viewModel =
+                hiltViewModel<KeywordRuleEditViewModel, KeywordRuleEditViewModel.Factory>(
+                    creationCallback = { it.create(key) },
+                ),
+            snackbarState = snackbarState,
+            onClose = { backStack.remove(key) },
             // The edit screen applies the keyboard inset itself, so the padding must say it already took the bar inset.
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
         )
@@ -337,23 +371,15 @@ private fun openCategoriesSettings(backStack: MutableList<NavKey>) {
     if (backStack.lastOrNull() != CategoriesSettings) backStack.add(CategoriesSettings)
 }
 
-/** Opens [key]. A second call while it is on top does nothing, so a double tap cannot stack it. */
-private fun openEditAccount(
-    backStack: MutableList<NavKey>,
-    key: EditAccount,
-) {
-    if (backStack.lastOrNull() != key) backStack.add(key)
-}
-
-/** Opens [key]. A second call while it is on top does nothing, so a double tap cannot stack it. */
-private fun openEditCategory(
-    backStack: MutableList<NavKey>,
-    key: EditCategory,
-) {
-    if (backStack.lastOrNull() != key) backStack.add(key)
-}
-
 /** Opens [NotificationLogs]. A second call while it is on top does nothing, so a double tap cannot stack it. */
 private fun openNotificationLogs(backStack: MutableList<NavKey>) {
     if (backStack.lastOrNull() != NotificationLogs) backStack.add(NotificationLogs)
+}
+
+/** Opens [key]. A second call while it is on top does nothing, so a double tap cannot stack it. */
+private fun openPage(
+    backStack: MutableList<NavKey>,
+    key: NavKey,
+) {
+    if (backStack.lastOrNull() != key) backStack.add(key)
 }

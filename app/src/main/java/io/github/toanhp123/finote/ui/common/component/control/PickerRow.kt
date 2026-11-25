@@ -1,5 +1,6 @@
-package io.github.toanhp123.finote.ui.cashentry.component
+package io.github.toanhp123.finote.ui.common.component.control
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -10,8 +11,12 @@ import androidx.compose.ui.semantics.semantics
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.common.component.display.FinoteListRow
 import io.github.toanhp123.finote.ui.common.component.finance.CategoryIcon
+import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviewSurface
+import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviews
+import io.github.toanhp123.finote.ui.common.component.preview.PreviewRedArgb
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 
+/** A list row for a pick: the chosen one shows a check, which also marks it for a screen reader. */
 @Composable
 fun PickerRow(
     title: String,
@@ -41,4 +46,21 @@ fun PickerRow(
             },
         onClick = onClick,
     )
+}
+
+@FinotePreviews
+@Composable
+private fun PickerRowPreview() {
+    FinotePreviewSurface {
+        Column {
+            PickerRow(
+                title = "Food",
+                isSelected = true,
+                onClick = {},
+                icon = R.drawable.ic_restaurant,
+                colorArgb = PreviewRedArgb,
+            )
+            PickerRow(title = "No icon", isSelected = false, onClick = {})
+        }
+    }
 }

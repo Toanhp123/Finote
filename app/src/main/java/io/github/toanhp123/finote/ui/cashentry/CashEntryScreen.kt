@@ -31,14 +31,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.ui.cashentry.component.AccountList
 import io.github.toanhp123.finote.ui.cashentry.component.AdjustmentConfirmDialog
-import io.github.toanhp123.finote.ui.cashentry.component.CategoryList
 import io.github.toanhp123.finote.ui.cashentry.component.DeleteConfirmDialog
 import io.github.toanhp123.finote.ui.cashentry.component.KeypadPage
 import io.github.toanhp123.finote.ui.cashentry.component.PickerPage
+import io.github.toanhp123.finote.ui.cashentry.component.RuleOfferPage
 import io.github.toanhp123.finote.ui.cashentry.component.TextPage
 import io.github.toanhp123.finote.ui.cashentry.component.UnpairConfirmDialog
 import io.github.toanhp123.finote.ui.common.ObserveEffects
 import io.github.toanhp123.finote.ui.common.component.display.FinoteEmptyState
+import io.github.toanhp123.finote.ui.common.component.finance.CategoryList
+import io.github.toanhp123.finote.ui.common.component.overlay.BulkApplyDialog
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteBottomSheet
 import io.github.toanhp123.finote.ui.common.component.overlay.FinoteCalendar
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
@@ -67,16 +69,25 @@ fun CashEntryRoute(
     FinoteBottomSheet(
         // Edit mode stays hidden until the row filled the form, so the create defaults never flash.
         isVisible = state.isVisible && !state.isLoading,
-        onDismiss = { viewModel.onIntent(CashEntryIntent.Dismissed) },
+        // On the rule step the row is saved already: a swipe skips the rule.
+        onDismiss = {
+            viewModel.onIntent(if (state.ruleOffer != null) CashEntryIntent.RuleSkipped else CashEntryIntent.Dismissed)
+        },
         // A sheet hidden from the first composition also reports "settled hidden"; that is not a close.
         onDismissComplete = { if (!state.isLoading) onClose() },
     ) {
         BackHandler(enabled = state.page != CashEntryPage.KEYPAD, onBack = closePage)
+        BackHandler(enabled = state.ruleOffer != null) { viewModel.onIntent(CashEntryIntent.RuleSkipped) }
         CashEntryScreen(state = state, onIntent = viewModel::onIntent, onPageClose = closePage)
     }
     DeleteConfirmDialog(isVisible = state.isDeleteConfirmOpen, onIntent = viewModel::onIntent)
     UnpairConfirmDialog(isVisible = state.isUnpairConfirmOpen, onIntent = viewModel::onIntent)
     AdjustmentConfirmDialog(isVisible = state.pendingConfirmation != null, onIntent = viewModel::onIntent)
+    BulkApplyDialog(
+        count = state.bulkApplyCount,
+        onConfirm = { viewModel.onIntent(CashEntryIntent.BulkApplyConfirmed) },
+        onDismiss = { viewModel.onIntent(CashEntryIntent.BulkApplyDismissed) },
+    )
 }
 
 /**
@@ -90,6 +101,11 @@ fun CashEntryScreen(
     onPageClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // After a save that changed the category, the rule step replaces the form for good: the row is saved.
+    state.ruleOffer?.let { offer ->
+        RuleOfferPage(offer = offer, saveError = state.saveError, onIntent = onIntent, modifier = modifier)
+        return
+    }
     // Saved as px, so the height is known again after a restore, once the keypad page was measured.
     var keypadHeightPx by rememberSaveable { mutableIntStateOf(0) }
     val density = LocalDensity.current

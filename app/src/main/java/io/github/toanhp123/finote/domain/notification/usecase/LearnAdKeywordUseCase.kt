@@ -2,13 +2,13 @@ package io.github.toanhp123.finote.domain.notification.usecase
 
 import io.github.toanhp123.finote.domain.common.Outcome
 import io.github.toanhp123.finote.domain.common.TransactionRunner
+import io.github.toanhp123.finote.domain.common.normalizeKeyword
 import io.github.toanhp123.finote.domain.notification.model.AdKeywordRefusal
 import io.github.toanhp123.finote.domain.notification.model.NotificationLog
 import io.github.toanhp123.finote.domain.notification.model.UserIgnoreKeyword
 import io.github.toanhp123.finote.domain.notification.repository.UserKeywordRepository
 import io.github.toanhp123.finote.domain.notification.service.adKeywordMatches
 import io.github.toanhp123.finote.domain.notification.service.checkAdKeyword
-import io.github.toanhp123.finote.domain.notification.service.normalizeKeyword
 import java.time.Clock
 import java.util.UUID
 import javax.inject.Inject

@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.ui.cashentry.component
+package io.github.toanhp123.finote.ui.common.component.finance
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,6 +9,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.domain.category.model.Category
+import io.github.toanhp123.finote.domain.category.model.CategoryType
+import io.github.toanhp123.finote.ui.common.component.control.PickerRow
+import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviewSurface
+import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviews
+import io.github.toanhp123.finote.ui.common.component.preview.PreviewRedArgb
 import io.github.toanhp123.finote.ui.common.format.displayName
 import io.github.toanhp123.finote.ui.common.format.iconRes
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
@@ -16,22 +21,27 @@ import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 private const val CHILD_DEPTH = 1
 private const val NO_CATEGORY_KEY = "no_category"
 
-/** A flat "no category" row, then each top-level category with its children indented below it. */
+/**
+ * An optional flat "no category" row ([isNoneShown]), then each top-level category with its children indented below it.
+ */
 @Composable
 fun CategoryList(
     categories: List<Category>,
     selectedId: String?,
     onPick: (String?) -> Unit,
     modifier: Modifier = Modifier,
+    isNoneShown: Boolean = true,
 ) {
     val rows = remember(categories) { categories.asTree() }
     LazyColumn(modifier = modifier) {
-        item(key = NO_CATEGORY_KEY) {
-            PickerRow(
-                title = stringResource(R.string.cash_entry_no_category),
-                isSelected = selectedId == null,
-                onClick = { onPick(null) },
-            )
+        if (isNoneShown) {
+            item(key = NO_CATEGORY_KEY) {
+                PickerRow(
+                    title = stringResource(R.string.cash_entry_no_category),
+                    isSelected = selectedId == null,
+                    onClick = { onPick(null) },
+                )
+            }
         }
         items(rows, key = { (category, _) -> category.id }) { (category, depth) ->
             PickerRow(
@@ -53,3 +63,40 @@ private fun List<Category>.asTree(): List<Pair<Category, Int>> {
     return filter { it.parentId == null || it.parentId !in ids }
         .flatMap { root -> listOf(root to 0) + children[root.id].orEmpty().map { it to CHILD_DEPTH } }
 }
+
+@FinotePreviews
+@Composable
+private fun CategoryListPreview() {
+    FinotePreviewSurface {
+        CategoryList(
+            categories =
+                listOf(
+                    previewCategory("food", "Food", parentId = null),
+                    previewCategory("coffee", "Coffee", parentId = "food"),
+                    previewCategory("ride", "Transport", parentId = null),
+                ),
+            selectedId = "coffee",
+            onPick = {},
+        )
+    }
+}
+
+private fun previewCategory(
+    id: String,
+    name: String,
+    parentId: String?,
+) = Category(
+    id = id,
+    name = name,
+    nameKey = null,
+    icon = "restaurant",
+    color = PreviewRedArgb,
+    type = CategoryType.EXPENSE,
+    parentId = parentId,
+    isSystemDefault = false,
+    isHidden = false,
+    sortOrder = 0,
+    createdAt = 0L,
+    updatedAt = 0L,
+    deletedAt = null,
+)

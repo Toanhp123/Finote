@@ -19,6 +19,7 @@ class CategoryRepositoryImpl
         private val db: FinoteDatabase,
     ) : CategoryRepository {
         private val categories = db.categoryDao()
+        private val rules = db.keywordRuleDao()
 
         override suspend fun getCategory(id: String): Category? = storage { categories.getById(id)?.toDomain() }
 
@@ -67,6 +68,9 @@ class CategoryRepositoryImpl
         override suspend fun countLiveTransactions(categoryIds: Set<String>): Int =
             storage { categories.countLiveTransactions(categoryIds) }
 
+        override suspend fun countRules(categoryIds: Set<String>): Int =
+            storage { rules.countByCategories(categoryIds) }
+
         override suspend fun deleteAndMove(
             categoryIds: Set<String>,
             targetId: String?,
@@ -74,6 +78,12 @@ class CategoryRepositoryImpl
         ) {
             db.storageWrite {
                 categories.moveTransactions(categoryIds, targetId)
+                if (targetId == null) {
+                    rules.deleteByCategories(categoryIds)
+                } else {
+                    rules.deleteDuplicatesOf(categoryIds, targetId)
+                    rules.moveToCategory(categoryIds, targetId)
+                }
                 categories.softDeleteAll(categoryIds, deletedAt)
             }
         }

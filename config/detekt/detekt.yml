@@ -19,7 +19,8 @@ complexity:
     # Keeps the detekt defaults (tests) and adds DAOs and Hilt modules: flat lists of one-line declarations, where the
     # count says nothing about complexity and splitting only scatters one table's queries or one feature's bindings.
     # Repositories, like DAOs, are one table's operations, and splitting them only scatters them.
-    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/local/dao/**', '**/di/**', '**/repository/**']
+    # The Room database class is a flat list of DAO accessors, same reason as DAOs.
+    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/local/dao/**', '**/di/**', '**/repository/**', '**/data/database/FinoteDatabase.kt']
 naming:
   FunctionNaming:
     ignoreAnnotated: ['Composable']

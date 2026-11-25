@@ -1,4 +1,4 @@
-package io.github.toanhp123.finote.data.database
+package io.github.toanhp123.finote.data.database.migration
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -11,7 +11,11 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.toanhp123.finote.data.account.seed.SystemAccountSeeder
+import io.github.toanhp123.finote.data.category.seed.KeywordRuleSeeder
 import io.github.toanhp123.finote.data.category.seed.SystemCategorySeeder
+import io.github.toanhp123.finote.data.category.seed.SystemKeywordRules
+import io.github.toanhp123.finote.data.database.DATABASE_VERSION
+import io.github.toanhp123.finote.data.database.FinoteDatabase
 import io.github.toanhp123.finote.data.notification.repository.NotificationSettlementRepositoryImpl
 import io.github.toanhp123.finote.data.notification.seed.ParserRuleSeeder
 import io.github.toanhp123.finote.data.notification.seed.SystemParserRules
@@ -374,6 +378,30 @@ class MigrationPolicyTest {
         }
 
     @Test
+    fun `v12 opens at 13 with an empty rule table and rows intact`() =
+        runTest {
+            helper.createDatabase(12).use { connection -> V8_ROWS.forEach(connection::execSQL) }
+
+            helper.runMigrationsAndValidate(13, FINOTE_MIGRATIONS).close()
+
+            assertTrue(rowExists("accounts", "acc-a"))
+            assertTrue(rowExists("categories", "cat-1"))
+            assertTrue(rowExists("transactions", "tx-1"))
+            assertEquals(0L, longColumn("SELECT COUNT(*) FROM category_keyword_rules"))
+        }
+
+    @Test
+    fun `the first open after 12 to 13 seeds the system rules`() =
+        runTest {
+            helper.createDatabase(12).use { connection -> V8_ROWS.forEach(connection::execSQL) }
+
+            openWithPolicy().close()
+
+            assertEquals(SystemKeywordRules.size.toLong(), longColumn("SELECT COUNT(*) FROM category_keyword_rules"))
+            assertEquals(0L, longColumn("SELECT COUNT(*) FROM pragma_foreign_key_check('category_keyword_rules')"))
+        }
+
+    @Test
     fun `migrated schema validates`() = runTest { migrateKeyedRows() }
 
     private suspend fun migrateKeyedRows() {
@@ -388,6 +416,7 @@ class MigrationPolicyTest {
                 .setDriver(AndroidSQLiteDriver())
                 .applyMigrationPolicy()
                 .addCallback(SystemCategorySeeder(clock))
+                .addCallback(KeywordRuleSeeder())
                 .addCallback(SystemAccountSeeder(clock))
                 .addCallback(ParserRuleSeeder())
                 .build()

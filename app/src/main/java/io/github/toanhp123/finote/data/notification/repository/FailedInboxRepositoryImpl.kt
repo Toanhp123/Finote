@@ -155,6 +155,7 @@ class FailedInboxRepositoryImpl
                     updatedAt = now,
                     categoryId = booking.categoryId,
                     note = booking.note,
+                    merchantName = booking.merchantName,
                     source = TransactionSource.MANUAL,
                     postBalance = null,
                     notificationLogId = item.log.id,

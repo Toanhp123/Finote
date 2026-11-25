@@ -354,6 +354,9 @@
     <plurals name="category_delete_move_text">
         <item quantity="other">%1$d giao dịch sẽ chuyển sang danh mục bạn chọn. Không hoàn tác được.</item>
     </plurals>
+    <plurals name="category_delete_rules_text">
+        <item quantity="other">%1$d quy tắc từ khóa đi theo danh mục bạn chọn, hoặc bị xóa nếu bạn không chọn.</item>
+    </plurals>
     <string name="category_delete_branch_note">Danh mục con cũng bị xóa.</string>
     <string name="category_delete_none_option">Không danh mục</string>
     <string name="category_delete_no_transactions">Chưa có giao dịch nào dùng danh mục này.</string>
@@ -381,4 +384,33 @@
     <string name="categories_hidden_title">Đang ẩn (%1$d)</string>
     <string name="categories_empty_title">Không có danh mục nào đang hiện</string>
     <string name="categories_empty_message">Bấm + để thêm danh mục mới.</string>
+    <string name="cash_entry_rule_title">Áp dụng cho giao dịch tương tự?</string>
+    <string name="cash_entry_rule_text">Giao dịch sau có từ khóa này sẽ tự vào danh mục vừa chọn.</string>
+    <string name="cash_entry_rule_keyword">Từ khóa</string>
+    <string name="cash_entry_rule_name">Tên ngắn</string>
+    <string name="cash_entry_rule_create">Tạo luật</string>
+    <string name="cash_entry_rule_update">Cập nhật luật</string>
+    <string name="cash_entry_rule_skip">Bỏ qua</string>
+    <string name="cash_entry_rule_error_too_short">Từ khóa cần ít nhất 2 ký tự</string>
+    <string name="cash_entry_rule_error_duplicate">Đã có luật với từ khóa này</string>
+    <string name="cash_entry_rule_error_category_gone">Danh mục này không còn dùng được</string>
+    <string name="cash_entry_rule_error_not_found">Không tìm thấy luật, hãy thử lại</string>
+    <plurals name="bulk_apply_title">
+        <item quantity="other">Áp dụng cho %d giao dịch cũ?</item>
+    </plurals>
+    <string name="bulk_apply_text">Các giao dịch từ thông báo chưa có danh mục và khớp từ khóa sẽ được gán danh mục này.</string>
+    <string name="bulk_apply_confirm">Áp dụng</string>
+    <string name="settings_keyword_rules_title">Luật tự chọn danh mục</string>
+    <string name="settings_keyword_rules_subtitle">Từ khóa trong thông báo tự gán danh mục</string>
+    <string name="keyword_rules_add">Thêm luật</string>
+    <string name="keyword_rules_section_user">LUẬT CỦA BẠN</string>
+    <string name="keyword_rules_section_system">LUẬT CÓ SẴN</string>
+    <string name="keyword_rules_empty_title">Chưa có luật nào của bạn</string>
+    <string name="keyword_rules_empty_message">Bấm + để thêm luật. Thông báo có từ khóa sẽ tự vào danh mục bạn chọn.</string>
+    <string name="keyword_rule_edit_title_new">Thêm luật</string>
+    <string name="keyword_rule_edit_title_edit">Sửa luật</string>
+    <string name="keyword_rule_edit_category">Danh mục</string>
+    <string name="keyword_rule_edit_delete">Xóa luật</string>
+    <string name="keyword_rule_delete_title">Xóa luật \"%1$s\"?</string>
+    <string name="keyword_rule_delete_text">Giao dịch đã có danh mục vẫn giữ nguyên.</string>
 </resources>

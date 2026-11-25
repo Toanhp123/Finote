@@ -5,7 +5,12 @@ import io.github.toanhp123.finote.domain.account.model.AccountIdentifier
 import io.github.toanhp123.finote.domain.account.model.IdentifierKind
 import io.github.toanhp123.finote.domain.account.testAccount
 import io.github.toanhp123.finote.domain.account.usecase.FakeAccountRepository
+import io.github.toanhp123.finote.domain.category.model.KeywordMatchType
+import io.github.toanhp123.finote.domain.category.model.KeywordRule
+import io.github.toanhp123.finote.domain.category.testCategory
 import io.github.toanhp123.finote.domain.category.usecase.FakeCategoryRepository
+import io.github.toanhp123.finote.domain.category.usecase.FakeKeywordRuleRepository
+import io.github.toanhp123.finote.domain.common.normalizeKeyword
 import io.github.toanhp123.finote.domain.notification.model.AdjustmentToken
 import io.github.toanhp123.finote.domain.notification.model.BookInboxResult
 import io.github.toanhp123.finote.domain.notification.model.FailedInboxItem
@@ -104,12 +109,16 @@ class CashEntryFromLogViewModelTest {
     private val tokenA = AdjustmentToken(CASH_ID, 1L, 2L)
     private val tokenB = AdjustmentToken(BANK_ID, 1L, 2L)
 
-    private fun TestScope.open(item: FailedInboxItem? = inboxItem()): CashEntryViewModel {
+    private fun TestScope.open(
+        item: FailedInboxItem? = inboxItem(),
+        categories: FakeCategoryRepository = FakeCategoryRepository(),
+        rules: FakeKeywordRuleRepository = FakeKeywordRuleRepository(),
+    ): CashEntryViewModel {
         accounts.stored[CASH_ID] = testAccount(CASH_ID).copy(bankPackageName = PKG)
         accounts.stored[BANK_ID] = testAccount(BANK_ID).copy(sortOrder = 1)
         inbox.identifiers += AccountIdentifier(PKG, IdentifierKind.ACCOUNT, "1234", CASH_ID)
         inbox.item = item
-        return fromLogViewModel(ITEM_ID, inbox, accounts, FakeCategoryRepository(), transactions, clock)
+        return fromLogViewModel(ITEM_ID, inbox, accounts, categories, transactions, clock, rules)
             .also { runCurrent() }
     }
 
@@ -137,6 +146,81 @@ class CashEntryFromLogViewModelTest {
             assertEquals(LocalDate.of(2026, 11, 3), s.date)
             assertEquals(SourceText("Card spend", "A made-up text"), s.sourceText)
             assertFalse(s.isDateMissing)
+        }
+
+    private fun cafeRule() =
+        KeywordRule(
+            id = "r1",
+            keyword = "cafe",
+            normalizedKeyword = normalizeKeyword("cafe"),
+            matchType = KeywordMatchType.CONTAINS,
+            merchantName = "Cong Ca Phe",
+            categoryId = "food",
+            priority = 0,
+            isUserDefined = false,
+            isActive = true,
+            version = 0,
+            createdAt = 0,
+            updatedAt = 0,
+        )
+
+    @Test
+    fun `from-log sheet preselects the suggested category and books it with the merchant`() =
+        runTest(mainRule.dispatcher) {
+            val categories = FakeCategoryRepository().apply { stored["food"] = testCategory("food") }
+            val vm = open(categories = categories, rules = FakeKeywordRuleRepository(listOf(cafeRule())))
+            inbox.bookAnswers += BookInboxResult.Booked
+
+            assertEquals("food", vm.current.selectedCategoryIds[TransactionType.EXPENSE])
+            vm.save()
+
+            val booking = inbox.bookCalls.single().first
+            assertEquals("food", booking.categoryId)
+            assertEquals("Cong Ca Phe", booking.merchantName)
+        }
+
+    @Test
+    fun `booking another category than the suggestion shows the rule step`() =
+        runTest(mainRule.dispatcher) {
+            val categories =
+                FakeCategoryRepository().apply {
+                    stored["food"] = testCategory("food")
+                    stored["drink"] = testCategory("drink")
+                }
+            val vm = open(categories = categories, rules = FakeKeywordRuleRepository(listOf(cafeRule())))
+            inbox.bookAnswers += BookInboxResult.Booked
+
+            vm.send(CashEntryIntent.CategoryPicked("drink"))
+            vm.save()
+
+            val offer = vm.current.ruleOffer
+            // The keyword is the raw parsed merchant, not the rule's short name the row is booked with.
+            assertEquals("Cafe", offer?.keyword)
+            assertEquals("drink", offer?.categoryId)
+            assertTrue(vm.current.isVisible)
+            vm.send(CashEntryIntent.RuleSkipped)
+            assertFalse(vm.current.isVisible)
+        }
+
+    @Test
+    fun `booking the suggested category leaves without the rule step`() =
+        runTest(mainRule.dispatcher) {
+            val categories = FakeCategoryRepository().apply { stored["food"] = testCategory("food") }
+            val vm = open(categories = categories, rules = FakeKeywordRuleRepository(listOf(cafeRule())))
+            inbox.bookAnswers += BookInboxResult.Booked
+
+            vm.save()
+
+            assertNull(vm.current.ruleOffer)
+            assertFalse(vm.current.isVisible)
+        }
+
+    @Test
+    fun `from-log sheet has no category when no rule matches`() =
+        runTest(mainRule.dispatcher) {
+            val vm = open()
+
+            assertTrue(vm.current.selectedCategoryIds.isEmpty())
         }
 
     @Test

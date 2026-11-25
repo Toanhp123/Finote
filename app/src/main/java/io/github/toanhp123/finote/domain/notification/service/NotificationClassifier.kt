@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.domain.notification.service
 
+import io.github.toanhp123.finote.domain.common.normalizeKeyword
 import io.github.toanhp123.finote.domain.notification.model.Classification
 import io.github.toanhp123.finote.domain.notification.model.NotificationStatus
 import io.github.toanhp123.finote.domain.notification.model.ParseResult

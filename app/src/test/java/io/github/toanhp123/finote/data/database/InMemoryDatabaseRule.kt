@@ -6,6 +6,7 @@ import androidx.room3.useWriterConnection
 import androidx.sqlite.driver.AndroidSQLiteDriver
 import androidx.test.core.app.ApplicationProvider
 import io.github.toanhp123.finote.data.account.seed.SystemAccountSeeder
+import io.github.toanhp123.finote.data.category.seed.KeywordRuleSeeder
 import io.github.toanhp123.finote.data.category.seed.SystemCategorySeeder
 import io.github.toanhp123.finote.data.notification.seed.ParserRuleSeeder
 import org.junit.rules.TestWatcher
@@ -19,6 +20,7 @@ class InMemoryDatabaseRule(
     private val seedSystemCategories: Boolean = false,
     private val seedSystemAccount: Boolean = false,
     private val seedParserRules: Boolean = false,
+    private val seedKeywordRules: Boolean = false,
     private val clock: Clock = Clock.fixed(Instant.parse("2026-11-03T00:00:00Z"), ZoneOffset.UTC),
 ) : TestWatcher() {
     lateinit var db: FinoteDatabase
@@ -28,6 +30,8 @@ class InMemoryDatabaseRule(
         val context = ApplicationProvider.getApplicationContext<Context>()
         val builder = Room.inMemoryDatabaseBuilder<FinoteDatabase>(context).setDriver(AndroidSQLiteDriver())
         if (seedSystemCategories) builder.addCallback(SystemCategorySeeder(clock))
+        // Needs seedSystemCategories: the rules point at the system categories.
+        if (seedKeywordRules) builder.addCallback(KeywordRuleSeeder())
         if (seedSystemAccount) builder.addCallback(SystemAccountSeeder(clock))
         if (seedParserRules) builder.addCallback(ParserRuleSeeder())
         db = builder.build()

@@ -331,6 +331,9 @@
     <plurals name="category_delete_move_text">
         <item quantity="other">%1$d 笔交易将移至你选择的分类。此操作无法撤销。</item>
     </plurals>
+    <plurals name="category_delete_rules_text">
+        <item quantity="other">%1$d 条关键词规则将跟随你选择的分类；如果不选分类则会被删除。</item>
+    </plurals>
     <string name="category_delete_branch_note">其子分类也会被删除。</string>
     <string name="category_delete_none_option">无分类</string>
     <string name="category_delete_no_transactions">没有交易使用此分类。</string>
@@ -358,4 +361,33 @@
     <string name="categories_hidden_title">已隐藏（%1$d）</string>
     <string name="categories_empty_title">没有可见的分类</string>
     <string name="categories_empty_message">点按 + 添加新分类。</string>
+    <string name="cash_entry_rule_title">应用到类似交易？</string>
+    <string name="cash_entry_rule_text">以后含此关键词的交易会自动归入所选分类。</string>
+    <string name="cash_entry_rule_keyword">关键词</string>
+    <string name="cash_entry_rule_name">简称</string>
+    <string name="cash_entry_rule_create">创建规则</string>
+    <string name="cash_entry_rule_update">更新规则</string>
+    <string name="cash_entry_rule_skip">跳过</string>
+    <string name="cash_entry_rule_error_too_short">关键词至少需要 2 个字符</string>
+    <string name="cash_entry_rule_error_duplicate">已有使用此关键词的规则</string>
+    <string name="cash_entry_rule_error_category_gone">此分类已无法使用</string>
+    <string name="cash_entry_rule_error_not_found">找不到该规则，请重试</string>
+    <plurals name="bulk_apply_title">
+        <item quantity="other">应用到 %d 笔过去的交易？</item>
+    </plurals>
+    <string name="bulk_apply_text">来自通知、尚无分类且匹配关键词的交易将设为此分类。</string>
+    <string name="bulk_apply_confirm">应用</string>
+    <string name="settings_keyword_rules_title">自动分类规则</string>
+    <string name="settings_keyword_rules_subtitle">通知中的关键词自动设置分类</string>
+    <string name="keyword_rules_add">添加规则</string>
+    <string name="keyword_rules_section_user">我的规则</string>
+    <string name="keyword_rules_section_system">内置规则</string>
+    <string name="keyword_rules_empty_title">还没有自己的规则</string>
+    <string name="keyword_rules_empty_message">点按 + 添加规则。包含关键词的通知会自动归入你选择的分类。</string>
+    <string name="keyword_rule_edit_title_new">添加规则</string>
+    <string name="keyword_rule_edit_title_edit">编辑规则</string>
+    <string name="keyword_rule_edit_category">分类</string>
+    <string name="keyword_rule_edit_delete">删除规则</string>
+    <string name="keyword_rule_delete_title">删除规则\"%1$s\"？</string>
+    <string name="keyword_rule_delete_text">已有分类的交易保持不变。</string>
 </resources>

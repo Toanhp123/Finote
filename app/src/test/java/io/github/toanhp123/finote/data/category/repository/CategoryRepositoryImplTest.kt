@@ -7,6 +7,7 @@ import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.database.account
 import io.github.toanhp123.finote.data.database.category
 import io.github.toanhp123.finote.data.database.transaction
+import io.github.toanhp123.finote.data.database.userKeywordRule
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
 import kotlinx.coroutines.flow.first
@@ -244,6 +245,63 @@ class CategoryRepositoryImplTest {
             assertEquals(8L, rowOf("cat-a")?.deletedAt)
             assertEquals(8L, rowOf("cat-child")?.deletedAt)
             assertNull(rowOf("cat-b")?.deletedAt)
+        }
+
+    @Test
+    fun `deleteAndMove moves rules to the target`() =
+        runTest {
+            seedTransactions()
+            val rules = dbRule.db.keywordRuleDao()
+            rules.upsert(userKeywordRule("r-parent", "cat-a", keyword = "grab"))
+            rules.upsert(userKeywordRule("r-child", "cat-child", keyword = "bus"))
+
+            repo.deleteAndMove(setOf("cat-a", "cat-child"), "cat-b", deletedAt = 8L)
+
+            assertEquals("cat-b", rules.getById("r-parent")?.categoryId)
+            assertEquals("cat-b", rules.getById("r-child")?.categoryId)
+        }
+
+    @Test
+    fun `a moved rule that duplicates a target rule of the same keyword is dropped, the target's rule stays`() =
+        runTest {
+            seedTransactions()
+            val rules = dbRule.db.keywordRuleDao()
+            rules.upsert(userKeywordRule("r-dup", "cat-a", keyword = "grab"))
+            rules.upsert(userKeywordRule("r-new", "cat-a", keyword = "bus"))
+            rules.upsert(userKeywordRule("r-target", "cat-b", keyword = "grab"))
+
+            repo.deleteAndMove(setOf("cat-a"), "cat-b", deletedAt = 8L)
+
+            assertNull(rules.getById("r-dup"))
+            assertEquals("cat-b", rules.getById("r-new")?.categoryId)
+            assertEquals("cat-b", rules.getById("r-target")?.categoryId)
+        }
+
+    @Test
+    fun `deleteAndMove to null deletes the rules`() =
+        runTest {
+            seedTransactions()
+            val rules = dbRule.db.keywordRuleDao()
+            rules.upsert(userKeywordRule("r-a", "cat-a"))
+            rules.upsert(userKeywordRule("r-b", "cat-b"))
+
+            repo.deleteAndMove(setOf("cat-a"), null, deletedAt = 8L)
+
+            assertNull(rules.getById("r-a"))
+            assertNotNull(rules.getById("r-b"))
+        }
+
+    @Test
+    fun `countRules counts user rules of the ids`() =
+        runTest {
+            seedTransactions()
+            val rules = dbRule.db.keywordRuleDao()
+            rules.upsert(userKeywordRule("r-a", "cat-a"))
+            rules.upsert(userKeywordRule("r-child", "cat-child"))
+            rules.upsert(userKeywordRule("r-b", "cat-b"))
+
+            assertEquals(2, repo.countRules(setOf("cat-a", "cat-child")))
+            assertEquals(0, repo.countRules(emptySet()))
         }
 
     @Test

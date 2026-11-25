@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.domain.category.usecase
 
+import io.github.toanhp123.finote.domain.category.model.DeleteImpact
 import io.github.toanhp123.finote.domain.category.testCategory
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -23,13 +24,26 @@ class CountCategoryTransactionsUseCaseTest {
             repo.transactionCategory["t-other"] = "b"
             repo.deletedTransactions += "t-deleted"
 
-            assertEquals(2, count("a"))
-            assertEquals(1, count("b"))
+            assertEquals(2, count("a").transactions)
+            assertEquals(1, count("b").transactions)
+        }
+
+    @Test
+    fun `count includes the rules of the branch`() =
+        runTest {
+            repo.stored["a"] = testCategory(id = "a")
+            repo.stored["a1"] = testCategory(id = "a1", parentId = "a")
+            repo.stored["b"] = testCategory(id = "b")
+            repo.ruleCategory["r-parent"] = "a"
+            repo.ruleCategory["r-child"] = "a1"
+            repo.ruleCategory["r-other"] = "b"
+
+            assertEquals(DeleteImpact(transactions = 0, rules = 2), count("a"))
         }
 
     @Test
     fun `count of an unknown id is zero`() =
         runTest {
-            assertEquals(0, count("ghost"))
+            assertEquals(DeleteImpact(transactions = 0, rules = 0), count("ghost"))
         }
 }
