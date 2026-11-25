@@ -4,6 +4,7 @@ import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.account.model.SYSTEM_CASH_ACCOUNT_ID
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
+import io.github.toanhp123.finote.domain.category.service.shown
 
 /** Picks the account and category the cash-entry sheet preselects. */
 object CashEntryDefaults {
@@ -21,14 +22,15 @@ object CashEntryDefaults {
         return picked?.id
     }
 
-    /** Null unless the id is a live, not hidden category whose type matches. */
+    /** Null unless the id is a live category of [type] that is shown (see [shown]) or equals [keptId]. */
     fun pickCategory(
         categories: List<Category>,
         lastUsedId: String?,
         type: CategoryType,
+        keptId: String? = null,
     ): String? =
         categories
-            .firstOrNull {
-                it.id == lastUsedId && it.type == type && it.deletedAt == null && !it.isHidden
-            }?.id
+            .firstOrNull { it.id == lastUsedId && it.type == type && it.deletedAt == null }
+            ?.takeIf { it.id == keptId || it in categories.shown() }
+            ?.id
 }

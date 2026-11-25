@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.ui.navigation
 
 import androidx.navigation3.runtime.NavKey
+import io.github.toanhp123.finote.domain.category.model.CategoryType
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -36,6 +37,21 @@ data object AccountsSettings : NavKey
 data class EditAccount(
     val id: String? = null,
     val mergeTargetId: String? = null,
+) : NavKey
+
+/** The categories page (Expense and Income tabs, hide, reorder), pushed on top of [Settings]. */
+@Serializable
+data object CategoriesSettings : NavKey
+
+/**
+ * The category create screen ([id] null) or edit screen. [parentId] presets the parent of a new subcategory; [type] is
+ * the type of a new category (an edit takes the stored type).
+ */
+@Serializable
+data class EditCategory(
+    val id: String? = null,
+    val type: CategoryType = CategoryType.EXPENSE,
+    val parentId: String? = null,
 ) : NavKey
 
 /** The notification capture page, pushed on top of [Settings]. */

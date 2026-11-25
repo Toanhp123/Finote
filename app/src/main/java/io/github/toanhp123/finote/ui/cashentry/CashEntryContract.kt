@@ -24,6 +24,8 @@ data class CashEntryState(
     val selectedAccountId: String? = null,
     val categories: List<Category> = emptyList(),
     val selectedCategoryIds: Map<TransactionType, String?> = emptyMap(),
+    /** Edit mode: the row's own category, offered and kept even when hidden. Null in every other mode. */
+    val keptCategoryId: String? = null,
     val note: String = "",
     /** The transfer destination, kept across a type change. Never equals [selectedAccountId]. */
     val destinationId: String? = null,

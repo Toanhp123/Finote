@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.data.category.local.dao
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.database.category
+import io.github.toanhp123.finote.domain.category.model.CategoryType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -94,5 +95,33 @@ class CategoryDaoTest {
             dao.insert(category(id = "c2", parentId = "p", deletedAt = 9L))
             assertEquals(1, dao.countLiveChildren("p"))
             assertEquals(0, dao.countLiveChildren("c1"))
+        }
+
+    @Test
+    fun `observeCategories breaks ties by id`() =
+        runTest {
+            dao.insert(category(id = "b", sortOrder = 0, createdAt = 1_000L))
+            dao.insert(category(id = "a", sortOrder = 0, createdAt = 1_000L))
+            assertEquals(listOf("a", "b"), dao.observeCategories().first().map { it.id })
+        }
+
+    @Test
+    fun `getLevel returns one level with hidden rows`() =
+        runTest {
+            dao.insert(category(id = "p"))
+            dao.insert(category(id = "c2", parentId = "p", sortOrder = 1))
+            dao.insert(category(id = "c1", parentId = "p", sortOrder = 0).copy(isHidden = true))
+            dao.insert(category(id = "c3", parentId = "p", deletedAt = 9L))
+            dao.insert(category(id = "other"))
+            assertEquals(listOf("c1", "c2"), dao.getLevel(CategoryType.EXPENSE, "p").map { it.id })
+        }
+
+    @Test
+    fun `getLevel with null parent returns top level of one type`() =
+        runTest {
+            dao.insert(category(id = "top-e"))
+            dao.insert(category(id = "top-i").copy(type = CategoryType.INCOME))
+            dao.insert(category(id = "child", parentId = "top-e"))
+            assertEquals(listOf("top-e"), dao.getLevel(CategoryType.EXPENSE, null).map { it.id })
         }
 }

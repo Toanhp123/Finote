@@ -17,6 +17,8 @@ sealed interface SettingsIntent {
 
     data object AccountsClicked : SettingsIntent
 
+    data object CategoriesClicked : SettingsIntent
+
     data object InboxClicked : SettingsIntent
 
     data object LogsClicked : SettingsIntent
@@ -26,6 +28,8 @@ sealed interface SettingsEffect {
     data object OpenCaptureSettings : SettingsEffect
 
     data object OpenAccountsSettings : SettingsEffect
+
+    data object OpenCategoriesSettings : SettingsEffect
 
     data object OpenFailedInbox : SettingsEffect
 

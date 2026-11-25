@@ -32,6 +32,28 @@ class CreateCategoryUseCaseTest {
     }
 
     @Test
+    fun `create puts the category last in its level`() =
+        runTest {
+            listOf("x" to 0, "y" to 1, "z" to 5).forEach { (id, order) ->
+                repo.stored[id] = testCategory(id = id).copy(sortOrder = order)
+            }
+
+            val id = (create(testCategory(name = "New").copy(sortOrder = 0)) as Outcome.Ok).value
+
+            assertEquals(6, repo.stored.getValue(id).sortOrder)
+        }
+
+    @Test
+    fun `create in an empty level gets sortOrder 0`() =
+        runTest {
+            repo.stored["other-type"] = testCategory(id = "other-type", type = CategoryType.INCOME).copy(sortOrder = 4)
+
+            val id = (create(testCategory().copy(sortOrder = 9)) as Outcome.Ok).value
+
+            assertEquals(0, repo.stored.getValue(id).sortOrder)
+        }
+
+    @Test
     fun `blank name is rejected`() =
         runTest {
             assertRejected(CategoryError.BlankName, testCategory(name = ""))

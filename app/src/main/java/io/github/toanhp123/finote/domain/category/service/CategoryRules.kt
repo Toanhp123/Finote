@@ -33,13 +33,20 @@ object CategoryRules {
             else -> null
         }
 
-    fun checkDelete(
-        old: Category,
-        liveChildren: Int,
+    fun checkDelete(old: Category): CategoryError? = if (old.isSystemDefault) CategoryError.SystemCategory else null
+
+    /**
+     * `target` is the stored row of a `MoveTarget.Into`, null when missing. It must be live, of the deleted
+     * category's type, and outside the deleted branch (`branchIds`: the category and its children).
+     */
+    fun checkMoveTarget(
+        deleted: Category,
+        target: Category?,
+        branchIds: Set<String>,
     ): CategoryError? =
         when {
-            old.isSystemDefault -> CategoryError.SystemCategory
-            liveChildren > 0 -> CategoryError.HasChildren
+            target == null || target.deletedAt != null -> CategoryError.InvalidMoveTarget
+            target.type != deleted.type || target.id in branchIds -> CategoryError.InvalidMoveTarget
             else -> null
         }
 

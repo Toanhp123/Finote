@@ -179,6 +179,17 @@ class CashEntryViewModelTest {
         }
 
     @Test
+    fun `children of a hidden parent are not offered`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            categories.stored["p"] = testCategory("p").copy(isHidden = true)
+            categories.stored["k"] = testCategory("k", parentId = "p")
+            val viewModel = open()
+
+            assertEquals(listOf("c1", "c2"), viewModel.current.categories.map { it.id })
+        }
+
+    @Test
     fun `not positive shows no error text and disables save`() =
         runTest(mainRule.dispatcher) {
             seed()

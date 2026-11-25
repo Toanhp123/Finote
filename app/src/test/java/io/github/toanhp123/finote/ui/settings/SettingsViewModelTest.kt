@@ -118,6 +118,20 @@ class SettingsViewModelTest {
         }
 
     @Test
+    fun `categories row opens the categories page`() =
+        runTest(mainRule.dispatcher) {
+            val vm = viewModel(isToolsEnabled = false)
+
+            vm.effects.test {
+                vm.onIntent(SettingsIntent.CategoriesClicked)
+                runCurrent()
+
+                assertEquals(SettingsEffect.OpenCategoriesSettings, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
     fun `logs row hidden when tools are off`() =
         runTest(mainRule.dispatcher) {
             val vm = viewModel(isToolsEnabled = false)

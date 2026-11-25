@@ -155,17 +155,35 @@ class CategoryRulesTest {
     // checkDelete
 
     @Test
-    fun `delete of a plain category is allowed`() = assertNull(CategoryRules.checkDelete(testCategory(), 0))
+    fun `delete of a plain category is allowed`() = assertNull(CategoryRules.checkDelete(testCategory()))
 
     @Test
-    fun `delete of a system category is SystemCategory`() {
+    fun `delete of a parent with children is allowed`() =
+        assertNull(CategoryRules.checkDelete(testCategory(id = "top")))
+
+    @Test
+    fun `delete of a system category is refused`() {
         val system = testCategory().copy(isSystemDefault = true)
 
-        assertEquals(CategoryError.SystemCategory, CategoryRules.checkDelete(system, 0))
-        assertEquals(CategoryError.SystemCategory, CategoryRules.checkDelete(system, 3))
+        assertEquals(CategoryError.SystemCategory, CategoryRules.checkDelete(system))
     }
 
+    // checkMoveTarget
+
+    private val deleted = testCategory(id = "top")
+    private val target = testCategory(id = "other")
+
+    private fun checkMove(
+        target: Category?,
+        branchIds: Set<String> = setOf("top", "child"),
+    ) = CategoryRules.checkMoveTarget(deleted, target, branchIds)
+
     @Test
-    fun `delete of a parent with live children is HasChildren`() =
-        assertEquals(CategoryError.HasChildren, CategoryRules.checkDelete(testCategory(), 1))
+    fun `move target must be live, same type, outside the branch`() {
+        assertEquals(CategoryError.InvalidMoveTarget, checkMove(null))
+        assertEquals(CategoryError.InvalidMoveTarget, checkMove(target.copy(deletedAt = 5L)))
+        assertEquals(CategoryError.InvalidMoveTarget, checkMove(target.copy(type = CategoryType.INCOME)))
+        assertEquals(CategoryError.InvalidMoveTarget, checkMove(target.copy(id = "child")))
+        assertNull(checkMove(target.copy(isHidden = true)))
+    }
 }

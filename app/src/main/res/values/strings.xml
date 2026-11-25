@@ -188,8 +188,8 @@
     <string name="accounts_drag_handle">Kéo để di chuyển %1$s</string>
     <string name="accounts_move_up">Chuyển lên</string>
     <string name="accounts_move_down">Chuyển xuống</string>
-    <string name="accounts_expand">Mở rộng</string>
-    <string name="accounts_collapse">Thu gọn</string>
+    <string name="action_expand">Mở rộng</string>
+    <string name="action_collapse">Thu gọn</string>
     <plurals name="accounts_group_count">
         <item quantity="other">%d tài khoản</item>
     </plurals>
@@ -326,4 +326,59 @@
     <string name="logs_field_merchant" translatable="false">Nơi nhận</string>
     <string name="logs_field_note" translatable="false">Ghi chú</string>
     <string name="logs_field_transaction" translatable="false">Giao dịch liên kết</string>
+    <string name="category_edit_title_new">Thêm danh mục</string>
+    <string name="category_edit_title_edit">Sửa danh mục</string>
+    <string name="category_edit_name">Tên danh mục</string>
+    <string name="category_edit_parent">Danh mục cha</string>
+    <string name="category_edit_parent_none">Không có (cấp cao nhất)</string>
+    <string name="category_parent_locked_system">Danh mục hệ thống không đổi được danh mục cha</string>
+    <string name="category_parent_locked_children">Danh mục đang có danh mục con</string>
+    <string name="category_icon_group_food">Ăn uống</string>
+    <string name="category_icon_group_transport">Di chuyển</string>
+    <string name="category_icon_group_home">Nhà cửa</string>
+    <string name="category_icon_group_shopping">Mua sắm</string>
+    <string name="category_icon_group_health">Sức khỏe</string>
+    <string name="category_icon_group_fun">Giải trí</string>
+    <string name="category_icon_group_study">Học tập</string>
+    <string name="category_icon_group_family">Gia đình</string>
+    <string name="category_icon_group_money">Tiền bạc</string>
+    <string name="category_icon_group_other">Khác</string>
+    <string name="category_edit_hide">Ẩn danh mục</string>
+    <string name="category_edit_show">Hiện danh mục</string>
+    <string name="category_edit_hidden_by_parent">Đang ẩn vì danh mục cha đang ẩn</string>
+    <string name="category_hidden_label">Đang ẩn</string>
+    <string name="category_edit_children">Danh mục con</string>
+    <string name="category_edit_add_child">Thêm danh mục con</string>
+    <string name="category_edit_delete">Xóa danh mục</string>
+    <string name="category_delete_title">Xóa \"%1$s\"?</string>
+    <plurals name="category_delete_move_text">
+        <item quantity="other">%1$d giao dịch sẽ chuyển sang danh mục bạn chọn. Không hoàn tác được.</item>
+    </plurals>
+    <string name="category_delete_branch_note">Danh mục con cũng bị xóa.</string>
+    <string name="category_delete_none_option">Không danh mục</string>
+    <string name="category_delete_no_transactions">Chưa có giao dịch nào dùng danh mục này.</string>
+    <string name="category_drag_handle">Kéo để di chuyển %1$s</string>
+    <string name="category_move_up">Chuyển lên</string>
+    <string name="category_move_down">Chuyển xuống</string>
+    <string name="category_snack_failed">Không thực hiện được. Thử lại sau.</string>
+    <string name="category_error_not_found">Danh mục không còn nữa</string>
+    <string name="category_error_blank_name">Nhập tên danh mục</string>
+    <string name="category_error_type_changed">Không đổi được loại danh mục</string>
+    <string name="category_error_system">Không xóa được danh mục hệ thống</string>
+    <string name="category_error_move_target">Không chuyển được sang danh mục này</string>
+    <string name="category_error_parent">Danh mục cha không hợp lệ</string>
+    <string name="settings_group_categories">DANH MỤC</string>
+    <string name="settings_categories_title">Danh mục</string>
+    <string name="settings_categories_subtitle">Thêm, sửa, ẩn và sắp xếp danh mục</string>
+    <string name="categories_add">Thêm danh mục</string>
+    <string name="categories_reorder">Sắp xếp</string>
+    <string name="categories_reorder_done">Xong</string>
+    <string name="categories_reorder_cancel">Hủy sắp xếp</string>
+    <string name="categories_tab_expense">Chi</string>
+    <string name="categories_tab_income">Thu</string>
+    <string name="categories_hide_cd">Ẩn %1$s</string>
+    <string name="categories_show_cd">Hiện %1$s</string>
+    <string name="categories_hidden_title">Đang ẩn (%1$d)</string>
+    <string name="categories_empty_title">Không có danh mục nào đang hiện</string>
+    <string name="categories_empty_message">Bấm + để thêm danh mục mới.</string>
 </resources>

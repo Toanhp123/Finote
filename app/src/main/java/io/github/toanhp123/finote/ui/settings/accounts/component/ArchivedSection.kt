@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.domain.account.model.Account
+import io.github.toanhp123.finote.ui.common.component.display.ExpandChevron
 import io.github.toanhp123.finote.ui.common.component.display.FinoteCard
 import io.github.toanhp123.finote.ui.common.component.display.FinoteListRow
 import io.github.toanhp123.finote.ui.settings.accounts.AccountsSettingsIntent

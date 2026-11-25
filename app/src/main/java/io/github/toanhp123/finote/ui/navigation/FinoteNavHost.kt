@@ -40,6 +40,9 @@ import io.github.toanhp123.finote.ui.settings.accountedit.AccountEditRoute
 import io.github.toanhp123.finote.ui.settings.accountedit.AccountEditViewModel
 import io.github.toanhp123.finote.ui.settings.accounts.AccountsSettingsRoute
 import io.github.toanhp123.finote.ui.settings.capture.NotificationCaptureSettingsRoute
+import io.github.toanhp123.finote.ui.settings.categories.CategoriesSettingsRoute
+import io.github.toanhp123.finote.ui.settings.categoryedit.CategoryEditRoute
+import io.github.toanhp123.finote.ui.settings.categoryedit.CategoryEditViewModel
 import io.github.toanhp123.finote.ui.settings.inbox.FailedInboxRoute
 import io.github.toanhp123.finote.ui.settings.logs.NotificationLogsRoute
 import io.github.toanhp123.finote.ui.setup.SetupRoute
@@ -106,6 +109,7 @@ fun FinoteNavHost(
                     entry<Budget> { ComingSoonScreen(R.string.tab_budget) }
                     settingsEntries(backStack, snackbarState, padding)
                     accountEditEntry(backStack, snackbarState, padding, scope)
+                    categoryEditEntry(backStack, snackbarState, padding)
                     inboxEntry(backStack, snackbarState, padding)
                     if (isToolsEnabled) logsEntry(backStack, snackbarState, padding)
                     editorEntry(backStack)
@@ -137,6 +141,7 @@ private fun EntryProviderScope<NavKey>.settingsEntries(
             viewModel = hiltViewModel(),
             onOpenCapture = { openNotificationCaptureSettings(backStack) },
             onOpenAccounts = { openAccountsSettings(backStack) },
+            onOpenCategories = { openCategoriesSettings(backStack) },
             onOpenInbox = { openFailedInbox(backStack) },
             onOpenLogs = { openNotificationLogs(backStack) },
             modifier = Modifier.padding(padding),
@@ -147,6 +152,15 @@ private fun EntryProviderScope<NavKey>.settingsEntries(
             viewModel = hiltViewModel(),
             snackbarState = snackbarState,
             onOpenAccount = { key -> openEditAccount(backStack, key) },
+            onClose = { backStack.removeLastOrNull() },
+            modifier = Modifier.padding(padding),
+        )
+    }
+    entry<CategoriesSettings> {
+        CategoriesSettingsRoute(
+            viewModel = hiltViewModel(),
+            snackbarState = snackbarState,
+            onOpenCategory = { key -> openEditCategory(backStack, key) },
             onClose = { backStack.removeLastOrNull() },
             modifier = Modifier.padding(padding),
         )
@@ -181,6 +195,27 @@ private fun EntryProviderScope<NavKey>.accountEditEntry(
                 backStack.remove(key)
                 if (message != null) scope.launch { snackbarState.show(message) }
             },
+            // The edit screen applies the keyboard inset itself, so the padding must say it already took the bar inset.
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
+        )
+    }
+}
+
+/** The category create and edit screen, full screen. A new subcategory opens another one on top of it. */
+private fun EntryProviderScope<NavKey>.categoryEditEntry(
+    backStack: MutableList<NavKey>,
+    snackbarState: FinoteSnackbarState,
+    padding: PaddingValues,
+) {
+    entry<EditCategory> { key ->
+        CategoryEditRoute(
+            viewModel =
+                hiltViewModel<CategoryEditViewModel, CategoryEditViewModel.Factory>(
+                    creationCallback = { it.create(key) },
+                ),
+            snackbarState = snackbarState,
+            onClose = { backStack.remove(key) },
+            onOpenCategory = { openEditCategory(backStack, it) },
             // The edit screen applies the keyboard inset itself, so the padding must say it already took the bar inset.
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
         )
@@ -297,10 +332,23 @@ private fun openAccountsSettings(backStack: MutableList<NavKey>) {
     if (backStack.lastOrNull() != AccountsSettings) backStack.add(AccountsSettings)
 }
 
+/** Opens [CategoriesSettings]. A second call while it is on top does nothing, so a double tap cannot stack it. */
+private fun openCategoriesSettings(backStack: MutableList<NavKey>) {
+    if (backStack.lastOrNull() != CategoriesSettings) backStack.add(CategoriesSettings)
+}
+
 /** Opens [key]. A second call while it is on top does nothing, so a double tap cannot stack it. */
 private fun openEditAccount(
     backStack: MutableList<NavKey>,
     key: EditAccount,
+) {
+    if (backStack.lastOrNull() != key) backStack.add(key)
+}
+
+/** Opens [key]. A second call while it is on top does nothing, so a double tap cannot stack it. */
+private fun openEditCategory(
+    backStack: MutableList<NavKey>,
+    key: EditCategory,
 ) {
     if (backStack.lastOrNull() != key) backStack.add(key)
 }

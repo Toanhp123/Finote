@@ -15,3 +15,4 @@ __pycache__/
 *.keystore
 google-services.json
 .superpowers/
+.agents/

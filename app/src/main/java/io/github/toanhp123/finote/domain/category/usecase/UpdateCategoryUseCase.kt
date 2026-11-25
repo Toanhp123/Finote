@@ -16,7 +16,10 @@ class UpdateCategoryUseCase
         private val tx: TransactionRunner,
         private val clock: Clock,
     ) {
-        /** Stamps `updatedAt`. Pass the stored `name` unless the user edited it: see [CategoryRepository.update]. */
+        /**
+         * Stamps `updatedAt`. Pass the stored `name` unless the user edited it: see [CategoryRepository.update].
+         * A changed `parentId` puts the category last in its new level.
+         */
         suspend operator fun invoke(category: Category): Outcome<Unit, CategoryError> {
             val updated = category.copy(updatedAt = clock.millis())
             return tx.write {
@@ -30,7 +33,14 @@ class UpdateCategoryUseCase
                     if (error != null) {
                         Outcome.Err(error)
                     } else {
-                        repository.update(updated)
+                        val moved =
+                            if (updated.parentId == old.parentId) {
+                                updated
+                            } else {
+                                val level = repository.getLevel(updated.type, updated.parentId)
+                                updated.copy(sortOrder = (level.maxOfOrNull { it.sortOrder } ?: -1) + 1)
+                            }
+                        repository.update(moved)
                         Outcome.Ok(Unit)
                     }
                 }

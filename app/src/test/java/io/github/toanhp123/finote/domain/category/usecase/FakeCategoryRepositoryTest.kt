@@ -20,4 +20,12 @@ class FakeCategoryRepositoryTest {
 
             assertEquals(listOf("first", "early", "late"), repository.observeCategories().first().map { it.id })
         }
+
+    @Test
+    fun `observeCategories breaks ties by id`() =
+        runTest {
+            listOf("b", "a").forEach { repository.add(testCategory(id = it).copy(sortOrder = 0, createdAt = 1)) }
+
+            assertEquals(listOf("a", "b"), repository.observeCategories().first().map { it.id })
+        }
 }

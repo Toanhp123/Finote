@@ -100,4 +100,26 @@ class CashEntryDefaultsTest {
     fun `null category id returns null`() {
         assertNull(CashEntryDefaults.pickCategory(listOf(testCategory()), null, CategoryType.EXPENSE))
     }
+
+    @Test
+    fun `child of a hidden parent is not picked`() {
+        val parent = testCategory(id = "parent").copy(isHidden = true)
+        val child = testCategory(id = "child", parentId = "parent")
+        assertNull(CashEntryDefaults.pickCategory(listOf(parent, child), "child", CategoryType.EXPENSE))
+    }
+
+    @Test
+    fun `hidden category is picked when it is the kept one`() {
+        val hidden = testCategory(id = "food").copy(isHidden = true)
+        assertEquals("food", CashEntryDefaults.pickCategory(listOf(hidden), "food", CategoryType.EXPENSE, "food"))
+    }
+
+    @Test
+    fun `kept category of the wrong type or deleted is not picked`() {
+        val food = testCategory(id = "food").copy(isHidden = true)
+        assertNull(CashEntryDefaults.pickCategory(listOf(food), "food", CategoryType.INCOME, "food"))
+        assertNull(
+            CashEntryDefaults.pickCategory(listOf(food.copy(deletedAt = 5L)), "food", CategoryType.EXPENSE, "food"),
+        )
+    }
 }

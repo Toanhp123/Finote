@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.domain.category.repository
 
 import io.github.toanhp123.finote.domain.category.model.Category
+import io.github.toanhp123.finote.domain.category.model.CategoryType
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -36,12 +37,29 @@ interface CategoryRepository {
         updatedAt: Long,
     )
 
+    /** Live rows of one level ordered `sortOrder, createdAt, id`, hidden ones included. Null [parentId]: top level. */
+    suspend fun getLevel(
+        type: CategoryType,
+        parentId: String?,
+    ): List<Category>
+
+    /** Live (not soft-deleted) transactions whose category is in [categoryIds]. */
+    suspend fun countLiveTransactions(categoryIds: Set<String>): Int
+
     /**
-     * Soft delete. A missing id or an already deleted row is ignored. A category with transactions can be deleted:
-     * the transactions keep their `categoryId`.
+     * Points every transaction of [categoryIds] at [targetId] (null clears it), deleted and paired-away ones too,
+     * without touching `updatedAt`, then soft-deletes the categories. This is the only place that knows which tables
+     * point at a category: step 16 (`CategoryKeywordRule`) and step 18 (`Budget`) add their table here.
      */
-    suspend fun softDelete(
-        id: String,
+    suspend fun deleteAndMove(
+        categoryIds: Set<String>,
+        targetId: String?,
         deletedAt: Long,
+    )
+
+    /** `sortOrder = index` for each id in [orderedIds]; ids not listed keep their value. */
+    suspend fun reorder(
+        orderedIds: List<String>,
+        now: Long,
     )
 }

@@ -172,7 +172,10 @@ private fun IconPicker(
     selected: String,
     onPick: (String) -> Unit,
 ) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.xs)) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.xs),
+    ) {
         AccountIcons.forEachIndexed { index, name ->
             val description = stringResource(R.string.account_edit_icon_cd, index + 1)
             val isSelected = name == selected

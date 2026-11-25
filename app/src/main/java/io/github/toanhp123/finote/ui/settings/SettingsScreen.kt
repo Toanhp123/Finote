@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +38,7 @@ fun SettingsRoute(
     viewModel: SettingsViewModel,
     onOpenCapture: () -> Unit,
     onOpenAccounts: () -> Unit,
+    onOpenCategories: () -> Unit,
     onOpenInbox: () -> Unit,
     onOpenLogs: () -> Unit,
     modifier: Modifier = Modifier,
@@ -45,6 +48,7 @@ fun SettingsRoute(
         when (effect) {
             SettingsEffect.OpenCaptureSettings -> onOpenCapture()
             SettingsEffect.OpenAccountsSettings -> onOpenAccounts()
+            SettingsEffect.OpenCategoriesSettings -> onOpenCategories()
             SettingsEffect.OpenFailedInbox -> onOpenInbox()
             SettingsEffect.OpenNotificationLogs -> onOpenLogs()
         }
@@ -63,7 +67,11 @@ fun SettingsScreen(
     Column(modifier = modifier.fillMaxSize()) {
         FinoteTopBar(title = stringResource(R.string.tab_settings))
         Column(
-            modifier = Modifier.padding(horizontal = FinoteTheme.spacing.lg),
+            modifier =
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = FinoteTheme.spacing.lg)
+                    .padding(bottom = FinoteTheme.spacing.lg),
             verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
         ) {
             FinoteSection(title = stringResource(R.string.settings_group_accounts)) {
@@ -73,6 +81,15 @@ fun SettingsScreen(
                     leading = { RowIcon(R.drawable.ic_payments, FinoteTheme.scheme.primary) },
                     trailing = { RowIcon(R.drawable.ic_chevron_right, FinoteTheme.scheme.onSurfaceVariant) },
                     onClick = { onIntent(SettingsIntent.AccountsClicked) },
+                )
+            }
+            FinoteSection(title = stringResource(R.string.settings_group_categories)) {
+                FinoteListRow(
+                    title = stringResource(R.string.settings_categories_title),
+                    subtitle = stringResource(R.string.settings_categories_subtitle),
+                    leading = { RowIcon(R.drawable.ic_category, FinoteTheme.scheme.primary) },
+                    trailing = { RowIcon(R.drawable.ic_chevron_right, FinoteTheme.scheme.onSurfaceVariant) },
+                    onClick = { onIntent(SettingsIntent.CategoriesClicked) },
                 )
             }
             FinoteSection(title = stringResource(R.string.settings_group_capture)) {

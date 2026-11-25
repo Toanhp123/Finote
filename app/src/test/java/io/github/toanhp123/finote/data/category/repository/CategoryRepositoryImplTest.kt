@@ -155,46 +155,6 @@ class CategoryRepositoryImplTest {
         }
 
     @Test
-    fun `softDelete of a category with transactions succeeds and getCategory still returns it`() =
-        runTest {
-            seed(category(id = "cat-1"))
-            dbRule.db.accountDao().insert(account())
-            dbRule.db.transactionDao().insert(transaction(categoryId = "cat-1"))
-
-            repo.softDelete("cat-1", deletedAt = 8L)
-
-            assertEquals(8L, repo.getCategory("cat-1")?.deletedAt)
-            assertEquals(
-                "cat-1",
-                dbRule.db
-                    .transactionDao()
-                    .getById("tx-1")
-                    ?.categoryId,
-            )
-        }
-
-    @Test
-    fun `softDelete sets deletedAt and updatedAt, second call does nothing`() =
-        runTest {
-            seed(category(id = "cat-1"))
-
-            repo.softDelete("cat-1", deletedAt = 8L)
-            repo.softDelete("cat-1", deletedAt = 9L)
-
-            val after = checkNotNull(rowOf("cat-1"))
-            assertEquals(8L, after.deletedAt)
-            assertEquals(8L, after.updatedAt)
-        }
-
-    @Test
-    fun `softDelete of a missing id does nothing`() =
-        runTest {
-            repo.softDelete("ghost", deletedAt = 8L)
-
-            assertNull(rowOf("ghost"))
-        }
-
-    @Test
     fun `countLiveChildren ignores soft-deleted children`() =
         runTest {
             seed(
@@ -222,5 +182,100 @@ class CategoryRepositoryImplTest {
             assertTrue("cat-2" in ids)
             assertFalse("cat-3" in ids)
             assertNotNull(repo.getCategory("cat-3"))
+        }
+
+    private suspend fun seedTransactions() {
+        seed(category(id = "cat-a"), category(id = "cat-b"), category(id = "cat-child", parentId = "cat-a"))
+        dbRule.db.accountDao().insert(account())
+        val txs = dbRule.db.transactionDao()
+        txs.insert(transaction(id = "tx-live", categoryId = "cat-a"))
+        txs.insert(transaction(id = "tx-gone", categoryId = "cat-a").copy(deletedAt = 5L))
+        txs.insert(transaction(id = "tx-pair", categoryId = "cat-a").copy(pairedIntoId = "tx-live"))
+    }
+
+    private suspend fun txCategory(id: String) =
+        dbRule.db
+            .transactionDao()
+            .getById(id)
+            ?.categoryId
+
+    @Test
+    fun `deleteAndMove moves live, deleted and paired rows`() =
+        runTest {
+            seedTransactions()
+
+            repo.deleteAndMove(setOf("cat-a"), "cat-b", deletedAt = 8L)
+
+            listOf("tx-live", "tx-gone", "tx-pair").forEach { assertEquals(it, "cat-b", txCategory(it)) }
+        }
+
+    @Test
+    fun `deleteAndMove keeps updatedAt`() =
+        runTest {
+            seedTransactions()
+            val before = checkNotNull(dbRule.db.transactionDao().getById("tx-live"))
+            assertEquals(before.createdAt, before.updatedAt)
+
+            repo.deleteAndMove(setOf("cat-a"), "cat-b", deletedAt = 8L)
+
+            val after = checkNotNull(dbRule.db.transactionDao().getById("tx-live"))
+            assertEquals(before.createdAt, after.createdAt)
+            assertEquals(before.updatedAt, after.updatedAt)
+        }
+
+    @Test
+    fun `deleteAndMove to null clears the category`() =
+        runTest {
+            seedTransactions()
+
+            repo.deleteAndMove(setOf("cat-a"), null, deletedAt = 8L)
+
+            assertNull(txCategory("tx-live"))
+            assertNull(txCategory("tx-gone"))
+        }
+
+    @Test
+    fun `deleteAndMove soft-deletes every id`() =
+        runTest {
+            seedTransactions()
+
+            repo.deleteAndMove(setOf("cat-a", "cat-child"), "cat-b", deletedAt = 8L)
+
+            assertEquals(8L, rowOf("cat-a")?.deletedAt)
+            assertEquals(8L, rowOf("cat-child")?.deletedAt)
+            assertNull(rowOf("cat-b")?.deletedAt)
+        }
+
+    @Test
+    fun `countLiveTransactions ignores deleted rows`() =
+        runTest {
+            seedTransactions()
+
+            assertEquals(2, repo.countLiveTransactions(setOf("cat-a")))
+            assertEquals(0, repo.countLiveTransactions(setOf("cat-b", "cat-child")))
+        }
+
+    @Test
+    fun `getLevel returns live rows of one level in order`() =
+        runTest {
+            seed(
+                category(id = "p"),
+                category(id = "y", parentId = "p", sortOrder = 1),
+                category(id = "z", parentId = "p", sortOrder = 0),
+                category(id = "x", parentId = "p", deletedAt = 3L),
+            )
+
+            assertEquals(listOf("z", "y"), repo.getLevel(CategoryType.EXPENSE, "p").map { it.id })
+        }
+
+    @Test
+    fun `reorder writes index as sortOrder`() =
+        runTest {
+            seed(category(id = "c1"), category(id = "c2"), category(id = "c3"))
+
+            repo.reorder(listOf("c3", "c1", "c2"), now = 8L)
+
+            assertEquals(listOf(1, 2, 0), listOf("c1", "c2", "c3").map { rowOf(it)?.sortOrder })
+            assertEquals(8L, rowOf("c3")?.updatedAt)
         }
 }

@@ -150,10 +150,64 @@ class CashEntryEditViewModelTest {
         }
 
     @Test
-    fun `a hidden category shows as none`() =
+    fun `a hidden category stays selected`() =
         runTest(mainRule.dispatcher) {
             seed()
             categories.setHidden("c1", hidden = true, updatedAt = 2L)
+            row(categoryId = "c1")
+            val viewModel = openEdit()
+
+            assertEquals("c1", viewModel.current.selectedCategoryIds[TransactionType.EXPENSE])
+            viewModel.onIntent(CashEntryIntent.NoteChanged("lunch"))
+            viewModel.onIntent(CashEntryIntent.SaveClicked)
+            runCurrent()
+
+            assertEquals("c1", transactions.stored.getValue(ROW_ID).categoryId)
+        }
+
+    @Test
+    fun `a hidden category is offered only to its own transaction`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            categories.setHidden("c1", hidden = true, updatedAt = 2L)
+            row(categoryId = "c1")
+
+            assertEquals(listOf("c1", "c2"), openEdit().current.categories.map { it.id })
+            assertEquals(listOf("c2"), open(transactionId = null).current.categories.map { it.id })
+        }
+
+    @Test
+    fun `a hidden category stays when the lists change later`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            row(categoryId = "c1")
+            val viewModel = openEdit()
+
+            categories.setHidden("c1", hidden = true, updatedAt = 2L)
+            runCurrent()
+
+            assertEquals("c1", viewModel.current.selectedCategoryIds[TransactionType.EXPENSE])
+            assertEquals(listOf("c1", "c2"), viewModel.current.categories.map { it.id })
+        }
+
+    @Test
+    fun `a hidden category is not offered on the other type`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            categories.setHidden("c1", hidden = true, updatedAt = 2L)
+            row(categoryId = "c1")
+            val viewModel = openEdit()
+
+            viewModel.onIntent(CashEntryIntent.TypeChanged(TransactionType.INCOME))
+
+            assertEquals(listOf("i1"), viewModel.current.categories.map { it.id })
+        }
+
+    @Test
+    fun `a deleted category of the row shows as none`() =
+        runTest(mainRule.dispatcher) {
+            seed()
+            categories.stored["c1"] = testCategory("c1").copy(deletedAt = 2L)
             row(categoryId = "c1")
 
             assertNull(openEdit().current.selectedCategoryIds[TransactionType.EXPENSE])

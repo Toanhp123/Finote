@@ -7,6 +7,7 @@ import io.github.toanhp123.finote.data.database.mapStorageErrors
 import io.github.toanhp123.finote.data.database.storage
 import io.github.toanhp123.finote.data.database.storageWrite
 import io.github.toanhp123.finote.domain.category.model.Category
+import io.github.toanhp123.finote.domain.category.model.CategoryType
 import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -58,14 +59,29 @@ class CategoryRepositoryImpl
             }
         }
 
-        override suspend fun softDelete(
-            id: String,
+        override suspend fun getLevel(
+            type: CategoryType,
+            parentId: String?,
+        ): List<Category> = storage { categories.getLevel(type, parentId).map { it.toDomain() } }
+
+        override suspend fun countLiveTransactions(categoryIds: Set<String>): Int =
+            storage { categories.countLiveTransactions(categoryIds) }
+
+        override suspend fun deleteAndMove(
+            categoryIds: Set<String>,
+            targetId: String?,
             deletedAt: Long,
         ) {
             db.storageWrite {
-                val old = categories.getById(id) ?: return@storageWrite
-                if (old.deletedAt != null) return@storageWrite
-                categories.update(old.copy(deletedAt = deletedAt, updatedAt = deletedAt))
+                categories.moveTransactions(categoryIds, targetId)
+                categories.softDeleteAll(categoryIds, deletedAt)
             }
+        }
+
+        override suspend fun reorder(
+            orderedIds: List<String>,
+            now: Long,
+        ) {
+            db.storageWrite { orderedIds.forEachIndexed { index, id -> categories.setSortOrder(id, index, now) } }
         }
     }

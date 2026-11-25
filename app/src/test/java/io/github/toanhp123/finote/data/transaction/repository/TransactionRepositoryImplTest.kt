@@ -434,6 +434,13 @@ class TransactionRepositoryImplTest {
             assertNull(repo.getCategoryType("ghost"))
         }
 
+    @Test
+    fun `category type of a deleted category is null`() =
+        runTest {
+            dbRule.db.categoryDao().insert(category(id = "cat-1", deletedAt = 5L))
+            assertNull(repo.getCategoryType("cat-1"))
+        }
+
     private suspend fun liveTxCount() =
         dbRule.db
             .transactionDao()

@@ -36,6 +36,30 @@ class UpdateCategoryUseCaseTest {
         }
 
     @Test
+    fun `moving a child to another parent puts it last there`() =
+        runTest {
+            repo.stored["p1"] = testCategory(id = "p1")
+            repo.stored["p2"] = testCategory(id = "p2")
+            repo.stored["kid"] = testCategory(id = "kid", parentId = "p1").copy(sortOrder = 0)
+            repo.stored["old"] = testCategory(id = "old", parentId = "p2").copy(sortOrder = 3)
+
+            assertEquals(Outcome.Ok(Unit), update(testCategory(id = "kid", parentId = "p2").copy(sortOrder = 0)))
+
+            assertEquals(4, repo.stored.getValue("kid").sortOrder)
+        }
+
+    @Test
+    fun `an update that keeps the parent keeps the sortOrder`() =
+        runTest {
+            repo.stored["p1"] = testCategory(id = "p1")
+            repo.stored["kid"] = testCategory(id = "kid", parentId = "p1").copy(sortOrder = 2)
+
+            update(testCategory(id = "kid", name = "Renamed", parentId = "p1").copy(sortOrder = 2))
+
+            assertEquals(2, repo.stored.getValue("kid").sortOrder)
+        }
+
+    @Test
     fun `blank name is rejected`() =
         runTest {
             repo.stored["cat-1"] = testCategory()

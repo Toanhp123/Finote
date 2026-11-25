@@ -165,7 +165,15 @@ class FailedInboxRepositoryImpl
                     .getById(booking.accountId)
                     ?.toDomain()
                     ?.isUsable == true
-            val categoryType = booking.categoryId?.let { db.categoryDao().getById(it)?.type }
+            val categoryType =
+                booking.categoryId?.let {
+                    db
+                        .categoryDao()
+                        .getById(it)
+                        ?.takeIf { c ->
+                            c.deletedAt == null
+                        }?.type
+                }
             val refusal =
                 TransactionRules.check(
                     transaction,

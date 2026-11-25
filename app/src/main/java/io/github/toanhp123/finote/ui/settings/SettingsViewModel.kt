@@ -48,6 +48,10 @@ class SettingsViewModel
                     sendEffect(SettingsEffect.OpenAccountsSettings)
                 }
 
+                SettingsIntent.CategoriesClicked -> {
+                    sendEffect(SettingsEffect.OpenCategoriesSettings)
+                }
+
                 SettingsIntent.InboxClicked -> {
                     sendEffect(SettingsEffect.OpenFailedInbox)
                 }

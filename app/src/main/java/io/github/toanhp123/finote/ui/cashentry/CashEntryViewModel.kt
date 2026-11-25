@@ -227,9 +227,11 @@ class CashEntryViewModel
                 sendEffect(CashEntryEffect.Close)
                 return
             }
-            val category = CashEntryDefaults.pickCategory(categoryList, row.categoryId, row.type.toCategoryType())
+            val category =
+                CashEntryDefaults.pickCategory(categoryList, row.categoryId, row.type.toCategoryType(), row.categoryId)
             setState {
-                filledFrom(row, accountList, visible(row.type), category, clock).copy(isAutoPaired = start.isAutoPaired)
+                filledFrom(row, accountList, categoryList.offeredFor(row.type, row.categoryId), category, clock)
+                    .copy(isAutoPaired = start.isAutoPaired, keptCategoryId = row.categoryId)
             }
         }
 
@@ -281,7 +283,8 @@ class CashEntryViewModel
             setState { withCreateLists(choices, isFirst, accountList, categoryList) }
         }
 
-        private fun visible(type: TransactionType): List<Category> = allCategories.offeredFor(type)
+        private fun visible(type: TransactionType): List<Category> =
+            allCategories.offeredFor(type, state.value.keptCategoryId)
 
         private fun save() {
             val s = state.value

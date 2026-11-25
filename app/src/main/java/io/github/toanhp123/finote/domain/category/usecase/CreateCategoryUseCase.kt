@@ -18,8 +18,8 @@ class CreateCategoryUseCase
         private val clock: Clock,
     ) {
         /**
-         * Assigns a new id, stamps both timestamps from the clock and clears `deletedAt`. Returns the new id,
-         * or the rule that refused the category.
+         * Assigns a new id, stamps both timestamps from the clock, clears `deletedAt` and puts the category last in
+         * its level (the caller's `sortOrder` is ignored). Returns the new id, or the rule that refused the category.
          */
         suspend operator fun invoke(category: Category): Outcome<String, CategoryError> {
             val now = clock.millis()
@@ -36,7 +36,8 @@ class CreateCategoryUseCase
                 if (error != null) {
                     Outcome.Err(error)
                 } else {
-                    repository.add(fresh)
+                    val last = repository.getLevel(fresh.type, fresh.parentId).maxOfOrNull { it.sortOrder } ?: -1
+                    repository.add(fresh.copy(sortOrder = last + 1))
                     Outcome.Ok(fresh.id)
                 }
             }

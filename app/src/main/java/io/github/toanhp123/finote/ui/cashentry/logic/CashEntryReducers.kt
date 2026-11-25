@@ -3,6 +3,7 @@ package io.github.toanhp123.finote.ui.cashentry.logic
 import io.github.toanhp123.finote.domain.account.model.Account
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.category.model.CategoryType
+import io.github.toanhp123.finote.domain.category.service.shown
 import io.github.toanhp123.finote.domain.notification.model.BookInboxResult
 import io.github.toanhp123.finote.domain.transaction.error.TransactionError
 import io.github.toanhp123.finote.domain.transaction.model.ManualChoices
@@ -13,16 +14,25 @@ import io.github.toanhp123.finote.ui.cashentry.CashEntryState
 internal fun TransactionType.toCategoryType() =
     if (this == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
 
-/** The live categories that are not hidden, of [type], by sortOrder. */
-internal fun List<Category>.offeredFor(type: TransactionType): List<Category> =
-    filter { it.type == type.toCategoryType() && it.deletedAt == null && !it.isHidden }.sortedBy { it.sortOrder }
+/** The shown categories of [type] (see [shown]), plus the live [keptId] row of that type, by sortOrder. */
+internal fun List<Category>.offeredFor(
+    type: TransactionType,
+    keptId: String? = null,
+): List<Category> {
+    val shownIds = shown().mapTo(HashSet()) { it.id }
+    return filter {
+        it.type == type.toCategoryType() && (it.id in shownIds || (it.id == keptId && it.deletedAt == null))
+    }.sortedBy { it.sortOrder }
+}
 
-private fun Map<TransactionType, String?>.stillIn(categoryList: List<Category>) =
-    mapValues { (type, id) -> CashEntryDefaults.pickCategory(categoryList, id, type.toCategoryType()) }
+private fun Map<TransactionType, String?>.stillIn(
+    categoryList: List<Category>,
+    keptId: String? = null,
+) = mapValues { (type, id) -> CashEntryDefaults.pickCategory(categoryList, id, type.toCategoryType(), keptId) }
 
 /**
- * Edit mode, after the first fill: the sheet leaves when its source account left [accountList]. A destination that
- * left it, or equals the source, shows as none.
+ * Edit mode, after the first fill: [CashEntryState.keptCategoryId] stays offered and selected. The sheet leaves when
+ * its source account left [accountList]. A destination that left it, or equals the source, shows as none.
  */
 internal fun CashEntryState.withEditLists(
     accountList: List<Account>,
@@ -32,8 +42,8 @@ internal fun CashEntryState.withEditLists(
         accounts = accountList,
         isVisible = isVisible && accountList.any { it.id == selectedAccountId },
         destinationId = destinationId?.takeIf { d -> d != selectedAccountId && accountList.any { it.id == d } },
-        selectedCategoryIds = selectedCategoryIds.stillIn(categoryList),
-        categories = categoryList.offeredFor(type),
+        selectedCategoryIds = selectedCategoryIds.stillIn(categoryList, keptCategoryId),
+        categories = categoryList.offeredFor(type, keptCategoryId),
     )
 
 /** From-log mode, after the first fill: an account that left [accountList] leaves the field empty, so Save is off. */

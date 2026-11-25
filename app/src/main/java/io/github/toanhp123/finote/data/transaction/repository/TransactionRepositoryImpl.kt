@@ -44,7 +44,13 @@ class TransactionRepositoryImpl
             }
 
         override suspend fun getCategoryType(categoryId: String): CategoryType? =
-            storage { db.categoryDao().getById(categoryId)?.type }
+            storage {
+                db
+                    .categoryDao()
+                    .getById(categoryId)
+                    ?.takeIf { it.deletedAt == null }
+                    ?.type
+            }
 
         override suspend fun getLastManualAccountId(): String? = storage { transactions.getLastManualAccountId() }
 

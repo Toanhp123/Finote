@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
 import io.github.toanhp123.finote.data.database.RoomTransactionRunner
 import io.github.toanhp123.finote.data.database.account
+import io.github.toanhp123.finote.data.database.category
 import io.github.toanhp123.finote.data.database.transaction
 import io.github.toanhp123.finote.data.notification.local.entity.NotificationLogEntity
 import io.github.toanhp123.finote.data.notification.notificationLogEntity
@@ -342,6 +343,20 @@ class FailedInboxBookingTest {
             assertEquals(BookInboxResult.Refused(TransactionError.InvalidTimestamp), result)
             assertTrue(txDao.getActiveByAccount(ACC).isEmpty())
             assertEquals(NotificationStatus.FAILED, statusOf("log-1"))
+        }
+
+    @Test
+    fun `a soft-deleted category refuses the booking and writes nothing`() =
+        runTest {
+            seed(failedLog("log-1"))
+            dbRule.db.categoryDao().insert(category(id = "cat-gone", deletedAt = POST))
+
+            val result = book(booking(categoryId = "cat-gone"))
+
+            assertEquals(BookInboxResult.Refused(TransactionError.CategoryNotFound), result)
+            assertTrue(txDao.getActiveByAccount(ACC).isEmpty())
+            assertEquals(NotificationStatus.FAILED, statusOf("log-1"))
+            assertEquals(1_000_000L, balanceOf(ACC))
         }
 
     @Test
