@@ -1,8 +1,7 @@
 <resources>
     <string name="app_name">Finote</string>
-    <string name="balance_total">合計残高</string>
     <string name="balance_income">収入</string>
-    <string name="balance_expense">支出</string>
+    <string name="balance_net">収支</string>
     <string name="cd_loading">読み込み中</string>
     <string name="cd_back">戻る</string>
     <string name="action_ok">OK</string>
@@ -110,6 +109,8 @@
     <string name="transactions_uncategorized">未分類</string>
     <string name="transactions_deleted_account">削除済みの口座</string>
     <string name="transactions_auto_paired">自動ペア</string>
+    <string name="transactions_not_in_reports">レポート対象外</string>
+    <string name="transaction_row_fee">手数料</string>
     <string name="transactions_empty">取引はまだありません</string>
     <string name="transactions_empty_account">この口座の取引はありません</string>
     <string name="transactions_error">取引を読み込めませんでした</string>
@@ -390,4 +391,22 @@
     <string name="keyword_rule_edit_delete">ルールを削除</string>
     <string name="keyword_rule_delete_title">ルール「%1$s」を削除しますか？</string>
     <string name="keyword_rule_delete_text">すでにカテゴリが付いた取引は変わりません。</string>
+    <string name="overview_spent">支出</string>
+    <string name="overview_spent_refund">払い戻しが支出を上回る</string>
+    <string name="overview_month_prev_cd">前の月</string>
+    <string name="overview_month_next_cd">次の月</string>
+    <string name="overview_pace_up">先月同時期比 +%1$d%%</string>
+    <string name="overview_pace_down">先月同時期比 −%1$d%%</string>
+    <string name="overview_pace_flat">先月同時期比 0%%</string>
+    <string name="overview_pace_chart_cd">日ごとの累計支出、今月と先月の比較</string>
+    <string name="overview_pace_future_note">未来の日付の取引があります。金額は月全体を集計し、グラフは今日までです。</string>
+    <string name="overview_section_buckets">グループ別の支出</string>
+    <string name="overview_section_merchants">よく使う店</string>
+    <string name="overview_buckets_empty">その月の支出はありません</string>
+    <string name="overview_bucket_fees">振込手数料</string>
+    <string name="overview_buckets_view_all">すべて見る（%1$d）</string>
+    <string name="overview_share">%1$d%%</string>
+    <string name="overview_pace_legend_this">今月</string>
+    <string name="overview_pace_legend_last">先月</string>
+    <string name="report_list_empty">このグループに取引はありません</string>
 </resources>

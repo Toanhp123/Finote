@@ -1,8 +1,7 @@
 <resources>
     <string name="app_name">Finote</string>
-    <string name="balance_total">Total balance</string>
     <string name="balance_income">Income</string>
-    <string name="balance_expense">Expense</string>
+    <string name="balance_net">Net</string>
     <string name="cd_loading">Loading</string>
     <string name="cd_back">Back</string>
     <string name="action_ok">OK</string>
@@ -110,6 +109,8 @@
     <string name="transactions_uncategorized">Uncategorized</string>
     <string name="transactions_deleted_account">Deleted account</string>
     <string name="transactions_auto_paired">Auto-paired</string>
+    <string name="transactions_not_in_reports">Not in reports</string>
+    <string name="transaction_row_fee">Fee</string>
     <string name="transactions_empty">No transactions yet</string>
     <string name="transactions_empty_account">No transactions in this account</string>
     <string name="transactions_error">Couldn\'t load transactions</string>
@@ -403,4 +404,22 @@
     <string name="keyword_rule_edit_delete">Delete rule</string>
     <string name="keyword_rule_delete_title">Delete rule \"%1$s\"?</string>
     <string name="keyword_rule_delete_text">Transactions that already have a category stay as they are.</string>
+    <string name="overview_spent">Spent</string>
+    <string name="overview_spent_refund">Refunds exceed spending</string>
+    <string name="overview_month_prev_cd">Previous month</string>
+    <string name="overview_month_next_cd">Next month</string>
+    <string name="overview_pace_up">+%1$d%% vs the same period last month</string>
+    <string name="overview_pace_down">−%1$d%% vs the same period last month</string>
+    <string name="overview_pace_flat">0%% vs the same period last month</string>
+    <string name="overview_pace_chart_cd">Cumulative spending by day, this month against last month</string>
+    <string name="overview_pace_future_note">Some rows are dated in the future: amounts count the whole month, the chart stops today.</string>
+    <string name="overview_section_buckets">Spending by group</string>
+    <string name="overview_section_merchants">Top merchants</string>
+    <string name="overview_buckets_empty">No spending in the month</string>
+    <string name="overview_bucket_fees">Transfer fees</string>
+    <string name="overview_buckets_view_all">View all (%1$d)</string>
+    <string name="overview_share">%1$d%%</string>
+    <string name="overview_pace_legend_this">This month</string>
+    <string name="overview_pace_legend_last">Last month</string>
+    <string name="report_list_empty">No transactions left in this group</string>
 </resources>

@@ -1,8 +1,7 @@
 <resources>
     <string name="app_name">Finote</string>
-    <string name="balance_total">总余额</string>
     <string name="balance_income">收入</string>
-    <string name="balance_expense">支出</string>
+    <string name="balance_net">净额</string>
     <string name="cd_loading">加载中</string>
     <string name="cd_back">返回</string>
     <string name="action_ok">确定</string>
@@ -110,6 +109,8 @@
     <string name="transactions_uncategorized">未分类</string>
     <string name="transactions_deleted_account">已删除的账户</string>
     <string name="transactions_auto_paired">自动配对</string>
+    <string name="transactions_not_in_reports">不计入报表</string>
+    <string name="transaction_row_fee">手续费</string>
     <string name="transactions_empty">暂无交易</string>
     <string name="transactions_empty_account">该账户暂无交易</string>
     <string name="transactions_error">无法加载交易</string>
@@ -390,4 +391,22 @@
     <string name="keyword_rule_edit_delete">删除规则</string>
     <string name="keyword_rule_delete_title">删除规则\"%1$s\"？</string>
     <string name="keyword_rule_delete_text">已有分类的交易保持不变。</string>
+    <string name="overview_spent">支出</string>
+    <string name="overview_spent_refund">退款多于支出</string>
+    <string name="overview_month_prev_cd">上个月</string>
+    <string name="overview_month_next_cd">下个月</string>
+    <string name="overview_pace_up">较上月同期 +%1$d%%</string>
+    <string name="overview_pace_down">较上月同期 −%1$d%%</string>
+    <string name="overview_pace_flat">较上月同期 0%%</string>
+    <string name="overview_pace_chart_cd">按日累计支出，本月与上月对比</string>
+    <string name="overview_pace_future_note">有未来日期的交易：金额按整月计算，图表只到今天。</string>
+    <string name="overview_section_buckets">按分类支出</string>
+    <string name="overview_section_merchants">常去商家</string>
+    <string name="overview_buckets_empty">该月暂无支出</string>
+    <string name="overview_bucket_fees">转账手续费</string>
+    <string name="overview_buckets_view_all">查看全部（%1$d）</string>
+    <string name="overview_share">%1$d%%</string>
+    <string name="overview_pace_legend_this">本月</string>
+    <string name="overview_pace_legend_last">上月</string>
+    <string name="report_list_empty">此分组下已无交易</string>
 </resources>

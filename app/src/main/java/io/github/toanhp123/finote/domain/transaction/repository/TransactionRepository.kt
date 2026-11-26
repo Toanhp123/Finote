@@ -32,6 +32,15 @@ interface TransactionRepository {
      */
     fun observeTransactions(accountId: String?): Flow<List<Transaction>>
 
+    /** Live transactions with `timestamp` in [[startInclusive], [endExclusive]) epoch ms, newest first. */
+    fun observeTransactionsBetween(
+        startInclusive: Long,
+        endExclusive: Long,
+    ): Flow<List<Transaction>>
+
+    /** True while at least one live transaction exists. */
+    fun observeHasTransactions(): Flow<Boolean>
+
     suspend fun add(transaction: Transaction)
 
     /**

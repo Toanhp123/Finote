@@ -1,6 +1,5 @@
 package io.github.toanhp123.finote.ui.transactions
 
-import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,7 +30,6 @@ import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.domain.category.model.Category
 import io.github.toanhp123.finote.domain.transaction.model.Transaction
 import io.github.toanhp123.finote.domain.transaction.model.TransactionDay
-import io.github.toanhp123.finote.domain.transaction.model.TransactionType
 import io.github.toanhp123.finote.ui.common.ObserveEffects
 import io.github.toanhp123.finote.ui.common.component.display.FinoteEmptyState
 import io.github.toanhp123.finote.ui.common.component.display.FinoteSkeleton
@@ -52,6 +50,8 @@ import io.github.toanhp123.finote.ui.transactions.component.ReconcileSheet
 import io.github.toanhp123.finote.ui.transactions.component.TransactionFilterChips
 import io.github.toanhp123.finote.ui.transactions.logic.DayLabel
 import io.github.toanhp123.finote.ui.transactions.logic.dayLabel
+import io.github.toanhp123.finote.ui.transactions.logic.fallbackIcon
+import io.github.toanhp123.finote.ui.transactions.logic.fallbackTitle
 import io.github.toanhp123.finote.ui.transactions.logic.isOpenable
 import io.github.toanhp123.finote.ui.transactions.logic.moneyKindOf
 import io.github.toanhp123.finote.ui.transactions.logic.rowSubtitle
@@ -220,6 +220,7 @@ private fun DayList(
                 TransactionItem(
                     transaction = transaction,
                     isAutoPaired = transaction.id in state.autoPairedIds,
+                    selectedAccountId = state.selectedAccountId,
                     modifier = Modifier.animateItem(),
                     category = transaction.categoryId?.let(state.categoriesById::get),
                     accountNames = accountNames,
@@ -281,6 +282,7 @@ private fun TransactionItem(
     category: Category?,
     accountNames: Map<String, String>,
     isAutoPaired: Boolean,
+    selectedAccountId: String?,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
@@ -296,28 +298,16 @@ private fun TransactionItem(
                 pendingLabel = stringResource(R.string.reimbursement_pending),
                 settledLabel = stringResource(R.string.reimbursement_settled),
                 autoPairedLabel = stringResource(R.string.transactions_auto_paired).takeIf { isAutoPaired },
+                excludedLabel = stringResource(R.string.transactions_not_in_reports),
             ),
         amount = transaction.amount,
         kind = moneyKindOf(transaction),
         iconRes = category?.let { iconRes(it.icon) } ?: transaction.type.fallbackIcon(),
         colorArgb = category?.color ?: FinoteTheme.scheme.onSurfaceVariant.toArgb(),
         modifier = modifier.padding(horizontal = FinoteTheme.spacing.lg),
+        // Like the day net: a transfer seen from its destination account carries no fee.
+        fee = if (selectedAccountId == null || selectedAccountId == transaction.accountId) transaction.feeAmount else 0,
+        isMuted = transaction.isExcludedFromAnalytics,
         onClick = onClick,
     )
 }
-
-@StringRes
-private fun TransactionType.fallbackTitle(): Int =
-    when (this) {
-        TransactionType.TRANSFER -> R.string.transactions_transfer
-        TransactionType.ADJUSTMENT -> R.string.transactions_adjustment
-        else -> R.string.transactions_uncategorized
-    }
-
-@DrawableRes
-private fun TransactionType.fallbackIcon(): Int =
-    when (this) {
-        TransactionType.TRANSFER -> R.drawable.ic_swap_horiz
-        TransactionType.ADJUSTMENT -> R.drawable.ic_tune
-        else -> R.drawable.ic_more_horiz
-    }

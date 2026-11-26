@@ -43,7 +43,7 @@ All are in `ui/common/component/<group>/`, one main component per file; a small 
 | `control/` | Input and actions: `FinoteButton`, `FinoteIconButton`, `FinoteTextField`, `FinoteSwitch`, `FinoteSwitchRow`, `FinoteChip`, `FinoteSegmented`. `FinoteButtonStyle` is in `FinoteButton.kt` |
 | `overlay/` | Layers and messages: `FinoteBottomSheet`, `FinoteDialog`, `FinoteDatePicker`, `FinoteSnackbar` with its state in the same file, helper `DatePickerDates` |
 | `layout/` | Screen frame: `FinoteScaffold`, `FinoteTopBar`, `FinoteNavBar` (`FinoteNavItem` is in the same file) |
-| `display/` | Generic display with no finance meaning: `FinoteCard`, `FinoteSection`, `FinoteListRow`, `FinoteEmptyState`, `FinoteSkeleton`, helper `ListRowLayout` |
+| `display/` | Generic display with no finance meaning: `FinoteCard`, `FinoteSection`, `FinoteListRow`, `FinoteEmptyState`, `FinoteSkeleton`, `FinoteLineChart`, helper `ListRowLayout` |
 | `finance/` | Finance widgets: `BalanceHeroCard`, `TransactionRow`, `MoneyText`, `CategoryIcon` |
 | `glass/` | Glass effect infrastructure: `HazeLocals` (holds `LocalBlurEnabled`) |
 | `preview/` | Preview infrastructure: `FinotePreviews` (holds `FinotePreviewSurface`) |
@@ -66,11 +66,11 @@ A component file sits directly in one group. No group has a sub-group. `DesignSy
 | `FinoteSwitchRow` | `(title, checked, onCheckedChange, modifier)` | A settings row with a title and a switch. The whole row is one `toggleable` target with `Role.Switch` |
 | `FinoteChip` | `(text, selected, onClick, modifier, iconRes?)` | Filter or single choice in a row |
 | `FinoteSegmented` | `<T>(options, selected, onSelect, label, modifier)` | Pick one of 2-3 modes (expense, income, transfer) |
-| `BalanceHeroCard` | `(label, balance, income, expense, modifier)` | The balance summary on a screen. See the gradient rule below |
+| `BalanceHeroCard` | `(label, amount, income, net, modifier)` | One big amount under a label, with income and net chips. Every amount is neutral; the words carry the meaning. See the gradient rule below |
 | `FinoteCard` | `(modifier, onClick?, content)` | Group content on a separate surface |
 | `FinoteSection` | `(title, modifier, content)` | A settings group: a heading label above a `FinoteCard` that holds the rows |
 | `FinoteListRow` | `(title, modifier, subtitle?, leading?, trailing?, onClick?)` | One list line. Trailing content drops below the title when the title gets too narrow |
-| `TransactionRow` | `(title, subtitle, amount, kind, iconRes, colorArgb, modifier, onClick?)` | One transaction in a list |
+| `TransactionRow` | `(title, subtitle, amount, kind, iconRes, colorArgb, modifier, fee: Long = 0, isMuted: Boolean = false, onClick?)` | One transaction in a list |
 | `CategoryIcon` | `(iconRes, colorArgb, contentDescription?, modifier)` | Category or account tile |
 | `MoneyText` | `(amount: Long, kind: MoneyKind, modifier, style, shrinkToFit)` | Every amount on the UI. `shrinkToFit` shrinks down to 50% for large balances |
 | `FinoteSnackbarState` | `rememberFinoteSnackbarState()`, then `suspend show(message, actionLabel?): Boolean` | Transient message. Pass the state to `FinoteScaffold`. `show` returns true when the user pressed the action |

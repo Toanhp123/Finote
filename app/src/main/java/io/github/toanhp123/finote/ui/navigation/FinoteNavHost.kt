@@ -98,7 +98,8 @@ fun FinoteNavHost(
             predictivePopTransitionSpec = { fadeThrough(motion) },
             entryProvider =
                 entryProvider<NavKey> {
-                    entry<Overview> { ComingSoonScreen(R.string.tab_overview) }
+                    overviewEntry(backStack, padding)
+                    reportListEntry(backStack, padding)
                     entry<Transactions> {
                         TransactionListRoute(
                             viewModel = hiltViewModel(),

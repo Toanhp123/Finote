@@ -26,6 +26,9 @@ class FakeCategoryRepository : CategoryRepository {
     var writes = 0
         private set
 
+    /** Makes the next [observeCategories] emission fail, as a Room error in a running query would. */
+    var failObserve: Throwable? = null
+
     /** Makes [observeCategories] emit again after a test edits [stored] directly. */
     fun notifyChanged() {
         version.value++
@@ -35,6 +38,7 @@ class FakeCategoryRepository : CategoryRepository {
 
     override fun observeCategories(): Flow<List<Category>> =
         version.map { _ ->
+            failObserve?.let { throw it }
             stored.values
                 .filter { category -> category.deletedAt == null }
                 .sortedWith(compareBy<Category> { it.sortOrder }.thenBy { it.createdAt }.thenBy { it.id })

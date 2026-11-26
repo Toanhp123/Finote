@@ -333,4 +333,35 @@ class TransactionDaoTest {
             assertNull(dao.getLastManualAccountId())
             assertNull(dao.getLastManualCategoryId(TransactionType.EXPENSE))
         }
+
+    @Test
+    fun `observeBetween includes start and excludes end`() =
+        runTest {
+            seedAccount()
+            dao.insert(transaction(id = "tx-1", timestamp = 1_000L))
+            dao.insert(transaction(id = "tx-2", timestamp = 1_999L))
+            dao.insert(transaction(id = "tx-3", timestamp = 2_000L))
+            dao.insert(transaction(id = "tx-0", timestamp = 999L))
+            assertEquals(listOf("tx-2", "tx-1"), dao.observeBetween(1_000L, 2_000L).first().map { it.id })
+        }
+
+    @Test
+    fun `observeBetween skips deleted rows`() =
+        runTest {
+            seedAccount()
+            dao.insert(transaction(id = "tx-1", timestamp = 1_000L))
+            dao.insert(transaction(id = "tx-2", timestamp = 1_500L).copy(deletedAt = 1L))
+            assertEquals(listOf("tx-1"), dao.observeBetween(1_000L, 2_000L).first().map { it.id })
+        }
+
+    @Test
+    fun `observeHasLive is false for only deleted rows and true after an insert`() =
+        runTest {
+            seedAccount()
+            assertEquals(false, dao.observeHasLive().first())
+            dao.insert(transaction(id = "tx-1").copy(deletedAt = 1L))
+            assertEquals(false, dao.observeHasLive().first())
+            dao.insert(transaction(id = "tx-2"))
+            assertEquals(true, dao.observeHasLive().first())
+        }
 }

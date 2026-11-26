@@ -32,3 +32,14 @@ fun formatMoney(
         }
     return sign + format.format(abs(amount))
 }
+
+/**
+ * An amount that may be a net refund, split for [MoneyText]: a spend (> 0) is an expense, a refund (< 0) is its
+ * absolute value as income, so it reads `+...` everywhere. Zero is neutral, so an empty total is not red.
+ */
+fun moneyOf(amount: Long): Pair<Long, MoneyKind> =
+    when {
+        amount > 0 -> amount to MoneyKind.Expense
+        amount < 0 -> Math.negateExact(amount) to MoneyKind.Income
+        else -> 0L to MoneyKind.Neutral
+    }

@@ -60,6 +60,17 @@ class TransactionRepositoryImpl
         override fun observeTransactions(accountId: String?): Flow<List<Transaction>> =
             transactions.observeTransactions(accountId).map { rows -> rows.map { it.toDomain() } }.mapStorageErrors()
 
+        override fun observeTransactionsBetween(
+            startInclusive: Long,
+            endExclusive: Long,
+        ): Flow<List<Transaction>> =
+            transactions
+                .observeBetween(startInclusive, endExclusive)
+                .map { rows -> rows.map { it.toDomain() } }
+                .mapStorageErrors()
+
+        override fun observeHasTransactions(): Flow<Boolean> = transactions.observeHasLive().mapStorageErrors()
+
         override suspend fun add(transaction: Transaction) {
             db.storageWrite { ledger.insert(transaction) }
         }

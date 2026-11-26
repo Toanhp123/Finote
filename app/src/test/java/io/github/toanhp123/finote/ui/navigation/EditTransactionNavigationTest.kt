@@ -49,4 +49,12 @@ class EditTransactionNavigationTest {
     fun `the tab bar hides on a pushed page`() {
         assertFalse(isTabBarVisible(listOf(Overview, Settings, AccountsSettings)))
     }
+
+    @Test
+    fun `the tab bar hides on a report list and the tab stays overview`() {
+        val stack = listOf(Overview, ReportList("2026-11", ReportListKind.UNCATEGORIZED))
+
+        assertFalse(isTabBarVisible(stack))
+        assertEquals(Overview, currentTab(stack))
+    }
 }

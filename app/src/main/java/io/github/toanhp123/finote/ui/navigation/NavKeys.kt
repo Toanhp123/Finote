@@ -87,3 +87,21 @@ data class BookInboxItem(
 data class EditTransaction(
     val id: String,
 ) : NavKey
+
+/** What a [ReportList] shows; [ReportList.key] is the category id or the merchant name for two of them. */
+@Serializable
+enum class ReportListKind { CATEGORY, UNCATEGORIZED, TRANSFER_FEES, MERCHANT }
+
+/**
+ * The rows behind one Overview amount, pushed on top of [Overview]. [month] is `yyyy-MM`. [key] is the category id
+ * ([ReportListKind.CATEGORY]) or the merchant name ([ReportListKind.MERCHANT]) and is null for the other kinds.
+ */
+@Serializable
+data class ReportList(
+    val month: String,
+    val kind: ReportListKind,
+    val key: String? = null,
+) : NavKey {
+    // A merchant name must never reach a log or crash report.
+    override fun toString() = "ReportList(month=$month, kind=$kind)"
+}

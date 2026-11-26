@@ -53,8 +53,11 @@ fun moneyKindOf(transaction: Transaction): MoneyKind =
 /**
  * [accountName] resolves an id to a display name, null when the account is gone. A reimbursement status adds its
  * label ([pendingLabel], [settledLabel]) after the accounts and before the note. [autoPairedLabel], when not null,
- * sits right after the accounts. An expense, income or refund with a merchant name shows it in place of the note.
+ * sits right after the accounts. [excludedLabel] follows it for a row left out of reports, unless a reimbursement
+ * label is shown, because that label already says why.
+ * An expense, income or refund with a merchant name shows it in place of the note.
  */
+@Suppress("LongParameterList") // why: one label per row state, all from strings.xml; a holder type would only hide them
 fun rowSubtitle(
     transaction: Transaction,
     accountName: (String) -> String?,
@@ -62,6 +65,7 @@ fun rowSubtitle(
     pendingLabel: String,
     settledLabel: String,
     autoPairedLabel: String? = null,
+    excludedLabel: String? = null,
 ): String {
     fun name(id: String) = accountName(id) ?: deletedLabel
 
@@ -77,10 +81,13 @@ fun rowSubtitle(
             ReimbursementStatus.PENDING -> pendingLabel
             ReimbursementStatus.SETTLED -> settledLabel
         }
+    val isOutOfReports =
+        transaction.isExcludedFromAnalytics && transaction.reimbursementStatus == ReimbursementStatus.NONE
     val merchant = transaction.merchantName?.takeIf { it.isNotBlank() && transaction.type in MerchantTypes }
     return listOfNotNull(
         accounts,
         autoPairedLabel,
+        excludedLabel.takeIf { isOutOfReports },
         label,
         merchant ?: transaction.note.takeIf { it.isNotBlank() },
     ).joinToString(" · ")

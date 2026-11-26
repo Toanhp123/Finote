@@ -68,6 +68,19 @@ interface TransactionDao {
     )
     fun observeTransactions(accountId: String?): Flow<List<TransactionEntity>>
 
+    /** Live rows with `timestamp` in [[startInclusive], [endExclusive]), ordered like [observeTransactions]. */
+    @Query(
+        "SELECT * FROM transactions WHERE deletedAt IS NULL AND timestamp >= :startInclusive " +
+            "AND timestamp < :endExclusive ORDER BY timestamp DESC, createdAt DESC, id DESC",
+    )
+    fun observeBetween(
+        startInclusive: Long,
+        endExclusive: Long,
+    ): Flow<List<TransactionEntity>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM transactions WHERE deletedAt IS NULL)")
+    fun observeHasLive(): Flow<Boolean>
+
     /** Live income and expense rows booked from a notification that have no category yet. */
     @Query(
         "SELECT * FROM transactions WHERE deletedAt IS NULL AND categoryId IS NULL " +

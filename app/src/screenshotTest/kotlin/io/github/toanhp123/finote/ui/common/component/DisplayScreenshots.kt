@@ -7,7 +7,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import io.github.toanhp123.finote.R
+import io.github.toanhp123.finote.ui.common.component.display.ChartLine
+import io.github.toanhp123.finote.ui.common.component.display.ChartSeries
 import io.github.toanhp123.finote.ui.common.component.display.FinoteCard
+import io.github.toanhp123.finote.ui.common.component.display.FinoteLineChart
 import io.github.toanhp123.finote.ui.common.component.display.FinoteListRow
 import io.github.toanhp123.finote.ui.common.component.finance.BalanceHeroCard
 import io.github.toanhp123.finote.ui.common.component.finance.CategoryIcon
@@ -21,6 +24,11 @@ import io.github.toanhp123.finote.ui.common.format.MoneyKind
 
 // 16 characters five times: an 80-character title.
 private const val LONG_TITLE_REPEAT = 5
+
+private const val CHART_THIS_DAYS = 30
+private const val CHART_LAST_DAYS = 18
+private const val CHART_DAY_COUNT = 31
+private const val CHART_STEP = 50_000L
 
 @PreviewTest
 @FinotePreviews
@@ -146,6 +154,34 @@ private fun TransactionRowPreview() {
 @PreviewTest
 @FinotePreviews
 @Composable
+private fun TransactionRowFeeAndMutedPreview() {
+    FinotePreviewSurface {
+        Column {
+            TransactionRow(
+                title = "Transfer",
+                subtitle = "Bank → MoMo",
+                amount = 2_000_000,
+                kind = MoneyKind.Transfer,
+                iconRes = R.drawable.ic_swap_horiz,
+                colorArgb = PreviewRedArgb,
+                fee = 1_000,
+            )
+            TransactionRow(
+                title = "Food",
+                subtitle = "Cash · Not in reports",
+                amount = 45_000,
+                kind = MoneyKind.Expense,
+                iconRes = R.drawable.ic_restaurant,
+                colorArgb = PreviewRedArgb,
+                isMuted = true,
+            )
+        }
+    }
+}
+
+@PreviewTest
+@FinotePreviews
+@Composable
 private fun TransactionRowLongPreview() {
     FinotePreviewSurface {
         TransactionRow(
@@ -165,10 +201,10 @@ private fun TransactionRowLongPreview() {
 private fun BalanceHeroCardPreview() {
     FinotePreviewSurface {
         BalanceHeroCard(
-            label = stringResource(R.string.balance_total),
-            balance = 12_450_000,
+            label = stringResource(R.string.overview_spent),
+            amount = 2_100_000,
             income = 15_000_000,
-            expense = 2_100_000,
+            net = 12_900_000,
         )
     }
 }
@@ -179,10 +215,10 @@ private fun BalanceHeroCardPreview() {
 private fun BalanceHeroCardNegativePreview() {
     FinotePreviewSurface {
         BalanceHeroCard(
-            label = stringResource(R.string.balance_total),
-            balance = -2_500_000,
+            label = stringResource(R.string.overview_spent),
+            amount = 3_500_000,
             income = 1_000_000,
-            expense = 3_500_000,
+            net = -2_500_000,
         )
     }
 }
@@ -193,10 +229,27 @@ private fun BalanceHeroCardNegativePreview() {
 private fun BalanceHeroCardHugePreview() {
     FinotePreviewSurface {
         BalanceHeroCard(
-            label = stringResource(R.string.balance_total),
-            balance = 999_999_999_999,
+            label = stringResource(R.string.overview_spent),
+            amount = 999_999_999_999,
             income = 1_000_000,
-            expense = 3_500_000,
+            net = -998_999_999_999,
+        )
+    }
+}
+
+@PreviewTest
+@FinotePreviews
+@Composable
+private fun FinoteLineChartScreenshot() {
+    FinotePreviewSurface {
+        FinoteLineChart(
+            series =
+                listOf(
+                    ChartSeries(points = List(CHART_THIS_DAYS) { (it + 1) * CHART_STEP }, line = ChartLine.Primary),
+                    ChartSeries(points = List(CHART_LAST_DAYS) { (it + 1) * CHART_STEP / 2 }, line = ChartLine.Muted),
+                ),
+            dayCount = CHART_DAY_COUNT,
+            contentDescription = "Spending chart",
         )
     }
 }

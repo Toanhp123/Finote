@@ -186,4 +186,41 @@ class TransactionRowTextTest {
             rowSubtitle(transfer, names::get, deleted, pendingLabel, settledLabel),
         )
     }
+
+    @Test
+    fun `excluded row says not in reports right after the account`() {
+        val expense =
+            tx(
+                TransactionType.EXPENSE,
+                1,
+                account = "cash",
+            ).copy(note = "Bún bò", isExcludedFromAnalytics = true)
+
+        assertEquals(
+            "Tiền mặt · Ngoài báo cáo · Bún bò",
+            rowSubtitle(expense, names::get, deleted, pendingLabel, settledLabel, excludedLabel = "Ngoài báo cáo"),
+        )
+    }
+
+    @Test
+    fun `normal row has no excluded label`() {
+        val expense = tx(TransactionType.EXPENSE, 1, account = "cash").copy(note = "Bún bò")
+
+        assertEquals(
+            "Tiền mặt · Bún bò",
+            rowSubtitle(expense, names::get, deleted, pendingLabel, settledLabel, excludedLabel = null),
+        )
+    }
+
+    @Test
+    fun `reimbursement row shows its status, not the excluded label`() {
+        val pending =
+            tx(TransactionType.EXPENSE, 1, account = "cash")
+                .copy(isExcludedFromAnalytics = true, reimbursementStatus = ReimbursementStatus.PENDING)
+
+        assertEquals(
+            "Tiền mặt · Chờ trả",
+            rowSubtitle(pending, names::get, deleted, pendingLabel, settledLabel, excludedLabel = "Ngoài báo cáo"),
+        )
+    }
 }

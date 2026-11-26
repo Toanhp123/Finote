@@ -78,6 +78,15 @@ class FakeTransactionRepository(
         }
     }
 
+    override fun observeTransactionsBetween(
+        startInclusive: Long,
+        endExclusive: Long,
+    ): Flow<List<Transaction>> =
+        observeTransactions(null).map { rows -> rows.filter { it.timestamp in startInclusive until endExclusive } }
+
+    override fun observeHasTransactions(): Flow<Boolean> =
+        transactionsFlow.map { rows -> rows.any { it.deletedAt == null } }
+
     override suspend fun add(transaction: Transaction) {
         failWrite?.let { throw it }
         writes++

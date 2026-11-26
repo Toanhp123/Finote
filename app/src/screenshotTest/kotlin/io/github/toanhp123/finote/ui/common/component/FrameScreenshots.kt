@@ -210,7 +210,7 @@ private fun SampleScreen(extraRows: Int = 0) {
                         .padding(horizontal = FinoteTheme.spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.sm),
             ) {
-                BalanceHeroCard(label = "Total balance", balance = 12_450_000, income = 15_000_000, expense = 2_100_000)
+                BalanceHeroCard(label = "Spent", amount = 2_100_000, income = 15_000_000, net = 12_900_000)
                 SampleRow("Food", 45_000, MoneyKind.Expense)
                 SampleRow("Salary", 15_000_000, MoneyKind.Income)
                 SampleRow("Fuel", 120_000, MoneyKind.Expense)

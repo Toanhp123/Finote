@@ -7,11 +7,11 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 ## 1. Hiện trạng (2026-11-23)
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2d (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản, ghép chuyển khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Đoạn A xong: v0.2.0 phát hành 2026-11-23 (tag `v0.2.0`). Đoạn B: bước 13 (`feature/failed-inbox`), bước 14 (`feature/account-manage`) và bước 15 (`feature/category-ui`) và bước 16 (`feature/merchant-normalize`) xong. Tiếp theo: bước 13b và 17.
+- Đoạn A xong: v0.2.0 phát hành 2026-11-23 (tag `v0.2.0`). Đoạn B: bước 13 (`feature/failed-inbox`), bước 14 (`feature/account-manage`) và bước 15 (`feature/category-ui`), bước 16 (`feature/merchant-normalize`) và bước 17 (`feature/dashboard`) xong. Tiếp theo: bước 18 (ngân sách, dùng N6) và 13b.
 - Dogfood đóng 2026-11-23 (chỉ Techcombank): APK dogfood (R8) chạy ổn trên máy thật; `EncryptedDatabaseTest` qua trên máy thật; chưa gặp báo lệch số dư; luồng bình thường của bản sửa N-03 đã thử trên máy Vivo.
 - Mẫu thật chỉ gom được của Techcombank (2026-11-22): user không có tài khoản VCB, MB, MoMo. Rule VCB, MB, MoMo chỉ kiểm trên mẫu tổng hợp (D4).
 - DB version 13 (migration 12→13 của bước 16; 11→12 của bước 14), có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
-- Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Tài khoản: danh sách gom theo ngân hàng, tạo, sửa, sao chính, sắp xếp, lưu trữ, xóa, gộp, bỏ qua, số đã che. Quản lý danh mục: danh sách theo Chi, Thu và cha-con, tạo, sửa, đổi icon, ẩn, sắp xếp, xóa kèm chuyển giao dịch. Chưa có: dashboard.
+- Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Tài khoản: danh sách gom theo ngân hàng, tạo, sửa, sao chính, sắp xếp, lưu trữ, xóa, gộp, bỏ qua, số đã che. Quản lý danh mục: danh sách theo Chi, Thu và cha-con, tạo, sửa, đổi icon, ẩn, sắp xếp, xóa kèm chuyển giao dịch. Tổng quan (bước 17): chi, thu, ròng của tháng, nhịp chi so với cùng kỳ tháng trước (biểu đồ Vico), chi theo danh mục và cửa hàng; bấm một số mở danh sách báo cáo có tổng khớp. Danh sách giao dịch hiện phí chuyển khoản, đánh dấu dòng ngoài báo cáo, tab "Tất cả" bỏ dòng của tài khoản bị bỏ qua.
 
 ## 2. Nguyên tắc làm việc
 
@@ -47,7 +47,7 @@ Rà code ngày 2026-11-15. Mỗi dòng là một chỗ mà nhiều tính năng s
 | N3 | **Bộ so khớp** (matcher) | Hai bộ: `SettlementPlanner` (ngân hàng + ví, cùng chiều, 30 giây, trước khi ghi) và `TransferPairing.kt` (chuyển khoản, ngược chiều, 30 phút, khi ghi dòng thứ hai) | Ghép chuyển khoản; so "ứng viên với sổ" cho bóc lại log, failed-inbox, định kỳ, import | Bước 5 (tách vị từ), bước 11 (ứng viên với sổ) |
 | N4 | **Migration thật** | Xong: `applyMigrationPolicy`, test `MigrationPolicyTest` | Mọi nhánh thêm bảng hoặc cột sau khi có dữ liệu thật | Bước 6 |
 | N5 | **Định danh tài khoản** | Xong: bảng `account_identifiers` `(packageName, kind, mask)`; gộp chuyển định danh | Thẻ ghi nợ, MoMo nguồn ngân hàng, màn tài khoản (liên kết 4 số cuối), thẻ tín dụng, thêm ngân hàng | Bước 10 |
-| N6 | **Lõi báo cáo** (`domain/report`) | Chưa có. Tổng thu chi trong snapshot gồm cả điều chỉnh, phí, hoàn tiền; không biết `excludeFromAnalytics` | Dashboard, ngân sách, hoàn tiền, merchant, tách giao dịch | Bước 17 |
+| N6 | **Lõi báo cáo** (`domain/report`) | Xong: `ReportCalculator` đọc giao dịch, không đọc snapshot; tổng theo danh mục lá (`expenseByCategory`) cho ngân sách | Dashboard, ngân sách, hoàn tiền, merchant, tách giao dịch | Bước 17 |
 | N7 | **Thông báo của app** (kênh, quyền `POST_NOTIFICATIONS`) | Chưa có | Cảnh báo ngân sách, nhắc hóa đơn định kỳ, nhắc đòi tiền chi hộ | Bước 18 |
 | N8 | **Ghi theo lô** | Mỗi lần ghi tính lại toàn bộ tài khoản, O(số giao dịch) | Import (nghìn dòng), định kỳ, hiệu năng 50.000 giao dịch | Bước 25 (lô), bước 30 (tính lại từ tháng sửa) |
 
@@ -150,7 +150,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 14 | `feature/account-manage` | Must-Have | N5 | ✅ [spec](superpowers/specs/2026-11-24-account-manage-design.md) |
 | 15 | `feature/category-ui` | Must-Have | | ✅ [spec](superpowers/specs/2026-11-25-category-ui-design.md) |
 | 16 | `feature/merchant-normalize` | Should-Have | N1 | ✅ [spec](superpowers/specs/2026-11-25-merchant-normalize-design.md) |
-| 17 | `feature/dashboard` | **Must-Have** (bản cũ ghi nhầm Should-Have) | N6 | ⬜ |
+| 17 | `feature/dashboard` | **Must-Have** (bản cũ ghi nhầm Should-Have) | N6 | ✅ [spec](superpowers/specs/2026-11-25-dashboard-design.md) |
 | 18 | `feature/budget` | Should-Have | N6, N7 | ⬜ |
 | 19 | `feature/net-worth` | Should-Have | | ⬜ |
 | 20 | `feature/tags`, `feature/fts-search` | Should-Have | N2 | ⬜ |
@@ -215,7 +215,6 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | Mã | Vấn đề | Sửa ở |
 |---|---|---|
 | T2 | Giao dịch ngày tương lai (tới 366 ngày) tính ngay vào số dư hiện tại | D11, trước bước 24 |
-| T3 | Tổng thu chi trong snapshot gồm điều chỉnh, phí, hoàn tiền | Bước 17 (báo cáo không đọc snapshot) |
 | T4 | Không có khóa chống trùng giữa import, định kỳ và thông báo. Bước 11 đã dựng `isCoveredByAdjustment` (log với dòng điều chỉnh); còn thiếu so ứng viên với giao dịch thường | Bước 24, 25 |
 
 ### Nợ nhỏ
@@ -231,7 +230,7 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-14 | `MainActivity` inject thẳng `SetupRepository`, đọc prefs trên main thread; `settleNow()` chạy mỗi `onCreate` (nợ #6 cũ) | Bước 30 |
 | N-15 | Hash dòng bí mật dò ngược được OTP 6 số (nợ #4 cũ); OTA một khóa ghim, chưa xoay khóa | Bước 32 |
 | N-16 | Chuỗi `ja`, `zh-rCN` do máy viết, cần người bản ngữ xem | Trước bước 33 |
-| N-17 | Mục nhỏ của audit 2026-11-10: UI không dùng (`FinoteDatePicker`; `BalanceHeroCard` giữ cho bước 17), test mẫu, dependency thừa, test dùng đồng hồ thật | Bước 32 |
+| N-17 | Mục nhỏ của audit 2026-11-10: UI không dùng (`FinoteDatePicker`), test mẫu, dependency thừa, test dùng đồng hồ thật | Bước 32 |
 | N-19 | Dòng gốc bị ẩn vì ghép (`pairedIntoId`) và chuyển khoản đã tách: thùng rác phải ẩn; không dọn dòng gốc khi `T` còn sống, dọn cùng `T` | Bước 26 |
 | N-20 | Ghép theo giờ thông báo đến máy; đọc giờ ngân hàng trong nội dung (nhóm `time`, định dạng từng ngân hàng, cột ở log, đổi `pairingTime`) | Sau bước 9 |
 | N-23 | Listener chết trên Vivo/Xiaomi khi Autostart tắt: chỉ sống lại khi mở app (`rebindIfDisconnected`). Thông báo user xóa trước lúc đó thì mất, chỉ còn báo lệch số dư bắt được. Cần: màn Capture báo listener đang dừng (không chỉ quyền), hướng dẫn bật Autostart theo hãng máy | Bước 29 |
@@ -243,6 +242,8 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-29 | Tạo danh mục ngay từ bộ chọn trong sheet nhập tiền mặt (kiểu Money Lover), hoãn từ bước 15 | Sau bước 15 |
 | N-30 | Màn danh mục chép `ColorPicker`, `Swatch`, `DragHandle`/`moveAction` và dòng chọn có dấu tích từ màn tài khoản; sửa một chỗ phải sửa chỗ kia. Mô tả biểu tượng trong bộ chọn là "Biểu tượng n", lặp lại mỗi nhóm (TalkBack) | Khi chạm lại hai màn |
 | N-31 | Bước "Áp dụng cho giao dịch tương tự?" chưa có "Chọn từ ghi chú" (bôi đen đoạn chữ làm từ khóa) | Bước 13b |
+| N-32 | Cỡ chữ 200%: `FinoteListRow` giữ `titleMinWidth` 96dp nên tiêu đề dài gãy giữa từ ("Shoppin/g") ở danh sách danh mục của Tổng quan | Khi chạm lại `FinoteListRow` |
+| N-33 | Dòng phí trên `TransactionRow` là hai nút TalkBack ("Phí", số tiền); nên gộp ngữ nghĩa | Bước 29 hoặc khi chạm lại |
 
 ## 7. Quyết định
 

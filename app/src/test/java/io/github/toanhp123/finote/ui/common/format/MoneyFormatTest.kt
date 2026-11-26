@@ -48,4 +48,11 @@ class MoneyFormatTest {
     fun `smallest long is rejected`() {
         formatMoney(Long.MIN_VALUE, MoneyKind.Neutral, vi)
     }
+
+    @Test
+    fun `moneyOf reads a spend as expense, a refund as income and zero as neutral`() {
+        assertEquals(45_000L to MoneyKind.Expense, moneyOf(45_000))
+        assertEquals(0L to MoneyKind.Neutral, moneyOf(0))
+        assertEquals(80_000L to MoneyKind.Income, moneyOf(-80_000))
+    }
 }

@@ -1,8 +1,7 @@
 <resources>
     <string name="app_name">Finote</string>
-    <string name="balance_total">Tổng số dư</string>
     <string name="balance_income">Thu</string>
-    <string name="balance_expense">Chi</string>
+    <string name="balance_net">Ròng</string>
     <string name="cd_loading">Đang tải</string>
     <string name="cd_back">Quay lại</string>
     <string name="action_ok">OK</string>
@@ -110,6 +109,8 @@
     <string name="transactions_uncategorized">Chưa phân loại</string>
     <string name="transactions_deleted_account">Tài khoản đã xóa</string>
     <string name="transactions_auto_paired">Tự ghép</string>
+    <string name="transactions_not_in_reports">Ngoài báo cáo</string>
+    <string name="transaction_row_fee">Phí</string>
     <string name="transactions_empty">Chưa có giao dịch</string>
     <string name="transactions_empty_account">Tài khoản này chưa có giao dịch</string>
     <string name="transactions_error">Không tải được giao dịch</string>
@@ -413,4 +414,22 @@
     <string name="keyword_rule_edit_delete">Xóa luật</string>
     <string name="keyword_rule_delete_title">Xóa luật \"%1$s\"?</string>
     <string name="keyword_rule_delete_text">Giao dịch đã có danh mục vẫn giữ nguyên.</string>
+    <string name="overview_spent">Đã chi</string>
+    <string name="overview_spent_refund">Hoàn nhiều hơn chi</string>
+    <string name="overview_month_prev_cd">Tháng trước</string>
+    <string name="overview_month_next_cd">Tháng sau</string>
+    <string name="overview_pace_up">+%1$d%% so với cùng kỳ tháng trước</string>
+    <string name="overview_pace_down">−%1$d%% so với cùng kỳ tháng trước</string>
+    <string name="overview_pace_flat">0%% so với cùng kỳ tháng trước</string>
+    <string name="overview_pace_chart_cd">Chi tiêu cộng dồn theo ngày, tháng này so với tháng trước</string>
+    <string name="overview_pace_future_note">Có giao dịch ngày tương lai: số tiền tính cả tháng, đường biểu đồ dừng ở hôm nay.</string>
+    <string name="overview_section_buckets">Chi theo nhóm</string>
+    <string name="overview_section_merchants">Nơi chi nhiều nhất</string>
+    <string name="overview_buckets_empty">Không có khoản chi nào trong tháng</string>
+    <string name="overview_bucket_fees">Phí chuyển khoản</string>
+    <string name="overview_buckets_view_all">Xem tất cả (%1$d)</string>
+    <string name="overview_share">%1$d%%</string>
+    <string name="overview_pace_legend_this">Tháng này</string>
+    <string name="overview_pace_legend_last">Tháng trước</string>
+    <string name="report_list_empty">Không còn giao dịch nào trong mục này</string>
 </resources>

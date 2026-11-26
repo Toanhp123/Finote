@@ -61,6 +61,21 @@ private fun TransactionListLoadingPreview() = Frame(TransactionListState(today =
 private fun TransactionListReimbursementPreview() = Frame(populated(withReimbursement = true))
 
 @PreviewTest
+@ScreenPreviews
+@Composable
+private fun TransactionListExcludedPreview() = Frame(populated(withExcluded = true))
+
+// The transfer seen from its destination account: no fee line.
+@PreviewTest
+@Preview(name = "Light", device = PHONE)
+@Composable
+private fun TransactionListTransferDestinationPreview() {
+    val all = populated()
+    val rows = all.days.flatMap { it.transactions }
+    Frame(all.copy(selectedAccountId = momo.id, days = groupByDay(rows, zone, momo.id)))
+}
+
+@PreviewTest
 @Preview(name = "Light", device = PHONE)
 @Composable
 private fun TransactionListPendingPreview() = Frame(pendingMode(populated(withReimbursement = true)))
@@ -134,7 +149,10 @@ private fun pendingMode(all: TransactionListState): TransactionListState {
 }
 
 // withReimbursement marks two expenses; the plain list keeps the references of the list screenshots unchanged.
-private fun populated(withReimbursement: Boolean = false): TransactionListState {
+private fun populated(
+    withReimbursement: Boolean = false,
+    withExcluded: Boolean = false,
+): TransactionListState {
     val yesterday = TODAY.minusDays(1)
     val older = LocalDate.of(2026, 10, 29)
     val rows =
@@ -174,11 +192,17 @@ private fun populated(withReimbursement: Boolean = false): TransactionListState 
             } else {
                 emptyList()
             }
+    val excluded =
+        if (withExcluded) {
+            listOf(row("t8", TransactionType.EXPENSE, 250_000, at(TODAY, 7), note = "Gift", isExcluded = true))
+        } else {
+            emptyList()
+        }
     return TransactionListState(
         isLoading = false,
         today = TODAY,
         accounts = listOf(cash, bank),
-        days = groupByDay(rows, zone, null),
+        days = groupByDay(rows + excluded, zone, null),
         accountsById = listOf(cash, bank, momo).associateBy { it.id },
         categoriesById = categories.associateBy { it.id },
     )
@@ -195,6 +219,7 @@ private fun row(
     fee: Long = 0,
     direction: AdjustmentDirection? = null,
     status: ReimbursementStatus = ReimbursementStatus.NONE,
+    isExcluded: Boolean = false,
 ) = Transaction(
     id = id,
     amount = amount,
@@ -209,7 +234,7 @@ private fun row(
     updatedAt = at,
     categoryId = category,
     note = note,
-    isExcludedFromAnalytics = status != ReimbursementStatus.NONE,
+    isExcludedFromAnalytics = isExcluded || status != ReimbursementStatus.NONE,
     reimbursementStatus = status,
 )
 

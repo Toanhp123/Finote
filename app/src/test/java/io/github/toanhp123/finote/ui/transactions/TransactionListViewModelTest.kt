@@ -75,7 +75,7 @@ class TransactionListViewModelTest {
     private fun viewModel(handle: SavedStateHandle = SavedStateHandle()) =
         TransactionListViewModel(
             savedStateHandle = handle,
-            observeList = ObserveTransactionListUseCase(fakeTx, clock),
+            observeList = ObserveTransactionListUseCase(fakeTx, accounts, clock),
             observeAccounts = ObserveAccountsUseCase(accounts),
             observeCategories = ObserveCategoriesUseCase(categories),
             observeDrifts =

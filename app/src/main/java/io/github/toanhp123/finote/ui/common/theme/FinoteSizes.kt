@@ -26,4 +26,10 @@ data class FinoteSizes(
     val switchTrackWidth: Dp = 52.dp,
     val switchTrackHeight: Dp = 32.dp,
     val switchThumb: Dp = 24.dp,
+    val chartHeight: Dp = 160.dp,
+    val chartStroke: Dp = 2.dp,
+    /** Length of the line sample in a chart legend. */
+    val legendSwatch: Dp = 16.dp,
+    /** Height of a share bar under a list row. */
+    val barHeight: Dp = 4.dp,
 )
