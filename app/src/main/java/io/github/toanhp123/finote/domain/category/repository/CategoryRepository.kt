@@ -24,6 +24,8 @@ interface CategoryRepository {
     /**
      * Keeps `isSystemDefault`, `isHidden`, `createdAt` and `deletedAt` of the stored row. A missing row is ignored.
      *
+     * A top-level category that gets a parent hands its budgets to that parent, as a delete does.
+     *
      * Contract for `name`: pass the stored `name` (the English fallback) unchanged unless the user edited the name
      * field. A different `name` clears `nameKey`. Passing the translated string the UI shows is a different `name`,
      * so it clears `nameKey` and the category loses its localization.
@@ -49,11 +51,16 @@ interface CategoryRepository {
     /** User keyword rules (not the seeded system ones) whose category is in [categoryIds]. */
     suspend fun countRules(categoryIds: Set<String>): Int
 
+    /** Budgets (any month) whose category is in [categoryIds]. */
+    suspend fun countBudgets(categoryIds: Set<String>): Int
+
     /**
      * Points every transaction of [categoryIds] at [targetId] (null clears it), deleted and paired-away ones too,
      * without touching `updatedAt`, then soft-deletes the categories. User keyword rules follow the transactions: a
-     * rule whose keyword [targetId] already has is dropped, and with a null [targetId] they are all deleted. This is
-     * the only place that knows which tables point at a category: step 18 (`Budget`) adds its table here.
+     * rule whose keyword [targetId] already has is dropped, and with a null [targetId] they are all deleted. Budgets
+     * move to the top-level category of [targetId] (budgets are top-level only); a month the target already budgets
+     * keeps the target's row, and with a null [targetId] they are deleted. This is the only place that knows which
+     * tables point at a category.
      */
     suspend fun deleteAndMove(
         categoryIds: Set<String>,

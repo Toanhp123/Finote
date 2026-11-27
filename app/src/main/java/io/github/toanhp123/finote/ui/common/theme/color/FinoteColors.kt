@@ -7,6 +7,8 @@ data class FinoteColors(
     val income: MoneyColorRole,
     val expense: MoneyColorRole,
     val transfer: MoneyColorRole,
+    /** Near a limit: past the warning mark, before it is crossed. */
+    val warning: MoneyColorRole,
     val hero: HeroColors,
     val glass: GlassColors,
     val background: Color,
@@ -48,6 +50,7 @@ internal fun finoteColors(
             income = DarkIncome,
             expense = DarkExpense,
             transfer = DarkTransfer,
+            warning = DarkWarning,
             hero = HeroColors(scheme.primaryContainer, scheme.tertiaryContainer, scheme.onPrimaryContainer),
             glass =
                 GlassColors(
@@ -63,6 +66,7 @@ internal fun finoteColors(
             income = LightIncome,
             expense = LightExpense,
             transfer = LightTransfer,
+            warning = LightWarning,
             hero = HeroColors(scheme.primary, scheme.tertiary, scheme.onPrimary),
             glass =
                 GlassColors(

@@ -264,6 +264,23 @@ class ReportCalculatorTest {
     }
 
     @Test
+    fun `all spending rows total the month expense`() {
+        val input =
+            input(
+                row(TransactionType.EXPENSE, 100_000, category = "c1"),
+                row(TransactionType.EXPENSE, 9_000, fee = 1_000),
+                row(TransactionType.REFUND, 30_000, category = "c1"),
+                row(TransactionType.TRANSFER, 1_000_000, fee = 3_300),
+                row(TransactionType.INCOME, 400_000),
+                row(TransactionType.EXPENSE, 5_000).copy(isExcludedFromAnalytics = true),
+            )
+        val rows = ReportCalculator.rows(input, month, ReportFilter.AllSpending)
+        assertEquals(report(input).expense, rows.total)
+        assertEquals(5, rows.rows.size)
+        assertTrue(rows.rows.any { it.amount < 0 })
+    }
+
+    @Test
     fun `fee rows carry the fee as amount`() {
         val transfer = row(TransactionType.TRANSFER, 2_000_000, fee = 5_000)
         val rows = ReportCalculator.rows(input(transfer), month, ReportFilter.TransferFees)

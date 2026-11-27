@@ -57,4 +57,31 @@ class EditTransactionNavigationTest {
         assertFalse(isTabBarVisible(stack))
         assertEquals(Overview, currentTab(stack))
     }
+
+    @Test
+    fun `the tab bar stays under the budget editor`() {
+        assertTrue(isTabBarVisible(listOf(Overview, Budget, EditBudget())))
+        assertTrue(isTabBarVisible(listOf(Overview, Budget, EditBudget("b"))))
+    }
+
+    @Test
+    fun `a double tap opens one budget editor`() {
+        val stack = mutableListOf<NavKey>(Overview, Budget)
+
+        openBudgetEditor(stack, "a")
+        openBudgetEditor(stack, null)
+
+        assertEquals(listOf<NavKey>(Overview, Budget, EditBudget("a")), stack)
+    }
+
+    @Test
+    fun `closing the budget editor twice is harmless`() {
+        val key = EditBudget()
+        val stack = mutableListOf<NavKey>(Overview, Budget, key)
+
+        closeBudgetEditor(stack, key)
+        closeBudgetEditor(stack, key)
+
+        assertEquals(listOf<NavKey>(Overview, Budget), stack)
+    }
 }

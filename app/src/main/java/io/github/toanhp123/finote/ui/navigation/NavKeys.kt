@@ -88,9 +88,15 @@ data class EditTransaction(
     val id: String,
 ) : NavKey
 
+/** The budget sheet: create ([id] null) or edit the budget [id], drawn over the [Budget] tab. */
+@Serializable
+data class EditBudget(
+    val id: String? = null,
+) : NavKey
+
 /** What a [ReportList] shows; [ReportList.key] is the category id or the merchant name for two of them. */
 @Serializable
-enum class ReportListKind { CATEGORY, UNCATEGORIZED, TRANSFER_FEES, MERCHANT }
+enum class ReportListKind { CATEGORY, UNCATEGORIZED, TRANSFER_FEES, MERCHANT, ALL_SPENDING }
 
 /**
  * The rows behind one Overview amount, pushed on top of [Overview]. [month] is `yyyy-MM`. [key] is the category id

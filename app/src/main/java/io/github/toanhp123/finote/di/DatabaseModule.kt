@@ -17,7 +17,9 @@ import io.github.toanhp123.finote.data.database.createFinoteDatabase
 import io.github.toanhp123.finote.data.transaction.local.dao.TagDao
 import io.github.toanhp123.finote.data.transaction.local.dao.TransactionDao
 import io.github.toanhp123.finote.data.transaction.local.dao.TransferPairDao
+import io.github.toanhp123.finote.work.BudgetAlertWatcher
 import java.time.Clock
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Module
@@ -28,7 +30,10 @@ object DatabaseModule {
     fun provideDatabase(
         @ApplicationContext context: Context,
         clock: Clock,
-    ): FinoteDatabase = createFinoteDatabase(context, clock)
+        watcher: Provider<BudgetAlertWatcher>,
+    ): FinoteDatabase =
+        // The watcher needs the database, so it comes through a Provider and starts only once the database exists.
+        createFinoteDatabase(context, clock).also { watcher.get().start() }
 
     @Provides
     fun provideAccountDao(db: FinoteDatabase): AccountDao = db.accountDao()

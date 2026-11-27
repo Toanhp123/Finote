@@ -6,4 +6,5 @@
     <exclude domain="sharedpref" path="rule_update.xml" />
     <exclude domain="sharedpref" path="app_setup.xml" />
     <exclude domain="sharedpref" path="drift_ack.xml" />
+    <exclude domain="sharedpref" path="budget_prompt.xml" />
 </full-backup-content>

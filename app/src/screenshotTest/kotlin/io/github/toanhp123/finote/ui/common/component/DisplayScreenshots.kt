@@ -1,5 +1,6 @@
 package io.github.toanhp123.finote.ui.common.component
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -7,11 +8,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import io.github.toanhp123.finote.R
+import io.github.toanhp123.finote.ui.common.component.control.MonthSwitcher
 import io.github.toanhp123.finote.ui.common.component.display.ChartLine
 import io.github.toanhp123.finote.ui.common.component.display.ChartSeries
 import io.github.toanhp123.finote.ui.common.component.display.FinoteCard
 import io.github.toanhp123.finote.ui.common.component.display.FinoteLineChart
 import io.github.toanhp123.finote.ui.common.component.display.FinoteListRow
+import io.github.toanhp123.finote.ui.common.component.display.FinoteProgressBar
+import io.github.toanhp123.finote.ui.common.component.display.ProgressTone
 import io.github.toanhp123.finote.ui.common.component.finance.BalanceHeroCard
 import io.github.toanhp123.finote.ui.common.component.finance.CategoryIcon
 import io.github.toanhp123.finote.ui.common.component.finance.MoneyText
@@ -21,6 +25,8 @@ import io.github.toanhp123.finote.ui.common.component.preview.FinotePreviews
 import io.github.toanhp123.finote.ui.common.component.preview.PreviewGreenArgb
 import io.github.toanhp123.finote.ui.common.component.preview.PreviewRedArgb
 import io.github.toanhp123.finote.ui.common.format.MoneyKind
+import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
+import java.time.YearMonth
 
 // 16 characters five times: an 80-character title.
 private const val LONG_TITLE_REPEAT = 5
@@ -251,5 +257,31 @@ private fun FinoteLineChartScreenshot() {
             dayCount = CHART_DAY_COUNT,
             contentDescription = "Spending chart",
         )
+    }
+}
+
+@PreviewTest
+@FinotePreviews
+@Composable
+private fun FinoteProgressBarScreenshot() {
+    FinotePreviewSurface {
+        Column(verticalArrangement = Arrangement.spacedBy(FinoteTheme.spacing.lg)) {
+            FinoteProgressBar(fraction = 0.4f, tone = ProgressTone.Normal)
+            FinoteProgressBar(fraction = 0.85f, tone = ProgressTone.Warning)
+            FinoteProgressBar(fraction = 1f, tone = ProgressTone.Over)
+            FinoteProgressBar(fraction = 0f, tone = ProgressTone.Normal)
+        }
+    }
+}
+
+@PreviewTest
+@FinotePreviews
+@Composable
+private fun MonthSwitcherScreenshot() {
+    FinotePreviewSurface {
+        Column {
+            MonthSwitcher(month = YearMonth.of(2026, 10), isNextEnabled = true, onPrevious = {}, onNext = {})
+            MonthSwitcher(month = YearMonth.of(2026, 11), isNextEnabled = false, onPrevious = {}, onNext = {})
+        }
     }
 }

@@ -24,6 +24,14 @@ class ContrastTest {
         }
 
     @Test
+    fun `warning reads on cards`() =
+        modes.forEach { (isDark, scheme) ->
+            val colors = finoteColors(scheme, isDark)
+            assertContrast(TEXT, colors.warning.color, colors.card, "warning dark=$isDark")
+            assertContrast(TEXT, colors.warning.onContainer, colors.warning.container, "warning container dark=$isDark")
+        }
+
+    @Test
     fun `hero text reads on both gradient ends`() =
         modes.forEach { (isDark, scheme) ->
             val hero = finoteColors(scheme, isDark).hero

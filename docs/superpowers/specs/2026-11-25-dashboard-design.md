@@ -1,7 +1,7 @@
 # Dashboard and the report core (roadmap step 17): design
 
 Date: 2026-11-25. Status: implemented on feature/dashboard (2026-11-26). Revised the same day after a builder check and an outside review (Gemini) checked it against the code.
-Branch (planned): `feature/dashboard` from `dev`. Source: `docs/roadmap.md` section 4 (N6), section 5 step 17; debt T3 (fixed here). Spec 4 "Dashboard & Báo cáo dòng tiền tháng" (spec L304–305), spec 3 `excludeFromAnalytics` (L114, L280), spec 3.5 `Budget` (L136–142), acceptance L413. Related: step 18 (budget, reuses N6 and replaces the pace gauge), step 19 (net worth, reuses the chart wrapper), step 22 (refund), step 28 (balance masking through `MoneyText`), debt T2 (future-dated rows).
+Branch (planned): `feature/dashboard` from `dev`. Source: `docs/roadmap.md` section 4 (N6), section 5 step 17; debt T3 (fixed here). Spec 4 "Dashboard & Báo cáo dòng tiền tháng" (spec L304–305), spec 3 `excludeFromAnalytics` (L114, L280), spec 3.5 `Budget` (L136–142), acceptance L413. Related: step 18 (budget, reuses N6; kept Overview unchanged, budget lives in its own tab), step 19 (net worth, reuses the chart wrapper), step 22 (refund), step 28 (balance masking through `MoneyText`), debt T2 (future-dated rows).
 
 ## Why
 
@@ -42,7 +42,7 @@ The user chose to fix all three in this step (option 2), so that the sum of a mo
 ## Non-goals
 
 - Balance masking button (`***`): step 28, through `MoneyText`.
-- Budget, "left to spend", the ideal-pace line: step 18. The pace gauge here is replaced by the budget bar then.
+- Budget, "left to spend", the ideal-pace line: step 18. Step 18 kept Overview unchanged (the pace gauge stays; budget lives in its own tab).
 - Net worth over years, and a total balance line on Overview: step 19. Whether it skips `excludeFromNetWorth` and subtracts card debt is decided there; a number here now could disagree later.
 - Refund creation and screens: step 22. No code path creates a `REFUND` today; the rules below only keep room for it.
 - Tapping the Spent or Income totals: the buckets already break Spent down. Income has no breakdown in this step.

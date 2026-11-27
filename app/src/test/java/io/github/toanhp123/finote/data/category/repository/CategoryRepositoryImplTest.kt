@@ -1,6 +1,7 @@
 package io.github.toanhp123.finote.data.category.repository
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.toanhp123.finote.data.budget.local.entity.BudgetEntity
 import io.github.toanhp123.finote.data.category.local.entity.CategoryEntity
 import io.github.toanhp123.finote.data.category.mapper.toDomain
 import io.github.toanhp123.finote.data.database.InMemoryDatabaseRule
@@ -302,6 +303,109 @@ class CategoryRepositoryImplTest {
 
             assertEquals(2, repo.countRules(setOf("cat-a", "cat-child")))
             assertEquals(0, repo.countRules(emptySet()))
+        }
+
+    private fun budget(
+        id: String,
+        categoryId: String?,
+        monthYear: String,
+        limit: Long = 1_000_000L,
+    ) = BudgetEntity(
+        id = id,
+        categoryId = categoryId,
+        limitAmount = limit,
+        monthYear = monthYear,
+        isRollover = false,
+        alertThreshold = 80,
+        lastAlertSentThreshold = null,
+        createdAt = 1L,
+        updatedAt = 1L,
+    )
+
+    private suspend fun budgetsOf(categoryId: String) =
+        dbRule.db
+            .budgetDao()
+            .getByCategories(setOf(categoryId))
+            .associate { it.monthYear to it.limitAmount }
+
+    @Test
+    fun `deleteAndMove moves budgets to the target and the target's own budget wins`() =
+        runTest {
+            seed(category(id = "cat-a"), category(id = "cat-b"))
+            val budgets = dbRule.db.budgetDao()
+            budgets.insert(budget("a-oct", "cat-a", "2026-10", limit = 100L))
+            budgets.insert(budget("a-nov", "cat-a", "2026-11", limit = 200L))
+            budgets.insert(budget("b-nov", "cat-b", "2026-11", limit = 300L))
+
+            repo.deleteAndMove(setOf("cat-a"), "cat-b", deletedAt = 8L)
+
+            assertEquals(mapOf("2026-10" to 100L, "2026-11" to 300L), budgetsOf("cat-b"))
+            assertTrue(budgetsOf("cat-a").isEmpty())
+        }
+
+    @Test
+    fun `deleteAndMove into a child moves budgets to its parent`() =
+        runTest {
+            seed(category(id = "cat-a"), category(id = "cat-p"), category(id = "cat-kid", parentId = "cat-p"))
+            dbRule.db.budgetDao().insert(budget("a-oct", "cat-a", "2026-10", limit = 100L))
+
+            repo.deleteAndMove(setOf("cat-a"), "cat-kid", deletedAt = 8L)
+
+            assertEquals(mapOf("2026-10" to 100L), budgetsOf("cat-p"))
+            assertTrue(budgetsOf("cat-kid").isEmpty())
+        }
+
+    @Test
+    fun `deleteAndMove with no target deletes budgets`() =
+        runTest {
+            seed(category(id = "cat-a"), category(id = "cat-b"))
+            val budgets = dbRule.db.budgetDao()
+            budgets.insert(budget("a-oct", "cat-a", "2026-10"))
+            budgets.insert(budget("b-oct", "cat-b", "2026-10"))
+
+            repo.deleteAndMove(setOf("cat-a"), null, deletedAt = 8L)
+
+            assertTrue(budgetsOf("cat-a").isEmpty())
+            assertEquals(1, budgetsOf("cat-b").size)
+        }
+
+    @Test
+    fun `update turning a budgeted top-level category into a child moves its budgets to the parent`() =
+        runTest {
+            seed(category(id = "cat-1"), category(id = "cat-p"))
+            val budgets = dbRule.db.budgetDao()
+            budgets.insert(budget("b-oct", "cat-1", "2026-10", limit = 100L))
+            budgets.insert(budget("b-nov", "cat-1", "2026-11", limit = 200L))
+            budgets.insert(budget("p-nov", "cat-p", "2026-11", limit = 300L))
+
+            repo.update(category(id = "cat-1", parentId = "cat-p").toDomain())
+
+            assertEquals(mapOf("2026-10" to 100L, "2026-11" to 300L), budgetsOf("cat-p"))
+            assertTrue(budgetsOf("cat-1").isEmpty())
+        }
+
+    @Test
+    fun `update that keeps the level keeps the budgets`() =
+        runTest {
+            seed(category(id = "cat-1"))
+            dbRule.db.budgetDao().insert(budget("b-oct", "cat-1", "2026-10"))
+
+            repo.update(category(id = "cat-1").toDomain().copy(color = 0x11))
+
+            assertEquals(1, budgetsOf("cat-1").size)
+        }
+
+    @Test
+    fun `countBudgets counts the budgets of the ids`() =
+        runTest {
+            seed(category(id = "cat-a"), category(id = "cat-b"))
+            val budgets = dbRule.db.budgetDao()
+            budgets.insert(budget("a-oct", "cat-a", "2026-10"))
+            budgets.insert(budget("a-nov", "cat-a", "2026-11"))
+            budgets.insert(budget("b-oct", "cat-b", "2026-10"))
+
+            assertEquals(2, repo.countBudgets(setOf("cat-a")))
+            assertEquals(0, repo.countBudgets(emptySet()))
         }
 
     @Test

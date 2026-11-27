@@ -21,6 +21,7 @@ class ReportListKeyTest {
                 ReportFilter.Uncategorized,
                 ReportFilter.TransferFees,
                 ReportFilter.ByMerchant("Highlands"),
+                ReportFilter.AllSpending,
             )
 
         filters.forEach { filter ->
@@ -44,6 +45,17 @@ class ReportListKeyTest {
         }
         assertThrows(IllegalArgumentException::class.java) {
             ReportList("2026-11", ReportListKind.TRANSFER_FEES, "x").toFilter()
+        }
+    }
+
+    @Test
+    fun `ALL_SPENDING key round trips and takes no key`() {
+        val key = ReportFilter.AllSpending.toNavKey(month)
+
+        assertEquals(ReportList("2026-11", ReportListKind.ALL_SPENDING), key)
+        assertEquals(ReportFilter.AllSpending, key.toFilter())
+        assertThrows(IllegalArgumentException::class.java) {
+            ReportList("2026-11", ReportListKind.ALL_SPENDING, "x").toFilter()
         }
     }
 

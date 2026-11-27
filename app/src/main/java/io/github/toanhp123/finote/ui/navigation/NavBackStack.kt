@@ -74,4 +74,5 @@ fun closeEditor(
 }
 
 /** The bar shows when the screen under any editor sheet is a tab. */
-fun isTabBarVisible(backStack: List<NavKey>): Boolean = backStack.lastOrNull { it !is EditTransaction } in TopLevelTabs
+fun isTabBarVisible(backStack: List<NavKey>): Boolean =
+    backStack.lastOrNull { it !is EditTransaction && it !is EditBudget } in TopLevelTabs

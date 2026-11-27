@@ -362,7 +362,10 @@ class CategoryEditViewModelTest {
 
             vm.onIntent(CategoryEditIntent.DeleteClicked)
             runCurrent()
-            assertEquals(DeleteImpact(transactions = 0, rules = 2), checkNotNull(vm.state.value.delete).impact)
+            assertEquals(
+                DeleteImpact(transactions = 0, rules = 2, budgets = 0),
+                checkNotNull(vm.state.value.delete).impact,
+            )
             assertEquals(DeleteChoice.Unset, checkNotNull(vm.state.value.delete).choice)
 
             vm.onIntent(CategoryEditIntent.DeleteChoicePicked(DeleteChoice.Into("b")))
@@ -370,6 +373,22 @@ class CategoryEditViewModelTest {
             runCurrent()
 
             assertEquals(setOf("b"), repo.ruleCategory.values.toSet())
+        }
+
+    @Test
+    fun `delete with only a budget opens the move sheet with the budget count`() =
+        runTest(mainRule.dispatcher) {
+            val vm = loaded(EditCategory(id = "a"), testCategory(id = "a"), testCategory(id = "b"))
+            repo.budgetCategory["b-oct"] = "a"
+
+            vm.onIntent(CategoryEditIntent.DeleteClicked)
+            runCurrent()
+
+            assertEquals(
+                DeleteImpact(transactions = 0, rules = 0, budgets = 1),
+                checkNotNull(vm.state.value.delete).impact,
+            )
+            assertEquals(DeleteChoice.Unset, checkNotNull(vm.state.value.delete).choice)
         }
 
     @Test

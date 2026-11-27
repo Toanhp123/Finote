@@ -7,10 +7,10 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 ## 1. Hiện trạng (2026-11-23)
 
 - Đã xong và nằm trên `dev`: P0 (nền tảng), P1 (lõi dữ liệu, nhập tay), P2a–P2d (bắt thông báo, parser, OTA, đối ánh tài khoản, khử trùng, số dư đầu tự động, gộp và bỏ qua tài khoản, ghép chuyển khoản), nâng cấp clean architecture R1–R6, dọn dẹp nhánh 1–6. Chi tiết ở mục 8.
-- Đoạn A xong: v0.2.0 phát hành 2026-11-23 (tag `v0.2.0`). Đoạn B: bước 13 (`feature/failed-inbox`), bước 14 (`feature/account-manage`) và bước 15 (`feature/category-ui`), bước 16 (`feature/merchant-normalize`) và bước 17 (`feature/dashboard`) xong. Tiếp theo: bước 18 (ngân sách, dùng N6) và 13b.
+- Đoạn A xong: v0.2.0 phát hành 2026-11-23 (tag `v0.2.0`). Đoạn B: bước 13 (`feature/failed-inbox`), bước 14 (`feature/account-manage`) và bước 15 (`feature/category-ui`), bước 16 (`feature/merchant-normalize`) và bước 17 (`feature/dashboard`) và bước 18 (`feature/budget`) xong. Tiếp theo: bước 19 (giá trị ròng) và 13b.
 - Dogfood đóng 2026-11-23 (chỉ Techcombank): APK dogfood (R8) chạy ổn trên máy thật; `EncryptedDatabaseTest` qua trên máy thật; chưa gặp báo lệch số dư; luồng bình thường của bản sửa N-03 đã thử trên máy Vivo.
 - Mẫu thật chỉ gom được của Techcombank (2026-11-22): user không có tài khoản VCB, MB, MoMo. Rule VCB, MB, MoMo chỉ kiểm trên mẫu tổng hợp (D4).
-- DB version 13 (migration 12→13 của bước 16; 11→12 của bước 14), có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
+- DB version 14 (migration 13→14 của bước 18; 12→13 của bước 16; 11→12 của bước 14), có migration thật: từ v8, thiếu migration hoặc hạ version thì app crash và giữ file; chỉ v1–v7 bị xóa.
 - Màn hình đang có: danh sách giao dịch, sheet nhập tiền mặt (Chi, Thu, Chuyển; có chế độ sửa và xóa giao dịch), setup quyền, Cài đặt (bắt thông báo, tài khoản: gộp, bỏ qua). Tài khoản: danh sách gom theo ngân hàng, tạo, sửa, sao chính, sắp xếp, lưu trữ, xóa, gộp, bỏ qua, số đã che. Quản lý danh mục: danh sách theo Chi, Thu và cha-con, tạo, sửa, đổi icon, ẩn, sắp xếp, xóa kèm chuyển giao dịch. Tổng quan (bước 17): chi, thu, ròng của tháng, nhịp chi so với cùng kỳ tháng trước (biểu đồ Vico), chi theo danh mục và cửa hàng; bấm một số mở danh sách báo cáo có tổng khớp. Danh sách giao dịch hiện phí chuyển khoản, đánh dấu dòng ngoài báo cáo, tab "Tất cả" bỏ dòng của tài khoản bị bỏ qua.
 
 ## 2. Nguyên tắc làm việc
@@ -18,7 +18,7 @@ Nguồn: spec `docs/Tài liệu Đặc tả...(MVP).txt` mục 2.2, 3, 4, 5–9;
 - Mỗi tính năng là một nhánh từ `dev`, squash vào `dev`. `reviewer` chạy một lần cho mỗi nhánh, trước khi squash.
 - Thay đổi logic (parser, dedup, pairing, balance) phải chạy `testDebugUnitTest` qua `gradle-run`.
 - Tiền là `Long` VND. Mọi thay đổi số dư và `AccountBalanceSnapshot` nằm trong một transaction.
-- Xóa mềm bằng `deletedAt`. Chỉ WorkManager dọn thùng rác mới xóa cứng. Ngoại lệ: dòng `account_identifiers` là khóa so khớp, và dòng `category_keyword_rules` là quy tắc, không phải bản ghi; xóa cứng được khi user xóa số đã che, quy tắc hoặc danh mục.
+- Xóa mềm bằng `deletedAt`. Chỉ WorkManager dọn thùng rác mới xóa cứng. Ngoại lệ: dòng `account_identifiers` là khóa so khớp, dòng `category_keyword_rules` là quy tắc, và dòng `budgets` là kế hoạch, không phải bản ghi; xóa cứng được khi user xóa số đã che, quy tắc, ngân sách hoặc danh mục. Dòng `budgets` cũng bị xóa cứng khi danh mục chuyển vào danh mục cha đã có ngân sách trong tháng đó.
 - Không log nội dung thông báo, số dư, số tài khoản. Fixture test dùng dữ liệu giả.
 - Instrumented test chỉ chạy khi user yêu cầu. Test Room chạy trong `testDebugUnitTest`.
 - **Mới:** thứ tự nhánh theo ba ưu tiên: (1) đúng tiền, (2) nền móng dùng chung làm trước tính năng dùng nó, (3) Must-Have trước Should-Have.
@@ -48,7 +48,7 @@ Rà code ngày 2026-11-15. Mỗi dòng là một chỗ mà nhiều tính năng s
 | N4 | **Migration thật** | Xong: `applyMigrationPolicy`, test `MigrationPolicyTest` | Mọi nhánh thêm bảng hoặc cột sau khi có dữ liệu thật | Bước 6 |
 | N5 | **Định danh tài khoản** | Xong: bảng `account_identifiers` `(packageName, kind, mask)`; gộp chuyển định danh | Thẻ ghi nợ, MoMo nguồn ngân hàng, màn tài khoản (liên kết 4 số cuối), thẻ tín dụng, thêm ngân hàng | Bước 10 |
 | N6 | **Lõi báo cáo** (`domain/report`) | Xong: `ReportCalculator` đọc giao dịch, không đọc snapshot; tổng theo danh mục lá (`expenseByCategory`) cho ngân sách | Dashboard, ngân sách, hoàn tiền, merchant, tách giao dịch | Bước 17 |
-| N7 | **Thông báo của app** (kênh, quyền `POST_NOTIFICATIONS`) | Chưa có | Cảnh báo ngân sách, nhắc hóa đơn định kỳ, nhắc đòi tiền chi hộ | Bước 18 |
+| N7 | **Thông báo của app** (kênh, quyền `POST_NOTIFICATIONS`) | Xong: kênh `budget`; xin `POST_NOTIFICATIONS` ở lần lưu ngân sách đầu tiên; bấm thông báo mở thẳng tab Ngân sách | Cảnh báo ngân sách, nhắc hóa đơn định kỳ, nhắc đòi tiền chi hộ | Bước 18 |
 | N8 | **Ghi theo lô** | Mỗi lần ghi tính lại toàn bộ tài khoản, O(số giao dịch) | Import (nghìn dòng), định kỳ, hiệu năng 50.000 giao dịch | Bước 25 (lô), bước 30 (tính lại từ tháng sửa) |
 
 Quy ước rút ra:
@@ -151,7 +151,7 @@ Trạng thái: ✅ xong, 🔧 đang làm, ⬜ chưa làm, ⏸ chờ điều ki�
 | 15 | `feature/category-ui` | Must-Have | | ✅ [spec](superpowers/specs/2026-11-25-category-ui-design.md) |
 | 16 | `feature/merchant-normalize` | Should-Have | N1 | ✅ [spec](superpowers/specs/2026-11-25-merchant-normalize-design.md) |
 | 17 | `feature/dashboard` | **Must-Have** (bản cũ ghi nhầm Should-Have) | N6 | ✅ [spec](superpowers/specs/2026-11-25-dashboard-design.md) |
-| 18 | `feature/budget` | Should-Have | N6, N7 | ⬜ |
+| 18 | `feature/budget` | Should-Have | N6, N7 | ✅ [spec](superpowers/specs/2026-11-27-budget-design.md) |
 | 19 | `feature/net-worth` | Should-Have | | ⬜ |
 | 20 | `feature/tags`, `feature/fts-search` | Should-Have | N2 | ⬜ |
 | 21 | `release/0.3.0` | | | ⬜ |
@@ -238,12 +238,12 @@ Một chỗ duy nhất. Mỗi dòng có nhánh sẽ sửa. Sửa xong thì xóa 
 | N-25 | Hộp thoại gộp (`MergeDialog.kt`) và `Selectors.kt` đưa số tiền vào câu bằng `formatMoney`, ngoài `MoneyText`; ẩn số dư ở bước 28 sẽ không che được | Bước 28 |
 | N-26 | Mốc "đã xác nhận" (`drift_ack.xml`) lưu SHA-256 của `accountId:T:L`, không phải số dư rõ, nhưng số dư ít entropy nên đọc được file prefs (máy root) thì dò ngược được. Hướng sửa: HMAC bằng khóa Keystore, hoặc thay `L` bằng dấu vết không chứa tiền (số dòng, `updatedAt` lớn nhất) | Bước 32 |
 | N-27 | Cặp ví + ngân hàng lỗi trước khi có `partner_failed` hiện thành hai mục trong hộp thư lỗi (không gộp được) | Khi có mẫu MoMo |
-| N-28 | `CategoryRepository.deleteAndMove` phải chuyển cả `Budget` (bước 18); phần quy tắc từ khóa đã xong ở bước 16 | Bước 18 |
 | N-29 | Tạo danh mục ngay từ bộ chọn trong sheet nhập tiền mặt (kiểu Money Lover), hoãn từ bước 15 | Sau bước 15 |
 | N-30 | Màn danh mục chép `ColorPicker`, `Swatch`, `DragHandle`/`moveAction` và dòng chọn có dấu tích từ màn tài khoản; sửa một chỗ phải sửa chỗ kia. Mô tả biểu tượng trong bộ chọn là "Biểu tượng n", lặp lại mỗi nhóm (TalkBack) | Khi chạm lại hai màn |
 | N-31 | Bước "Áp dụng cho giao dịch tương tự?" chưa có "Chọn từ ghi chú" (bôi đen đoạn chữ làm từ khóa) | Bước 13b |
 | N-32 | Cỡ chữ 200%: `FinoteListRow` giữ `titleMinWidth` 96dp nên tiêu đề dài gãy giữa từ ("Shoppin/g") ở danh sách danh mục của Tổng quan | Khi chạm lại `FinoteListRow` |
 | N-33 | Dòng phí trên `TransactionRow` là hai nút TalkBack ("Phí", số tiền); nên gộp ngữ nghĩa | Bước 29 hoặc khi chạm lại |
+| N-34 | `BudgetAlertWatcher` dừng hẳn khi luồng `observeChanges` ném `StorageException` một lần: hết cảnh báo ngân sách tới khi app khởi động lại, không thử lại. App scope không có `CoroutineExceptionHandler` | Bước 24 (dùng lại N7) hoặc bước 30 |
 
 ## 7. Quyết định
 

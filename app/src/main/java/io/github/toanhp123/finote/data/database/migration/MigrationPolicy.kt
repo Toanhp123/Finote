@@ -9,7 +9,7 @@ private const val FIRST_KEPT_VERSION = 8
 
 /** Hand-written migrations. Simple changes use `AutoMigration` on [FinoteDatabase] instead. */
 val FINOTE_MIGRATIONS: List<Migration> =
-    listOf(MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+    listOf(MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
 
 /**
  * Versions below [FIRST_KEPT_VERSION] may be dropped. From it on, a missing migration or a downgrade throws and

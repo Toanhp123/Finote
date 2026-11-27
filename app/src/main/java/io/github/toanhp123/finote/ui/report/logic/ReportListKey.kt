@@ -12,6 +12,7 @@ fun ReportFilter.toNavKey(month: YearMonth): ReportList {
         ReportFilter.Uncategorized -> ReportList(text, ReportListKind.UNCATEGORIZED)
         ReportFilter.TransferFees -> ReportList(text, ReportListKind.TRANSFER_FEES)
         is ReportFilter.ByMerchant -> ReportList(text, ReportListKind.MERCHANT, name)
+        ReportFilter.AllSpending -> ReportList(text, ReportListKind.ALL_SPENDING)
     }
 }
 
@@ -34,6 +35,11 @@ fun ReportList.toFilter(): ReportFilter =
         ReportListKind.TRANSFER_FEES -> {
             require(key == null) { "this list takes no key" }
             ReportFilter.TransferFees
+        }
+
+        ReportListKind.ALL_SPENDING -> {
+            require(key == null) { "this list takes no key" }
+            ReportFilter.AllSpending
         }
     }
 

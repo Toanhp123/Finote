@@ -58,6 +58,7 @@ object ReportCalculator {
         val picked =
             when (filter) {
                 is ReportFilter.ByMerchant -> entries.filter { it.isPrincipal && it.tx.merchantName == filter.name }
+                ReportFilter.AllSpending -> entries
                 else -> entries.filter { it.bucket == filter }
             }
         val rows =
@@ -174,7 +175,7 @@ object ReportCalculator {
             is ReportFilter.ByCategory -> 0
             ReportFilter.Uncategorized -> 1
             ReportFilter.TransferFees -> 2
-            is ReportFilter.ByMerchant -> error("a merchant is not a bucket")
+            is ReportFilter.ByMerchant, ReportFilter.AllSpending -> error("this filter is not a bucket")
         }
 
     private fun merchantsOf(entries: List<Entry>): List<MerchantTotal> =

@@ -110,7 +110,7 @@ internal val DarkBrandScheme =
         onTertiaryFixedVariant = Color(0xFF334863),
     )
 
-// Income, expense and transfer keep their hue under Dynamic Color.
+// Income, expense, transfer and warning keep their hue under Dynamic Color.
 internal val LightIncome = MoneyColorRole(Color(0xFF1B6D24), Color(0xFFFFFFFF), Color(0xFFA3F69C), Color(0xFF002204))
 internal val DarkIncome = MoneyColorRole(Color(0xFF88D982), Color(0xFF003909), Color(0xFF005313), Color(0xFFA3F69C))
 
@@ -119,3 +119,6 @@ internal val DarkExpense = MoneyColorRole(Color(0xFFFFB4AB), Color(0xFF690005), 
 
 internal val LightTransfer = MoneyColorRole(Color(0xFF345CA8), Color(0xFFFFFFFF), Color(0xFFD9E2FF), Color(0xFF001A43))
 internal val DarkTransfer = MoneyColorRole(Color(0xFFB0C6FF), Color(0xFF002D6E), Color(0xFF1A438F), Color(0xFFD9E2FF))
+
+internal val LightWarning = MoneyColorRole(Color(0xFF8A5100), Color(0xFFFFFFFF), Color(0xFFFFDDB8), Color(0xFF2C1600))
+internal val DarkWarning = MoneyColorRole(Color(0xFFFFB86B), Color(0xFF4A2800), Color(0xFF693C00), Color(0xFFFFDDB8))

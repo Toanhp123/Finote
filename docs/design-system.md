@@ -12,6 +12,7 @@ Code outside `ui/common/theme/` reads tokens through `FinoteTheme`. It never cal
 |---|---|---|
 | M3 color role | `FinoteTheme.kt` | `FinoteTheme.scheme.surface` |
 | Income, expense, transfer | `color/FinoteColors.kt` (values in `color/BrandColors.kt`) | `FinoteTheme.colors.income.color` (also `onColor`, `container`, `onContainer`) |
+| Warning (near a limit) | `color/FinoteColors.kt` (values in `color/BrandColors.kt`) | `FinoteTheme.colors.warning.color` (same four roles; `ContrastTest` checks it as text on `card`) |
 | Hero card colors | `color/FinoteColors.kt` | `FinoteTheme.colors.hero.start`, `.end`, `.onHero`, `.chipContainer` |
 | Glass colors | `color/FinoteColors.kt` | `FinoteTheme.colors.glass.fill`, `.solidFill`, `.stroke` |
 | Screen background, card | `color/FinoteColors.kt` | `FinoteTheme.colors.background`, `FinoteTheme.colors.card` |
@@ -28,7 +29,7 @@ Code outside `ui/common/theme/` reads tokens through `FinoteTheme`. It never cal
 | Category palette | `color/CategoryColors.kt` | `CategoryPalette` (14 colors; the only colors a user may pick) |
 
 - `FinoteTheme { }` is the root. It uses Dynamic Color on Android 12+ and the brand scheme (seed `#006A6A`, TonalSpot, in `color/BrandColors.kt`) on API 26-30. `dynamicColor = false` forces the brand scheme.
-- Income, expense, and transfer colors are fixed. They do not follow Dynamic Color. Hero, glass, background, and card follow the scheme.
+- Income, expense, transfer, and warning colors are fixed. They do not follow Dynamic Color. Hero, glass, background, and card follow the scheme.
 - Amount styles use tabular figures (`tnum`) so digits line up.
 - `CategoryIcon` takes the category color as `colorArgb: Int` and derives its tile and tint. `ContrastTest` checks every palette color.
 - Depth is flat. No shadows. Layers are told apart by color: screen background, then card, then floating glass.
@@ -40,10 +41,10 @@ All are in `ui/common/component/<group>/`, one main component per file; a small 
 
 | Group | What goes there |
 |---|---|
-| `control/` | Input and actions: `FinoteButton`, `FinoteIconButton`, `FinoteTextField`, `FinoteSwitch`, `FinoteSwitchRow`, `FinoteChip`, `FinoteSegmented`. `FinoteButtonStyle` is in `FinoteButton.kt` |
+| `control/` | Input and actions: `FinoteButton`, `FinoteIconButton`, `FinoteTextField`, `FinoteSwitch`, `FinoteSwitchRow`, `FinoteChip`, `FinoteSegmented`, `MonthSwitcher`. `FinoteButtonStyle` is in `FinoteButton.kt` |
 | `overlay/` | Layers and messages: `FinoteBottomSheet`, `FinoteDialog`, `FinoteDatePicker`, `FinoteSnackbar` with its state in the same file, helper `DatePickerDates` |
 | `layout/` | Screen frame: `FinoteScaffold`, `FinoteTopBar`, `FinoteNavBar` (`FinoteNavItem` is in the same file) |
-| `display/` | Generic display with no finance meaning: `FinoteCard`, `FinoteSection`, `FinoteListRow`, `FinoteEmptyState`, `FinoteSkeleton`, `FinoteLineChart`, helper `ListRowLayout` |
+| `display/` | Generic display with no finance meaning: `FinoteCard`, `FinoteSection`, `FinoteListRow`, `FinoteEmptyState`, `FinoteSkeleton`, `FinoteLineChart`, `FinoteProgressBar` (`ProgressTone` is in the same file), helper `ListRowLayout` |
 | `finance/` | Finance widgets: `BalanceHeroCard`, `TransactionRow`, `MoneyText`, `CategoryIcon` |
 | `glass/` | Glass effect infrastructure: `HazeLocals` (holds `LocalBlurEnabled`) |
 | `preview/` | Preview infrastructure: `FinotePreviews` (holds `FinotePreviewSurface`) |
@@ -76,6 +77,8 @@ A component file sits directly in one group. No group has a sub-group. `DesignSy
 | `FinoteSnackbarState` | `rememberFinoteSnackbarState()`, then `suspend show(message, actionLabel?): Boolean` | Transient message. Pass the state to `FinoteScaffold`. `show` returns true when the user pressed the action |
 | `FinoteEmptyState` | `(iconRes, title, modifier, message?, action?)` | A list or screen with no data |
 | `FinoteSkeleton` | `(modifier, shape)` | Placeholder block while data loads |
+| `FinoteProgressBar` | `(fraction: Float, tone: ProgressTone, modifier)` | A thin bar for a share of a limit. `fraction` is clamped to 0..1. `ProgressTone`: `Normal` (`scheme.primary`), `Warning` (`colors.warning`), `Over` (`scheme.error`). It has no semantics: the row that holds it says the state in words |
+| `MonthSwitcher` | `(month: YearMonth, isNextEnabled, onPrevious, onNext, modifier)` | Month title between previous and next buttons. The title is a heading |
 
 - Features may import only `Text` and `Icon` from `androidx.compose.material3`. A feature never holds a type of Material 3, Haze, or Compose Unstyled. The wrappers keep that state.
 - Icons are vector drawables named `ic_<name>.xml`. `material-icons-extended` is not used.

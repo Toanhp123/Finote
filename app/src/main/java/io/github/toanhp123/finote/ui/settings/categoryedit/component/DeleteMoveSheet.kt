@@ -33,9 +33,9 @@ import io.github.toanhp123.finote.ui.settings.categoryedit.logic.DeleteChoice
 import io.github.toanhp123.finote.ui.settings.categoryedit.logic.DeleteSheet
 
 /**
- * Where the transactions and keyword rules of the category [name] go before it is deleted. A null [sheet] hides it; it
- * keeps its rows while it leaves. [hasChildren] adds the note that the subcategories go too. The delete button waits
- * for a pick.
+ * Where the transactions, keyword rules and budgets of the category [name] go before it is deleted. A null [sheet]
+ * hides it; it keeps its rows while it leaves. [hasChildren] adds the note that the subcategories go too. The delete
+ * button waits for a pick.
  */
 @Composable
 fun DeleteMoveSheet(
@@ -68,6 +68,13 @@ fun DeleteMoveSheet(
         if (impact.rules > 0) {
             Text(
                 text = pluralStringResource(R.plurals.category_delete_rules_text, impact.rules, impact.rules),
+                color = FinoteTheme.scheme.onSurfaceVariant,
+                style = FinoteTheme.typography.material.bodyMedium,
+            )
+        }
+        if (impact.budgets > 0) {
+            Text(
+                text = pluralStringResource(R.plurals.category_delete_budgets_text, impact.budgets, impact.budgets),
                 color = FinoteTheme.scheme.onSurfaceVariant,
                 style = FinoteTheme.typography.material.bodyMedium,
             )
@@ -142,7 +149,7 @@ private fun DeleteMoveSheetPreview() {
         DeleteMoveSheet(
             sheet =
                 DeleteSheet(
-                    impact = DeleteImpact(transactions = 12, rules = 3),
+                    impact = DeleteImpact(transactions = 12, rules = 3, budgets = 2),
                     targets = listOf(previewTarget("a", "Food"), previewTarget("b", "Transport")),
                     choice = DeleteChoice.Into("a"),
                 ),

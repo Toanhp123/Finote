@@ -114,6 +114,10 @@ private fun ReportListState.title(): String =
         is ReportFilter.ByMerchant -> {
             shown.name
         }
+
+        ReportFilter.AllSpending -> {
+            stringResource(R.string.overview_spent)
+        }
     }
 
 /** The month under the title, and the total that equals the number tapped on Overview. */

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -57,10 +58,13 @@ import kotlinx.coroutines.launch
 fun FinoteNavHost(
     shouldStartAtSetup: Boolean,
     isToolsEnabled: Boolean,
+    openTabRequest: Int,
     modifier: Modifier = Modifier,
 ) {
     val start: NavKey = if (shouldStartAtSetup) Setup(isFromOnboarding = true) else Overview
     val backStack = rememberNavBackStack(start)
+    // The activity bumps the counter on a tap on a budget alert; 0 means no request.
+    LaunchedEffect(openTabRequest) { if (openTabRequest > 0) openTabFromAlert(backStack) }
     val snackbarState = rememberFinoteSnackbarState()
     val motion = FinoteTheme.motion
     val navBar by hiltViewModel<NavBarViewModel>().state.collectAsStateWithLifecycle()
@@ -110,7 +114,7 @@ fun FinoteNavHost(
                             contentPadding = padding,
                         )
                     }
-                    entry<Budget> { ComingSoonScreen(R.string.tab_budget) }
+                    budgetEntry(backStack, padding)
                     settingsEntries(backStack, snackbarState, padding)
                     accountEditEntry(backStack, snackbarState, padding, scope)
                     categoryEditEntry(backStack, snackbarState, padding)

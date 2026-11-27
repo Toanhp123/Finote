@@ -20,6 +20,7 @@ class CategoryRepositoryImpl
     ) : CategoryRepository {
         private val categories = db.categoryDao()
         private val rules = db.keywordRuleDao()
+        private val budgets = db.budgetDao()
 
         override suspend fun getCategory(id: String): Category? = storage { categories.getById(id)?.toDomain() }
 
@@ -46,6 +47,7 @@ class CategoryRepositoryImpl
                         nameKey = if (category.name == old.name) old.nameKey else null,
                     ),
                 )
+                if (old.parentId == null && category.parentId != null) moveBudgets(setOf(old.id), category.parentId)
             }
         }
 
@@ -71,6 +73,9 @@ class CategoryRepositoryImpl
         override suspend fun countRules(categoryIds: Set<String>): Int =
             storage { rules.countByCategories(categoryIds) }
 
+        override suspend fun countBudgets(categoryIds: Set<String>): Int =
+            storage { budgets.countByCategories(categoryIds) }
+
         override suspend fun deleteAndMove(
             categoryIds: Set<String>,
             targetId: String?,
@@ -84,8 +89,21 @@ class CategoryRepositoryImpl
                     rules.deleteDuplicatesOf(categoryIds, targetId)
                     rules.moveToCategory(categoryIds, targetId)
                 }
+                moveBudgets(categoryIds, targetId?.let { categories.getById(it)?.parentId ?: it })
                 categories.softDeleteAll(categoryIds, deletedAt)
             }
+        }
+
+        /** Null [to] deletes the budgets. A month [to] already budgets keeps its own row; the moved one is dropped. */
+        private suspend fun moveBudgets(
+            from: Set<String>,
+            to: String?,
+        ) {
+            val moving = budgets.getByCategories(from)
+            val taken = to?.let { budgets.getByCategories(setOf(it)).mapTo(mutableSetOf()) { b -> b.monthYear } }
+            val (kept, dropped) = moving.partition { taken?.add(it.monthYear) == true }
+            budgets.deleteByIds(dropped.map { it.id })
+            kept.forEach { budgets.update(it.copy(categoryId = to)) }
         }
 
         override suspend fun reorder(

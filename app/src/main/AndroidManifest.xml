@@ -5,6 +5,9 @@
     <!-- Used only to download the signed rule feed. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Budget alerts. Needs a runtime grant on API 33 and above. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".FinoteApplication"
         android:allowBackup="true"
@@ -18,7 +21,8 @@
         android:theme="@style/Theme.Finote">
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

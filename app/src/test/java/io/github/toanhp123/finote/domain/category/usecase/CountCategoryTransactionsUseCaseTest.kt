@@ -38,12 +38,25 @@ class CountCategoryTransactionsUseCaseTest {
             repo.ruleCategory["r-child"] = "a1"
             repo.ruleCategory["r-other"] = "b"
 
-            assertEquals(DeleteImpact(transactions = 0, rules = 2), count("a"))
+            assertEquals(DeleteImpact(transactions = 0, rules = 2, budgets = 0), count("a"))
+        }
+
+    @Test
+    fun `count includes budgets of the branch`() =
+        runTest {
+            repo.stored["a"] = testCategory(id = "a")
+            repo.stored["a1"] = testCategory(id = "a1", parentId = "a")
+            repo.stored["b"] = testCategory(id = "b")
+            repo.budgetCategory["b-oct"] = "a"
+            repo.budgetCategory["b-nov"] = "a"
+            repo.budgetCategory["b-other"] = "b"
+
+            assertEquals(DeleteImpact(transactions = 0, rules = 0, budgets = 2), count("a"))
         }
 
     @Test
     fun `count of an unknown id is zero`() =
         runTest {
-            assertEquals(DeleteImpact(transactions = 0, rules = 0), count("ghost"))
+            assertEquals(DeleteImpact(transactions = 0, rules = 0, budgets = 0), count("ghost"))
         }
 }

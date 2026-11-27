@@ -22,6 +22,9 @@ class FakeCategoryRepository : CategoryRepository {
 
     /** Rule id to category id; stands in for the user keyword rules. Does not copy the duplicate-keyword drop. */
     val ruleCategory = mutableMapOf<String, String>()
+
+    /** Budget id to category id; stands in for the budgets table. Only counted: moves are tested on the real DAO. */
+    val budgetCategory = mutableMapOf<String, String>()
     private val version = MutableStateFlow(0)
     var writes = 0
         private set
@@ -81,6 +84,8 @@ class FakeCategoryRepository : CategoryRepository {
         transactionCategory.count { (id, categoryId) -> id !in deletedTransactions && categoryId in categoryIds }
 
     override suspend fun countRules(categoryIds: Set<String>): Int = ruleCategory.values.count { it in categoryIds }
+
+    override suspend fun countBudgets(categoryIds: Set<String>): Int = budgetCategory.values.count { it in categoryIds }
 
     override suspend fun deleteAndMove(
         categoryIds: Set<String>,

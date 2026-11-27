@@ -8,6 +8,8 @@ import io.github.toanhp123.finote.data.account.repository.AccountMergeRepository
 import io.github.toanhp123.finote.data.account.repository.AccountRepositoryImpl
 import io.github.toanhp123.finote.data.account.repository.DriftAcknowledgementRepositoryImpl
 import io.github.toanhp123.finote.data.account.repository.MergeDismissalRepositoryImpl
+import io.github.toanhp123.finote.data.budget.repository.BudgetRepositoryImpl
+import io.github.toanhp123.finote.data.budget.repository.NotificationPromptRepositoryImpl
 import io.github.toanhp123.finote.data.category.repository.CategoryRepositoryImpl
 import io.github.toanhp123.finote.data.category.repository.KeywordRuleRepositoryImpl
 import io.github.toanhp123.finote.data.database.RoomTransactionRunner
@@ -18,6 +20,8 @@ import io.github.toanhp123.finote.domain.account.repository.AccountMergeReposito
 import io.github.toanhp123.finote.domain.account.repository.AccountRepository
 import io.github.toanhp123.finote.domain.account.repository.DriftAcknowledgementRepository
 import io.github.toanhp123.finote.domain.account.repository.MergeDismissalRepository
+import io.github.toanhp123.finote.domain.budget.repository.BudgetRepository
+import io.github.toanhp123.finote.domain.budget.repository.NotificationPromptRepository
 import io.github.toanhp123.finote.domain.category.repository.CategoryRepository
 import io.github.toanhp123.finote.domain.category.repository.KeywordRuleRepository
 import io.github.toanhp123.finote.domain.common.TransactionRunner
@@ -39,6 +43,12 @@ interface RepositoryModule {
 
     @Binds
     fun bindMergeDismissalRepository(impl: MergeDismissalRepositoryImpl): MergeDismissalRepository
+
+    @Binds
+    fun bindBudgetRepository(impl: BudgetRepositoryImpl): BudgetRepository
+
+    @Binds
+    fun bindNotificationPromptRepository(impl: NotificationPromptRepositoryImpl): NotificationPromptRepository
 
     @Binds
     fun bindCategoryRepository(impl: CategoryRepositoryImpl): CategoryRepository

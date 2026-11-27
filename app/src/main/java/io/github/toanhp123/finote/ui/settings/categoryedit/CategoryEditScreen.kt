@@ -228,7 +228,7 @@ private fun ColumnScope.ReorderBody(
     }
 }
 
-/** A category nobody uses gets a plain confirm; one with transactions or rules asks where they go. */
+/** A category nobody uses gets a plain confirm; one with transactions, rules or budgets asks where they go. */
 @Composable
 private fun DeleteOverlays(
     state: CategoryEditState,

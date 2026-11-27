@@ -3,35 +3,26 @@ package io.github.toanhp123.finote.ui.overview
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.toanhp123.finote.R
 import io.github.toanhp123.finote.domain.report.model.MonthReport
 import io.github.toanhp123.finote.domain.report.model.ReportFilter
 import io.github.toanhp123.finote.ui.common.ObserveEffects
-import io.github.toanhp123.finote.ui.common.component.control.FinoteIconButton
+import io.github.toanhp123.finote.ui.common.component.control.MonthSwitcher
 import io.github.toanhp123.finote.ui.common.component.display.FinoteEmptyState
 import io.github.toanhp123.finote.ui.common.component.display.FinoteSkeleton
 import io.github.toanhp123.finote.ui.common.component.finance.BalanceHeroCard
 import io.github.toanhp123.finote.ui.common.component.layout.FinoteTopBar
-import io.github.toanhp123.finote.ui.common.format.formatMonthYear
 import io.github.toanhp123.finote.ui.common.theme.FinoteTheme
 import io.github.toanhp123.finote.ui.overview.component.BucketList
 import io.github.toanhp123.finote.ui.overview.component.MerchantList
@@ -76,7 +67,12 @@ fun OverviewScreen(
             FinoteEmptyState(R.drawable.ic_receipt_long, stringResource(R.string.transactions_empty))
         } else {
             // The header stays while loading and on an error: the month is known, and another month retries.
-            MonthHeader(state, onIntent)
+            MonthSwitcher(
+                month = state.month,
+                isNextEnabled = state.month < state.currentMonth,
+                onPrevious = { onIntent(OverviewIntent.PreviousMonth) },
+                onNext = { onIntent(OverviewIntent.NextMonth) },
+            )
             when {
                 state.isLoading -> {
                     LoadingBlocks()
@@ -91,38 +87,6 @@ fun OverviewScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun MonthHeader(
-    state: OverviewState,
-    onIntent: (OverviewIntent) -> Unit,
-) {
-    val locale = LocalConfiguration.current.locales[0]
-    val title = remember(state.month, locale) { formatMonthYear(state.month, locale) }
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = FinoteTheme.spacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        FinoteIconButton(
-            iconRes = R.drawable.ic_chevron_left,
-            contentDescription = stringResource(R.string.overview_month_prev_cd),
-            onClick = { onIntent(OverviewIntent.PreviousMonth) },
-        )
-        Text(
-            text = title,
-            modifier = Modifier.weight(1f).semantics { heading() },
-            color = FinoteTheme.scheme.onSurface,
-            style = FinoteTheme.typography.material.titleMedium,
-            textAlign = TextAlign.Center,
-        )
-        FinoteIconButton(
-            iconRes = R.drawable.ic_chevron_right,
-            contentDescription = stringResource(R.string.overview_month_next_cd),
-            onClick = { onIntent(OverviewIntent.NextMonth) },
-            enabled = state.month < state.currentMonth,
-        )
     }
 }
 

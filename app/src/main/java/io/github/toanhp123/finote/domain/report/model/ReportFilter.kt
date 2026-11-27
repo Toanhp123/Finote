@@ -11,6 +11,9 @@ sealed interface ReportFilter {
 
     data object TransferFees : ReportFilter
 
+    /** Every spending entry of the month, so the rows total `MonthReport.expense`. Never a bucket. */
+    data object AllSpending : ReportFilter
+
     data class ByMerchant(
         val name: String,
     ) : ReportFilter {

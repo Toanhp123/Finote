@@ -100,7 +100,6 @@
     <string name="tab_budget">予算</string>
     <string name="tab_settings">設定</string>
     <string name="nav_item_new_cd">%1$s、新着あり</string>
-    <string name="coming_soon_title">近日公開</string>
     <string name="transactions_all">すべて</string>
     <string name="transactions_today">今日</string>
     <string name="transactions_yesterday">昨日</string>
@@ -335,6 +334,9 @@
     <plurals name="category_delete_rules_text">
         <item quantity="other">%1$d件のキーワードルールは選択したカテゴリに移動します。カテゴリを選ばない場合は削除されます。</item>
     </plurals>
+    <plurals name="category_delete_budgets_text">
+        <item quantity="other">%1$d件の予算は選択したカテゴリに移動します。カテゴリを選ばない場合は削除されます。</item>
+    </plurals>
     <string name="category_delete_branch_note">サブカテゴリも削除されます。</string>
     <string name="category_delete_none_option">カテゴリなし</string>
     <string name="category_delete_no_transactions">このカテゴリを使う取引はありません。</string>
@@ -409,4 +411,30 @@
     <string name="overview_pace_legend_this">今月</string>
     <string name="overview_pace_legend_last">先月</string>
     <string name="report_list_empty">このグループに取引はありません</string>
+    <string name="budget_alert_channel">予算</string>
+    <string name="budget_alert_text">%1$sは今月の予算の%2$d%%を使いました</string>
+    <string name="budget_total_title">予算合計</string>
+    <string name="budget_spent">支出</string>
+    <string name="budget_left">残り</string>
+    <string name="budget_word_over">超過</string>
+    <string name="budget_word_used_up">使い切り</string>
+    <string name="budget_word_near">まもなく上限</string>
+    <string name="budget_per_day">/日</string>
+    <string name="budget_carry">繰越を含む</string>
+    <string name="budget_empty">今月の予算はありません</string>
+    <string name="budget_add">予算を追加</string>
+    <string name="budget_alerts_off">予算の通知がオフです</string>
+    <string name="budget_alerts_on">オンにする</string>
+    <string name="budget_edit_cd">%1$sを編集</string>
+    <string name="budget_edit_title">予算を編集</string>
+    <string name="budget_edit_limit">上限額</string>
+    <string name="budget_edit_rollover">翌月に繰り越す</string>
+    <string name="budget_edit_threshold">通知する使用率</string>
+    <string name="budget_edit_save">保存</string>
+    <string name="budget_delete_title">この予算を削除しますか？</string>
+    <string name="budget_delete_text">過去の月の予算は残ります。</string>
+    <string name="budget_error_limit">0より大きい上限額を入力してください</string>
+    <string name="budget_error_duplicate">このカテゴリにはすでに予算があります</string>
+    <string name="budget_error_invalid_category">このカテゴリには予算を設定できません</string>
+    <string name="budget_error_failed">実行できませんでした。後でもう一度お試しください。</string>
 </resources>

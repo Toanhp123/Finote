@@ -402,6 +402,20 @@ class MigrationPolicyTest {
         }
 
     @Test
+    fun `v13 rows survive the migration to 14 and budgets table is empty`() =
+        runTest {
+            helper.createDatabase(13).use { connection -> V8_ROWS.forEach(connection::execSQL) }
+
+            helper.runMigrationsAndValidate(14, FINOTE_MIGRATIONS).close()
+
+            assertTrue(rowExists("accounts", "acc-a"))
+            assertTrue(rowExists("categories", "cat-1"))
+            assertTrue(rowExists("transactions", "tx-1"))
+            assertEquals(0L, longColumn("SELECT COUNT(*) FROM budgets"))
+            assertEquals(0L, longColumn("SELECT COUNT(*) FROM budget_months"))
+        }
+
+    @Test
     fun `migrated schema validates`() = runTest { migrateKeyedRows() }
 
     private suspend fun migrateKeyedRows() {

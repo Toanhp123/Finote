@@ -100,7 +100,6 @@
     <string name="tab_budget">Budget</string>
     <string name="tab_settings">Settings</string>
     <string name="nav_item_new_cd">%1$s, new</string>
-    <string name="coming_soon_title">Coming soon</string>
     <string name="transactions_all">All</string>
     <string name="transactions_today">Today</string>
     <string name="transactions_yesterday">Yesterday</string>
@@ -347,6 +346,10 @@
         <item quantity="one">%1$d keyword rule follows the category you pick, or is deleted if you pick none.</item>
         <item quantity="other">%1$d keyword rules follow the category you pick, or are deleted if you pick none.</item>
     </plurals>
+    <plurals name="category_delete_budgets_text">
+        <item quantity="one">%1$d budget follows the category you pick, or is deleted if you pick none.</item>
+        <item quantity="other">%1$d budgets follow the category you pick, or are deleted if you pick none.</item>
+    </plurals>
     <string name="category_delete_branch_note">Its subcategories are deleted too.</string>
     <string name="category_delete_none_option">No category</string>
     <string name="category_delete_no_transactions">No transaction uses this category.</string>
@@ -422,4 +425,30 @@
     <string name="overview_pace_legend_this">This month</string>
     <string name="overview_pace_legend_last">Last month</string>
     <string name="report_list_empty">No transactions left in this group</string>
+    <string name="budget_alert_channel">Budgets</string>
+    <string name="budget_alert_text">%1$s has used %2$d%% of the monthly budget</string>
+    <string name="budget_total_title">Total budget</string>
+    <string name="budget_spent">Spent</string>
+    <string name="budget_left">Left</string>
+    <string name="budget_word_over">Over</string>
+    <string name="budget_word_used_up">Used up</string>
+    <string name="budget_word_near">Almost out</string>
+    <string name="budget_per_day">/day</string>
+    <string name="budget_carry">Includes rollover</string>
+    <string name="budget_empty">No budgets this month</string>
+    <string name="budget_add">Add budget</string>
+    <string name="budget_alerts_off">Budget alerts are off</string>
+    <string name="budget_alerts_on">Turn on</string>
+    <string name="budget_edit_cd">Edit %1$s</string>
+    <string name="budget_edit_title">Edit budget</string>
+    <string name="budget_edit_limit">Limit</string>
+    <string name="budget_edit_rollover">Roll over to next month</string>
+    <string name="budget_edit_threshold">Alert at</string>
+    <string name="budget_edit_save">Save</string>
+    <string name="budget_delete_title">Delete this budget?</string>
+    <string name="budget_delete_text">Earlier months keep their budgets.</string>
+    <string name="budget_error_limit">Enter a limit above 0</string>
+    <string name="budget_error_duplicate">This category already has a budget</string>
+    <string name="budget_error_invalid_category">This category can\'t have a budget</string>
+    <string name="budget_error_failed">Couldn\'t do that. Try again later.</string>
 </resources>

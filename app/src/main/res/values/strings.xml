@@ -100,7 +100,6 @@
     <string name="tab_budget">Ngân sách</string>
     <string name="tab_settings">Cài đặt</string>
     <string name="nav_item_new_cd">%1$s, mới</string>
-    <string name="coming_soon_title">Sắp có</string>
     <string name="transactions_all">Tất cả</string>
     <string name="transactions_today">Hôm nay</string>
     <string name="transactions_yesterday">Hôm qua</string>
@@ -358,6 +357,9 @@
     <plurals name="category_delete_rules_text">
         <item quantity="other">%1$d quy tắc từ khóa đi theo danh mục bạn chọn, hoặc bị xóa nếu bạn không chọn.</item>
     </plurals>
+    <plurals name="category_delete_budgets_text">
+        <item quantity="other">%1$d ngân sách đi theo danh mục bạn chọn, hoặc bị xóa nếu bạn không chọn.</item>
+    </plurals>
     <string name="category_delete_branch_note">Danh mục con cũng bị xóa.</string>
     <string name="category_delete_none_option">Không danh mục</string>
     <string name="category_delete_no_transactions">Chưa có giao dịch nào dùng danh mục này.</string>
@@ -432,4 +434,30 @@
     <string name="overview_pace_legend_this">Tháng này</string>
     <string name="overview_pace_legend_last">Tháng trước</string>
     <string name="report_list_empty">Không còn giao dịch nào trong mục này</string>
+    <string name="budget_alert_channel">Ngân sách</string>
+    <string name="budget_alert_text">%1$s đã dùng %2$d%% ngân sách tháng</string>
+    <string name="budget_total_title">Tổng ngân sách</string>
+    <string name="budget_spent">Đã chi</string>
+    <string name="budget_left">Còn</string>
+    <string name="budget_word_over">Vượt</string>
+    <string name="budget_word_used_up">Hết</string>
+    <string name="budget_word_near">Sắp hết</string>
+    <string name="budget_per_day">/ngày</string>
+    <string name="budget_carry">Gồm kết chuyển</string>
+    <string name="budget_empty">Chưa có ngân sách tháng này</string>
+    <string name="budget_add">Thêm ngân sách</string>
+    <string name="budget_alerts_off">Thông báo ngân sách đang tắt</string>
+    <string name="budget_alerts_on">Bật</string>
+    <string name="budget_edit_cd">Sửa %1$s</string>
+    <string name="budget_edit_title">Sửa ngân sách</string>
+    <string name="budget_edit_limit">Hạn mức</string>
+    <string name="budget_edit_rollover">Kết chuyển sang tháng sau</string>
+    <string name="budget_edit_threshold">Cảnh báo khi đạt</string>
+    <string name="budget_edit_save">Lưu</string>
+    <string name="budget_delete_title">Xóa ngân sách này?</string>
+    <string name="budget_delete_text">Các tháng trước vẫn giữ ngân sách của chúng.</string>
+    <string name="budget_error_limit">Nhập hạn mức lớn hơn 0</string>
+    <string name="budget_error_duplicate">Danh mục này đã có ngân sách</string>
+    <string name="budget_error_invalid_category">Danh mục này không dùng được cho ngân sách</string>
+    <string name="budget_error_failed">Không thực hiện được. Thử lại sau.</string>
 </resources>

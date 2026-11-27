@@ -3,6 +3,7 @@
 <!-- rule_update.xml holds the download switch: a restored ON would download without a fresh choice. -->
 <!-- app_setup.xml holds the setup-done flag: a restored flag would skip setup on top of an empty database. -->
 <!-- drift_ack.xml holds drift acknowledgements keyed to the ledger: a restored one would hide a real drift. -->
+<!-- budget_prompt.xml holds the permission-asked flag: a restored flag would skip the ask on a new device. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="database" path="." />
@@ -10,6 +11,7 @@
         <exclude domain="sharedpref" path="rule_update.xml" />
         <exclude domain="sharedpref" path="app_setup.xml" />
         <exclude domain="sharedpref" path="drift_ack.xml" />
+        <exclude domain="sharedpref" path="budget_prompt.xml" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="database" path="." />
@@ -17,5 +19,6 @@
         <exclude domain="sharedpref" path="rule_update.xml" />
         <exclude domain="sharedpref" path="app_setup.xml" />
         <exclude domain="sharedpref" path="drift_ack.xml" />
+        <exclude domain="sharedpref" path="budget_prompt.xml" />
     </device-transfer>
 </data-extraction-rules>
